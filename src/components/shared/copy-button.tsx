@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -16,26 +16,32 @@ interface CopyButtonProps {
 export function CopyButton({ text, label, className, onError }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleCopy = useCallback(async () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+
     try {
       const success = await copyToClipboard(text);
       if (success) {
         setCopied(true);
         setHasError(false);
-        const timer = setTimeout(() => setCopied(false), 2000);
-        return () => clearTimeout(timer);
+        timerRef.current = setTimeout(() => setCopied(false), 2000);
       } else {
         setHasError(true);
         onError?.(new Error("Failed to copy text to clipboard"));
-        const timer = setTimeout(() => setHasError(false), 2000);
-        return () => clearTimeout(timer);
+        timerRef.current = setTimeout(() => setHasError(false), 2000);
       }
     } catch (err) {
       setHasError(true);
       onError?.(err instanceof Error ? err : new Error("Failed to copy"));
-      const timer = setTimeout(() => setHasError(false), 2000);
-      return () => clearTimeout(timer);
+      timerRef.current = setTimeout(() => setHasError(false), 2000);
     }
   }, [text, onError]);
 
