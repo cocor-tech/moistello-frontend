@@ -131,7 +131,7 @@ export class WalletSessionManager {
   }
 
   private handleChannelMessage(event: MessageEvent): void {
-    if (event.origin !== window.location.origin) return
+    if (event.origin && event.origin !== window.location.origin) return
 
     const { type } = event.data
     switch (type) {

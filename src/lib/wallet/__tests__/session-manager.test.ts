@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
+import { WalletSessionManager } from "../session-manager"
 
 describe("SessionManager", () => {
   const mockLocalStorage = new Map<string, string>()
@@ -116,5 +117,25 @@ describe("SessionManager", () => {
     }
     expect(threwError).toBe(true)
     // Session should still work in-memory
+  })
+
+  it("should process BroadcastChannel messages with empty origin", () => {
+    class MockBroadcastChannel {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      postMessage() {}
+      close() {}
+    }
+
+    vi.stubGlobal("BroadcastChannel", MockBroadcastChannel)
+
+    const manager = new WalletSessionManager()
+    const restoreSpy = vi.spyOn(manager as unknown as { restore: () => void }, "restore")
+
+    ;(manager as unknown as { handleChannelMessage: (event: MessageEvent) => void }).handleChannelMessage({
+      origin: "",
+      data: { type: "wallet_connected" },
+    } as MessageEvent)
+
+    expect(restoreSpy).toHaveBeenCalled()
   })
 })
