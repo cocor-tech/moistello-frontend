@@ -8,4 +8,6 @@ if (dsn) {
     environment: process.env.NODE_ENV ?? "production",
     tracesSampleRate: 0.1,
   })
+} else {
+  console.warn("[Sentry] NEXT_PUBLIC_SENTRY_DSN not configured. Server-side error monitoring is disabled. Set NEXT_PUBLIC_SENTRY_DSN in your environment to enable Sentry error tracking.")
 }

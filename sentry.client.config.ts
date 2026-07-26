@@ -7,7 +7,7 @@ if (dsn) {
     dsn,
     environment: process.env.NODE_ENV ?? "production",
     tracesSampleRate: 0.1,
-    beforeSend(event) {
+    beforeSend(event: any) {
       if (event.request?.url) {
         event.request.url = event.request.url.replace(
           /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
@@ -26,7 +26,7 @@ if (dsn) {
       }
       return event
     },
-    beforeBreadcrumb(breadcrumb) {
+    beforeBreadcrumb(breadcrumb: any) {
       if (breadcrumb.message) {
         breadcrumb.message = breadcrumb.message
           .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[email]")
@@ -34,4 +34,6 @@ if (dsn) {
       return breadcrumb
     },
   })
+} else {
+  console.warn("[Sentry] NEXT_PUBLIC_SENTRY_DSN not configured. Error monitoring is disabled. Set NEXT_PUBLIC_SENTRY_DSN in your environment to enable Sentry error tracking.")
 }

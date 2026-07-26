@@ -146,6 +146,12 @@ export function flushMetrics(): void {
         metricBuffer.unshift(...batch)
       })
     }
+  } else {
+    // Only warn once per session to avoid spam
+    if (typeof window !== "undefined" && !(window as any).__metricsWarned) {
+      console.warn("[Metrics] NEXT_PUBLIC_METRICS_ENDPOINT not configured. Metrics collection is disabled. Set NEXT_PUBLIC_METRICS_ENDPOINT in your environment to enable metrics tracking.")
+      ;(window as any).__metricsWarned = true
+    }
   }
 }
 
