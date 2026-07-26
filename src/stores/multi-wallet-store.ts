@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { getWalletRegistry } from "@/lib/wallet/registry";
 import { getSessionManager } from "@/lib/wallet/session-manager";
-import { WC2_QR_EXPIRATION_MS } from "@/lib/constants";
+import { WC2_QR_EXPIRATION_MS, STELLAR_NETWORK } from "@/lib/constants";
 import { fetchBalanceWithBackoff } from "@/lib/wallet/balance-cache";
 import type {
   WalletAdapter,
@@ -262,7 +262,7 @@ export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
               : {
                   adapter: null as unknown as WalletAdapter,
                   publicKey: "",
-                  network: "testnet" as NetworkType,
+                  network: STELLAR_NETWORK as NetworkType,
                   balance: null,
                   lastConnected: Date.now(),
                   error: offlineError,
@@ -292,7 +292,7 @@ export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
             : {
                 adapter,
                 publicKey: "",
-                network: "testnet" as NetworkType,
+                network: STELLAR_NETWORK as NetworkType,
                 balance: null,
                 lastConnected: Date.now(),
                 error: null,
@@ -357,7 +357,7 @@ export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
               : {
                   adapter,
                   publicKey: "",
-                  network: "testnet" as NetworkType,
+                  network: STELLAR_NETWORK as NetworkType,
                   balance: null,
                   lastConnected: Date.now(),
                   error,

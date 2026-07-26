@@ -4,11 +4,19 @@ export const API_BASE_URL =
 export const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:1100/ws"
 
-export const STELLAR_NETWORK = "testnet"
+/** Stellar network — set NEXT_PUBLIC_STELLAR_NETWORK=mainnet for production. Defaults to "testnet". */
+export const STELLAR_NETWORK: "testnet" | "mainnet" =
+  (process.env.NEXT_PUBLIC_STELLAR_NETWORK as "testnet" | "mainnet") ?? "testnet"
 
-export const STELLAR_HORIZON_URL = "https://horizon-testnet.stellar.org"
+export const STELLAR_HORIZON_URL =
+  STELLAR_NETWORK === "mainnet"
+    ? "https://horizon.stellar.org"
+    : "https://horizon-testnet.stellar.org"
 
-export const STELLAR_RPC_URL = "https://soroban-testnet.stellar.org"
+export const STELLAR_RPC_URL =
+  STELLAR_NETWORK === "mainnet"
+    ? "https://soroban.stellar.org"
+    : "https://soroban-testnet.stellar.org"
 
 export const USDC_CONTRACT_ID =
   process.env.NEXT_PUBLIC_USDC_CONTRACT_ID ||

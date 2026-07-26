@@ -1,4 +1,5 @@
 import { WalletAdapter, WalletMeta, SignOptions, NetworkType } from "../types"
+import { STELLAR_NETWORK } from "@/lib/constants"
 import {
   deriveStellarKeypair,
   publicKeyToStellarAddress,
@@ -315,7 +316,7 @@ export function createPasskeyAdapter(): WalletAdapter {
     },
 
     async getNetwork() {
-      return "testnet" as NetworkType
+      return STELLAR_NETWORK as NetworkType
     },
   }
 }
