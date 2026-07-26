@@ -1,7 +1,6 @@
 "use client";
 
 import React, { forwardRef } from "react";
-import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -55,15 +54,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const isDisabled = disabled || isLoading;
 
     return (
-      <motion.button
+      <button
         ref={ref}
         disabled={isDisabled}
-        whileHover={isDisabled ? undefined : { scale: 1.02 }}
-        whileTap={isDisabled ? undefined : { scale: 0.97 }}
         className={cn(
           "inline-flex items-center justify-center rounded-xl font-body font-medium transition-all duration-300",
+          "hover:scale-[1.02] active:scale-[0.97]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          "disabled:pointer-events-none disabled:opacity-40",
+          "disabled:pointer-events-none disabled:opacity-40 disabled:hover:scale-100",
           "w-full md:w-auto",
           variant === "primary" && "font-heading",
           variant === "premium" && "rounded-2xl",
@@ -75,7 +73,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           isLoading && "animate-shimmer",
           className,
         )}
-        {...(props as React.ComponentPropsWithoutRef<typeof motion.button>)}
+        {...props}
       >
         {isLoading && (
           <Loader2
@@ -97,7 +95,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {rightIcon}
           </span>
         )}
-      </motion.button>
+      </button>
     );
   },
 );

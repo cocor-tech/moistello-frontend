@@ -1,7 +1,6 @@
 "use client";
 
 import React, { forwardRef, useId, useState, useCallback } from "react";
-import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -106,14 +105,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <motion.span
-            animate={{ rotate: isFocused ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          <span
+            className={cn(
+              "pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-transform duration-200",
+              isFocused && "animate-rotate-180"
+            )}
             aria-hidden="true"
           >
             <ChevronDown className="h-4 w-4" />
-          </motion.span>
+          </span>
         </div>
         {error && (
           <p id={errorId} className="mt-1.5 text-xs text-red-400" role="alert">

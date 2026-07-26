@@ -112,6 +112,7 @@ const config: Config = {
         "shimmer": "shimmer 1.8s ease-in-out infinite",
         "holo-shift": "holo-shift 8s ease-in-out infinite",
         "radial-pulse": "radial-pulse 3s ease-in-out infinite",
+        "rotate-180": "rotate-180 0.2s ease-out",
       },
       keyframes: {
         "fade-in": { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "translateY(0)" } },
@@ -119,6 +120,7 @@ const config: Config = {
         "scale-in": { from: { opacity: "0", transform: "scale(0.92)" }, to: { opacity: "1", transform: "scale(1)" } },
         "slide-from-right": { from: { transform: "translateX(100%)" }, to: { transform: "translateX(0)" } },
         "slide-in-bottom": { from: { transform: "translateY(100%)" }, to: { transform: "translateY(0)" } },
+        "rotate-180": { from: { transform: "rotate(0deg)" }, to: { transform: "rotate(180deg)" } },
       },
       transitionTimingFunction: {
         "premium": "cubic-bezier(0.22, 1, 0.36, 1)",

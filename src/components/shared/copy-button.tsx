@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -46,15 +45,14 @@ export function CopyButton({ text, label, className, onError }: CopyButtonProps)
   }, [text, onError]);
 
   return (
-    <motion.button
+    <button
       type="button"
       onClick={handleCopy}
-      whileHover={{ scale: 1.04 }}
-      whileTap={{ scale: 0.94 }}
       className={cn(
         "inline-flex items-center gap-2 rounded-xl px-3 py-1.5",
         "text-xs font-mono font-medium tracking-tight",
         "transition-all duration-300",
+        "hover:scale-[1.04] active:scale-[0.94]",
         copied
           ? "glass-strong bg-success/10 text-success border border-success/20 shadow-[0_0_24px_rgba(16,185,129,0.15)]"
           : hasError
@@ -64,41 +62,19 @@ export function CopyButton({ text, label, className, onError }: CopyButtonProps)
       )}
       aria-label={copied ? "Copied" : hasError ? "Failed to copy" : label ?? "Copy to clipboard"}
     >
-      <AnimatePresence mode="wait">
-        {copied ? (
-          <motion.span
-            key="check"
-            initial={{ scale: 0, rotate: -90 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 90 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
-            className="text-success"
-          >
-            <Check className="h-3.5 w-3.5" />
-          </motion.span>
-        ) : hasError ? (
-          <motion.span
-            key="error"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
-            className="text-red-400"
-          >
-            <AlertCircle className="h-3.5 w-3.5" />
-          </motion.span>
-        ) : (
-          <motion.span
-            key="copy"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {copied ? (
+        <span className="text-success animate-scale-in">
+          <Check className="h-3.5 w-3.5" />
+        </span>
+      ) : hasError ? (
+        <span className="text-red-400 animate-scale-in">
+          <AlertCircle className="h-3.5 w-3.5" />
+        </span>
+      ) : (
+        <span className="animate-scale-in">
+          <Copy className="h-3.5 w-3.5" />
+        </span>
+      )}
       <span className={cn(copied && "text-success", hasError && "text-red-400")}>
         {hasError
           ? "Failed"
@@ -110,6 +86,6 @@ export function CopyButton({ text, label, className, onError }: CopyButtonProps)
           ? "Copied!"
           : text}
       </span>
-    </motion.button>
+    </button>
   );
 }

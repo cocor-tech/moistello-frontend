@@ -6,7 +6,6 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 interface TabsContextValue {
@@ -110,11 +109,7 @@ export function TabsTrigger({
       {...props}
     >
       {isActive && (
-        <motion.div
-          layoutId="tab-indicator"
-          className="absolute inset-0 gradient-bg rounded-lg"
-          transition={{ type: "spring", stiffness: 500, damping: 34 }}
-        />
+        <div className="absolute inset-0 gradient-bg rounded-lg animate-scale-in" />
       )}
       <span className="relative z-10">{children}</span>
     </button>
@@ -137,19 +132,16 @@ export function TabsContent({
   if (!isActive) return null;
 
   return (
-    <motion.div
+    <div
       role="tabpanel"
       tabIndex={0}
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
       className={cn(
-        "pt-4 focus-visible:outline-none",
+        "pt-4 focus-visible:outline-none animate-fade-in",
         className,
       )}
-      {...(props as React.ComponentPropsWithoutRef<typeof motion.div>)}
+      {...props}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
