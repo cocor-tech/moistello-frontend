@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { ApiResponse, User } from "@/types";
 import { post } from "@/lib/api-client";
+import { computeHmacSha256 } from "@/lib/wallet/hmac";
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -12,6 +13,11 @@ const isDev = process.env.NODE_ENV === "development"
 const ACCESS_TOKEN_KEY = "moistello_token";
 const REFRESH_TOKEN_KEY = "moistello_refresh";
 const USER_DATA_KEY = "moistello_user";
+
+interface UserStoreWithHmac {
+  user: User;
+  hmac: string;
+}
 
 function getStoredAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -47,13 +53,29 @@ function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(USER_DATA_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+
+    const store: UserStoreWithHmac = JSON.parse(raw);
+    if (!store.hmac || !store.user) return null;
+
+    const expectedHMAC = computeHmacSha256(JSON.stringify(store.user));
+    if (store.hmac !== expectedHMAC) {
+      console.warn("[auth] HMAC mismatch — user data may be tampered");
+      localStorage.removeItem(USER_DATA_KEY);
+      return null;
+    }
+
+    return store.user;
   } catch { return null }
 }
 
 function setStoredUser(user: User): void {
   if (typeof window === "undefined") return;
-  try { localStorage.setItem(USER_DATA_KEY, JSON.stringify(user)) } catch (e) { console.warn("[auth] Failed to persist user data:", e) }
+  try {
+    const hmac = computeHmacSha256(JSON.stringify(user));
+    const store: UserStoreWithHmac = { user, hmac };
+    localStorage.setItem(USER_DATA_KEY, JSON.stringify(store));
+  } catch (e) { console.warn("[auth] Failed to persist user data:", e) }
 }
 
 function removeStoredUser(): void {
