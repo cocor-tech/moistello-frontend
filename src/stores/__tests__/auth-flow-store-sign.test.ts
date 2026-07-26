@@ -69,6 +69,16 @@ describe("AuthFlowStore - signAndSubmit", () => {
     vi.clearAllMocks()
   })
 
+  it("persists auth flow state in localStorage so other tabs can receive storage events", () => {
+    localStorage.clear()
+    sessionStorage.clear()
+
+    useAuthFlowStore.getState().setStep("sign")
+
+    expect(localStorage.getItem("moistello-auth-flow")).not.toBeNull()
+    expect(sessionStorage.getItem("moistello-auth-flow")).toBeNull()
+  })
+
   it("fails early if no wallet connected", async () => {
     useAuthFlowStore.setState({
       connection: {

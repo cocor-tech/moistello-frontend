@@ -646,7 +646,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
     {
       name: "moistello-auth-flow",
       version: 3,
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
       partialize: state => ({
         step: state.step,
         auth: state.auth,
