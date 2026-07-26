@@ -4,66 +4,45 @@ import { useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
 import { Wallet, Loader2, Shield } from "lucide-react"
 import { WalletGrid } from "./wallet-grid"
-import type { ReactNode } from "react"
+import { useMultiWalletStore } from "@/stores/multi-wallet-store"
 
 const AuthConnectionState = dynamic(
   () => import("./auth-connection-state").then((m) => m.AuthConnectionState),
   { ssr: false }
 )
 
-interface DetectedWallet {
-  id: string
-  name: string
-  category: string
-  icon: ReactNode
-  description: string
-  isRecommended?: boolean
-  installUrl?: string
-  status?: "detected" | "not_detected"
-}
-
 interface ChooseWalletStepProps {
   mode: "login" | "register"
-  wallets: DetectedWallet[]
-  isScanning: boolean
-  connectingWalletId: string | null
-  wc2PairingUri: string | null
-  wc2PairingState: string
-  wc2PairingError: string | null
-  wc2QrExpiresAt: number | null
-  onSelectWallet: (walletId: string) => void
-  onWc2Cancel: () => void
-  onWc2Retry: () => void
+  /** Optional passkey login handler (login mode only). */
   onPasskeyLogin?: () => void
 }
 
-export function ChooseWalletStep({
-  mode,
-  wallets,
-  isScanning,
-  connectingWalletId,
-  wc2PairingUri,
-  wc2PairingState,
-  wc2PairingError,
-  wc2QrExpiresAt,
-  onSelectWallet,
-  onWc2Cancel,
-  onWc2Retry,
-  onPasskeyLogin,
-}: ChooseWalletStepProps) {
+export function ChooseWalletStep({ mode, onPasskeyLogin }: ChooseWalletStepProps) {
+  /* Read only the slices this component needs from the store directly,
+     eliminating 11+ props that were previously drilled from parent layers. */
+  const detectedWallets = useMultiWalletStore((s) => s.detectedWallets)
+  const isScanning = useMultiWalletStore((s) => s.isScanning)
+  const connectingWalletId = useMultiWalletStore((s) => s.connectingWalletId)
+  const wc2PairingUri = useMultiWalletStore((s) => s.wc2PairingUri)
+  const wc2PairingState = useMultiWalletStore((s) => s.wc2PairingState)
+  const wc2PairingError = useMultiWalletStore((s) => s.wc2PairingError)
+  const wc2QrExpiresAt = useMultiWalletStore((s) => s.wc2QrExpiresAt)
+  const resetWc2Pairing = useMultiWalletStore((s) => s.resetWc2Pairing)
+  const connect = useMultiWalletStore((s) => s.connect)
+
   const isWc2Active = wc2PairingState !== "idle" && wc2PairingState !== "approved"
 
   const handleSelect = useCallback(
     (walletId: string) => {
       if (connectingWalletId) return
-      onSelectWallet(walletId)
+      connect(walletId as Parameters<typeof connect>[0])
     },
-    [connectingWalletId, onSelectWallet]
+    [connectingWalletId, connect]
   )
 
   const hasPasskey = useMemo(() => {
-    return wallets.some((w) => w.id === "passkey" && w.status === "detected")
-  }, [wallets])
+    return detectedWallets.some((w) => w.id === "passkey" && w.status === "detected")
+  }, [detectedWallets])
 
   if (isWc2Active) {
     return (
@@ -72,8 +51,8 @@ export function ChooseWalletStep({
           pairingUri={wc2PairingUri}
           pairingState={wc2PairingState as "idle" | "pairing" | "awaiting_approval" | "approved" | "rejected" | "timeout" | "error"}
           error={wc2PairingError}
-          onRetry={onWc2Retry}
-          onCancel={onWc2Cancel}
+          onRetry={resetWc2Pairing}
+          onCancel={resetWc2Pairing}
           expiresAt={wc2QrExpiresAt}
         />
       </div>
@@ -89,9 +68,20 @@ export function ChooseWalletStep({
     )
   }
 
-  const extensions = wallets.filter((w) => w.category === "extension" || w.category === "mobile")
-  const hardware = wallets.filter((w) => w.category === "hardware")
-  const passkeyWallet = wallets.find((w) => w.id === "passkey")
+  const extensions = detectedWallets.filter((w) => w.category === "extension" || w.category === "mobile")
+  const hardware = detectedWallets.filter((w) => w.category === "hardware")
+  const passkeyWallet = detectedWallets.find((w) => w.id === "passkey")
+
+  /* Map store wallet shape to the shape WalletGrid expects */
+  const gridWallets = extensions.map((w) => ({
+    id: w.id,
+    name: w.name,
+    category: w.category,
+    icon: w.icon as unknown as React.ReactNode,
+    description: w.description,
+    installUrl: w.installUrl,
+    status: w.status,
+  }))
 
   return (
     <div className="space-y-4">
@@ -153,7 +143,7 @@ export function ChooseWalletStep({
             Or connect with a wallet
           </p>
           <WalletGrid
-            wallets={extensions}
+            wallets={gridWallets}
             connectingWalletId={connectingWalletId}
             onSelect={handleSelect}
           />
@@ -189,7 +179,7 @@ export function ChooseWalletStep({
               className="w-full flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left transition-all hover:border-aurora-violet/40 hover:bg-white/[0.06] disabled:opacity-50 disabled:pointer-events-none"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-premium-gold/20 text-premium-gold">
-                {w.icon}
+                {w.icon as unknown as React.ReactNode}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
