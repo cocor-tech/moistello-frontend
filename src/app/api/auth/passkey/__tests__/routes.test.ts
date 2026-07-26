@@ -159,7 +159,7 @@ describe("register API", () => {
     expect(data.error).toBe("challenge_mismatch")
   })
 
-  it("returns verified response with pepper on success", async () => {
+  it("returns verified response with keypair on success", async () => {
     const genRes = await generateOptions(makeRequest({ mode: "register" }))
     const { tempKey } = await genRes.json()
 
@@ -171,8 +171,10 @@ describe("register API", () => {
     const data = await res.json()
     expect(data.verified).toBe(true)
     expect(data.credentialId).toBe("new-cred-id")
-    expect(data.pepper).toBeDefined()
-    expect(typeof data.pepper).toBe("string")
+    expect(data.publicKey).toBeDefined()
+    expect(typeof data.publicKey).toBe("string")
+    expect(data.secretKey).toBeDefined()
+    expect(typeof data.secretKey).toBe("string")
   })
 
   it("stores credential after successful registration", async () => {
@@ -250,7 +252,7 @@ describe("auth-verify API", () => {
     expect(data.error).toBe("challenge_mismatch")
   })
 
-  it("returns verified response with pepper on success", async () => {
+  it("returns verified response with keypair on success", async () => {
     const { storeCredential } = await import("@/lib/passkey/store")
     await storeCredential("cred-id-123", {
       publicKey: new Uint8Array(32).fill(1),
@@ -268,7 +270,10 @@ describe("auth-verify API", () => {
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.verified).toBe(true)
-    expect(data.pepper).toBeDefined()
+    expect(data.publicKey).toBeDefined()
+    expect(typeof data.publicKey).toBe("string")
+    expect(data.secretKey).toBeDefined()
+    expect(typeof data.secretKey).toBe("string")
   })
 
   it("updates counter after successful verification", async () => {

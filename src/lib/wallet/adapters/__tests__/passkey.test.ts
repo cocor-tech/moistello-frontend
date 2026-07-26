@@ -90,7 +90,12 @@ const mockAssertion = {
   response: { clientDataJSON: "{}", authenticatorData: "{}", signature: "{}", userHandle: "{}" },
 }
 
-const pepperResponse = { verified: true, email: "user@test.com", pepper: "test-pepper" }
+const keypairResponse = {
+  verified: true,
+  email: "user@test.com",
+  publicKey: "a".repeat(64),
+  secretKey: "b".repeat(64),
+}
 
 describe("Passkey adapter", () => {
   beforeEach(() => {
@@ -102,10 +107,10 @@ describe("Passkey adapter", () => {
         return new Response(JSON.stringify({ options: mockOptions, challenge: "test-challenge" }))
       }
       if (url.includes("/register")) {
-        return new Response(JSON.stringify({ ...pepperResponse, credentialId: "test-credential-id-123" }))
+        return new Response(JSON.stringify({ ...keypairResponse, credentialId: "test-credential-id-123" }))
       }
       if (url.includes("/auth-verify")) {
-        return new Response(JSON.stringify(pepperResponse))
+        return new Response(JSON.stringify(keypairResponse))
       }
       return new Response(JSON.stringify({}), { status: 404 })
     })

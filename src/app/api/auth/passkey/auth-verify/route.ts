@@ -9,6 +9,7 @@ import {
   getExpectedOrigin,
 } from "@/lib/passkey/store"
 import { checkRateLimit, requireAuthenticatedUser } from "@/lib/passkey/auth-guard"
+import { deriveStellarKeypair, hexEncode } from "@/lib/crypto/key-derivation"
 
 export async function POST(req: NextRequest) {
   try {
@@ -85,11 +86,12 @@ export async function POST(req: NextRequest) {
       storedCredential.counter = verification.authenticationInfo.newCounter ?? storedCredential.counter
     }
 
-    const pepper = getPepper()
+    const keypair = await deriveStellarKeypair(resolvedCredentialId, getPepper())
     return NextResponse.json({
       verified: true,
       credentialId: resolvedCredentialId,
-      pepper,
+      publicKey: hexEncode(keypair.publicKey),
+      secretKey: hexEncode(keypair.secretKey),
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

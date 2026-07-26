@@ -1,11 +1,11 @@
 import { WalletAdapter, WalletMeta, SignOptions, NetworkType } from "../types"
 import { STELLAR_NETWORK } from "@/lib/constants"
 import {
-  deriveStellarKeypair,
   publicKeyToStellarAddress,
   secureZeroMemory,
   hexEncode,
 } from "@/lib/crypto/key-derivation"
+import { hexToBytes } from "@noble/hashes/utils.js"
 
 const CREDENTIAL_STORAGE_KEY = "moistello_passkey_credential"
 
@@ -23,7 +23,6 @@ interface PasskeySession {
   publicKey: Uint8Array
   secretKey: Uint8Array
   stellarAddress: string
-  pepper: string
 }
 
 function resolveNetworkPassphrase(network?: NetworkType, networkPassphrase?: string): string {
@@ -124,19 +123,19 @@ export function createPasskeyAdapter(): WalletAdapter {
           throw { adapter: "passkey", code: "internal" as const, message: cause, cause: String(err) }
         }
 
-        const verifyResult = await apiPost<{ verified: boolean; credentialId: string; pepper: string }>(
+        const verifyResult = await apiPost<{ verified: boolean; credentialId: string; publicKey: string; secretKey: string }>(
           "/api/auth/passkey/auth-verify",
           { credentialId: stored.credentialId, assertion, tempKey }
         )
 
-        const keypair = await deriveStellarKeypair(stored.credentialId, verifyResult.pepper)
-        const publicKeyHex = hexEncode(keypair.publicKey)
+        const publicKey = hexToBytes(verifyResult.publicKey)
+        const secretKey = hexToBytes(verifyResult.secretKey)
+        const publicKeyHex = verifyResult.publicKey
         session = {
           credentialId: stored.credentialId,
-          publicKey: keypair.publicKey,
-          secretKey: keypair.secretKey,
-          stellarAddress: publicKeyToStellarAddress(keypair.publicKey),
-          pepper: verifyResult.pepper,
+          publicKey,
+          secretKey,
+          stellarAddress: publicKeyToStellarAddress(publicKey),
         }
         return { publicKey: publicKeyHex }
       }
@@ -173,13 +172,14 @@ export function createPasskeyAdapter(): WalletAdapter {
       const attestationRecord = attestation as { rawId?: string; id?: string }
       const credentialId = attestationRecord.rawId || attestationRecord.id || ""
 
-      const registerResult = await apiPost<{ verified: boolean; credentialId: string; pepper: string }>(
+      const registerResult = await apiPost<{ verified: boolean; credentialId: string; publicKey: string; secretKey: string }>(
         "/api/auth/passkey/register",
         { attestation, tempKey }
       )
 
-      const keypair = await deriveStellarKeypair(credentialId, registerResult.pepper)
-      const publicKeyHex = hexEncode(keypair.publicKey)
+      const publicKey = hexToBytes(registerResult.publicKey)
+      const secretKey = hexToBytes(registerResult.secretKey)
+      const publicKeyHex = registerResult.publicKey
 
       storeCredential({
         credentialId,
@@ -188,10 +188,9 @@ export function createPasskeyAdapter(): WalletAdapter {
 
       session = {
         credentialId,
-        publicKey: keypair.publicKey,
-        secretKey: keypair.secretKey,
-        stellarAddress: publicKeyToStellarAddress(keypair.publicKey),
-        pepper: registerResult.pepper,
+        publicKey,
+        secretKey,
+        stellarAddress: publicKeyToStellarAddress(publicKey),
       }
 
       return { publicKey: publicKeyHex }

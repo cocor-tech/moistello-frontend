@@ -80,7 +80,7 @@ const mockAttestation = {
   response: { clientDataJSON: "{}", attestationObject: "{}" },
 }
 
-const pepperResponse = { verified: true, email: "user@test.com", pepper: "test-pepper" }
+const keypairResponse = { verified: true, email: "user@test.com", publicKey: "a".repeat(64), secretKey: "b".repeat(64) }
 
 describe("signTransaction — comprehensive", () => {
   beforeEach(() => {
@@ -92,7 +92,7 @@ describe("signTransaction — comprehensive", () => {
         return new Response(JSON.stringify({ options: { challenge: "x" }, challenge: "test" }))
       }
       if (url.includes("/register")) {
-        return new Response(JSON.stringify({ ...pepperResponse, credentialId: "test-credential-id-123" }))
+        return new Response(JSON.stringify({ ...keypairResponse, credentialId: "test-credential-id-123" }))
       }
       return new Response(JSON.stringify({}), { status: 404 })
     })
@@ -192,7 +192,7 @@ describe("signTransaction — error handling", () => {
         return new Response(JSON.stringify({ options: { challenge: "x" }, challenge: "test" }))
       }
       if (url.includes("/register")) {
-        return new Response(JSON.stringify({ ...pepperResponse, credentialId: "test-credential-id-123" }))
+        return new Response(JSON.stringify({ ...keypairResponse, credentialId: "test-credential-id-123" }))
       }
       return new Response(JSON.stringify({}), { status: 404 })
     })
