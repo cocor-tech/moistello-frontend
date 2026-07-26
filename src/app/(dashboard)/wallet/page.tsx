@@ -12,6 +12,7 @@ import { useTranslate } from "@/lib/locale/context"
 import { formatAddress } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
 import { useMultiWallet } from "@/hooks/use-multi-wallet"
+import { useUIStore } from "@/stores/ui-store"
 
 interface BalanceInfo {
   xlm: string
@@ -35,6 +36,7 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<BalanceInfo | null>(null)
   const [transactions, setTransactions] = useState<TransactionItem[]>([])
   const [loading, setLoading] = useState(true)
+  const addToast = useUIStore((s) => s.addToast)
 
   useEffect(() => {
     async function load() {
