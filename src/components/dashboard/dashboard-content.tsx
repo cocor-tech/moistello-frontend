@@ -322,9 +322,9 @@ export default function DashboardContent() {
     enabled: true,
   })
 
-  const circles = useMemo(() => circlesData ?? [], [circlesData])
-  const contributions = useMemo(() => contribsData ?? [], [contribsData])
-  const payouts = useMemo(() => payoutsData ?? [], [payoutsData])
+  const circles = circlesData ?? []
+  const contributions = contribsData ?? []
+  const payouts = payoutsData ?? []
 
   /* Initialize wallet on first dashboard load (fires once per session) */
   useEffect(() => {
