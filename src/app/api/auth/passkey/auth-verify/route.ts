@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { verifyAuthenticationResponse } from "@simplewebauthn/server"
 import type { AuthenticatorTransportFuture } from "@simplewebauthn/server"
 import {
-  getAndVerifyChallenge,
   getAndVerifyTempChallenge,
   getCredential,
   getPepper,
@@ -44,11 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify challenge
-    if (tempKey) {
-      if (!getAndVerifyTempChallenge(tempKey, parsed.challenge)) {
-        return NextResponse.json({ error: "challenge_mismatch" }, { status: 400 })
-      }
-    } else if (!getAndVerifyChallenge(resolvedCredentialId, parsed.challenge)) {
+    if (!tempKey || !getAndVerifyTempChallenge(tempKey, parsed.challenge)) {
       return NextResponse.json({ error: "challenge_mismatch" }, { status: 400 })
     }
 

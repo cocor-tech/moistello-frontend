@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateRegistrationOptions, generateAuthenticationOptions } from "@simplewebauthn/server"
-import { setChallenge, setTempChallenge, getRpId } from "@/lib/passkey/store"
+import { setTempChallenge, getRpId } from "@/lib/passkey/store"
 
 const RP_NAME = "Moistello"
 
@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
         timeout: 120_000,
       })
 
-      setChallenge(options.challenge, options.challenge)
+      const tempKey = setTempChallenge(options.challenge)
 
-      return NextResponse.json({ options, challenge: options.challenge })
+      return NextResponse.json({ options, challenge: options.challenge, tempKey })
     }
 
     if (mode === "authenticate") {
@@ -42,14 +42,13 @@ export async function POST(req: NextRequest) {
       })
 
       if (credentialId) {
-        setChallenge(credentialId, options.challenge)
-      } else {
-        // Discoverable credential — no credentialId, store challenge with temp key
         const tempKey = setTempChallenge(options.challenge)
         return NextResponse.json({ options, challenge: options.challenge, tempKey })
       }
 
-      return NextResponse.json({ options, challenge: options.challenge })
+      // Discoverable credential — no credentialId, store challenge with temp key
+      const tempKey = setTempChallenge(options.challenge)
+      return NextResponse.json({ options, challenge: options.challenge, tempKey })
     }
 
     return NextResponse.json({ error: "invalid_mode" }, { status: 400 })

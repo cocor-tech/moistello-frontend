@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyRegistrationResponse } from "@simplewebauthn/server"
 import {
-  getAndVerifyChallenge,
+  getAndVerifyTempChallenge,
   storeCredential,
   getPepper,
   getRpId,
@@ -11,7 +11,7 @@ import {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { attestation } = body
+    const { attestation, tempKey } = body
 
     if (!attestation || typeof attestation !== "object") {
       return NextResponse.json({ error: "invalid_attestation" }, { status: 400 })
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invalid_client_data" }, { status: 400 })
     }
 
-    if (!getAndVerifyChallenge(parsed.challenge, parsed.challenge)) {
+    if (!tempKey || !getAndVerifyTempChallenge(tempKey, parsed.challenge)) {
       return NextResponse.json({ error: "challenge_mismatch" }, { status: 400 })
     }
 

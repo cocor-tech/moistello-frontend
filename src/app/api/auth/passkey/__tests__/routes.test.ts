@@ -54,32 +54,26 @@ function makeRequest(body: unknown): NextRequest {
 describe("generate-options API", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Clear the challenge store between tests
-    // Since setChallenge is in module scope, we import it to reset
   })
 
-  it("returns registration options for valid email", async () => {
-    const res = await generateOptions(makeRequest({ email: "user@test.com", mode: "register" }))
+  it("returns registration options with tempKey", async () => {
+    const res = await generateOptions(makeRequest({ mode: "register" }))
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.options).toBeDefined()
     expect(data.options.challenge).toBe("reg-challenge-abc")
     expect(data.challenge).toBe("reg-challenge-abc")
+    expect(data.tempKey).toBeDefined()
+    expect(typeof data.tempKey).toBe("string")
   })
 
-  it("returns 400 for invalid email in register mode", async () => {
-    const res = await generateOptions(makeRequest({ email: "not-an-email", mode: "register" }))
-    expect(res.status).toBe(400)
-    const data = await res.json()
-    expect(data.error).toBe("invalid_email")
-  })
-
-  it("returns authentication options for valid credentialId", async () => {
+  it("returns authentication options with tempKey for valid credentialId", async () => {
     const res = await generateOptions(makeRequest({ credentialId: "cred-id-123", mode: "authenticate" }))
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.options).toBeDefined()
     expect(data.options.challenge).toBe("auth-challenge-xyz")
+    expect(data.tempKey).toBeDefined()
   })
 
   it("returns 200 for authenticate mode without credentialId (discoverable)", async () => {
@@ -94,18 +88,18 @@ describe("generate-options API", () => {
     expect(res.status).toBe(400)
   })
 
-  it("stores challenge for registration", async () => {
-    // First generate options — this stores the challenge
-    await generateOptions(makeRequest({ email: "user@test.com", mode: "register" }))
-    // Now verify that the stored challenge works with verify
-    const { getAndVerifyChallenge } = await import("@/lib/passkey/store")
-    expect(getAndVerifyChallenge("user@test.com", "reg-challenge-abc", "user@test.com")).toBe(true)
+  it("stores challenge retrievable via tempKey for registration", async () => {
+    const res = await generateOptions(makeRequest({ mode: "register" }))
+    const { tempKey } = await res.json()
+    const { getAndVerifyTempChallenge } = await import("@/lib/passkey/store")
+    expect(getAndVerifyTempChallenge(tempKey, "reg-challenge-abc")).toBe(true)
   })
 
-  it("stores challenge for authentication", async () => {
-    await generateOptions(makeRequest({ credentialId: "cred-id-123", mode: "authenticate" }))
-    const { getAndVerifyChallenge } = await import("@/lib/passkey/store")
-    expect(getAndVerifyChallenge("cred-id-123", "auth-challenge-xyz", "")).toBe(true)
+  it("stores challenge retrievable via tempKey for authentication", async () => {
+    const res = await generateOptions(makeRequest({ credentialId: "cred-id-123", mode: "authenticate" }))
+    const { tempKey } = await res.json()
+    const { getAndVerifyTempChallenge } = await import("@/lib/passkey/store")
+    expect(getAndVerifyTempChallenge(tempKey, "auth-challenge-xyz")).toBe(true)
   })
 })
 
@@ -114,31 +108,28 @@ describe("register API", () => {
     vi.clearAllMocks()
   })
 
-  it("returns 400 for missing email", async () => {
-    const res = await register(makeRequest({ attestation: { id: "test", response: { clientDataJSON: btoa(JSON.stringify({ challenge: "x" })) } } }))
-    expect(res.status).toBe(400)
-    const data = await res.json()
-    expect(data.error).toBe("invalid_email")
-  })
-
-  it("returns 400 for invalid email format", async () => {
-    const res = await register(makeRequest({ email: "bad", attestation: { id: "test" } }))
-    expect(res.status).toBe(400)
-  })
-
   it("returns 400 for missing attestation", async () => {
-    const res = await register(makeRequest({ email: "user@test.com" }))
+    const res = await register(makeRequest({}))
     expect(res.status).toBe(400)
   })
 
   it("returns 400 for missing clientDataJSON", async () => {
-    const res = await register(makeRequest({ email: "user@test.com", attestation: { id: "test" } }))
+    const res = await register(makeRequest({ attestation: { id: "test" } }))
     expect(res.status).toBe(400)
+  })
+
+  it("returns 400 when tempKey is missing", async () => {
+    const res = await register(makeRequest({
+      attestation: { id: "test", rawId: "test", response: { clientDataJSON: btoa(JSON.stringify({ challenge: "x" })) } },
+    }))
+    expect(res.status).toBe(400)
+    const data = await res.json()
+    expect(data.error).toBe("challenge_mismatch")
   })
 
   it("returns 400 when challenge not stored (replay attack)", async () => {
     const res = await register(makeRequest({
-      email: "user@test.com",
+      tempKey: "nonexistent-key",
       attestation: { id: "test", rawId: "test", response: { clientDataJSON: btoa(JSON.stringify({ challenge: "never-stored" })) } },
     }))
     expect(res.status).toBe(400)
@@ -147,31 +138,32 @@ describe("register API", () => {
   })
 
   it("returns verified response with pepper on success", async () => {
-    // First generate options to store the challenge
-    await generateOptions(makeRequest({ email: "user@test.com", mode: "register" }))
+    const genRes = await generateOptions(makeRequest({ mode: "register" }))
+    const { tempKey } = await genRes.json()
 
     const res = await register(makeRequest({
-      email: "user@test.com",
+      tempKey,
       attestation: { id: "some-id", rawId: "some-id", response: { clientDataJSON: btoa(JSON.stringify({ challenge: "reg-challenge-abc" })) } },
     }))
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.verified).toBe(true)
-    expect(data.email).toBe("user@test.com")
     expect(data.credentialId).toBe("new-cred-id")
     expect(data.pepper).toBeDefined()
     expect(typeof data.pepper).toBe("string")
   })
 
   it("stores credential after successful registration", async () => {
-    await generateOptions(makeRequest({ email: "store-cred@test.com", mode: "register" }))
+    const genRes = await generateOptions(makeRequest({ mode: "register" }))
+    const { tempKey } = await genRes.json()
+
     await register(makeRequest({
-      email: "store-cred@test.com",
+      tempKey,
       attestation: { id: "some-id", rawId: "some-id", response: { clientDataJSON: btoa(JSON.stringify({ challenge: "reg-challenge-abc" })) } },
     }))
 
     const { getCredential } = await import("@/lib/passkey/store")
-    const cred = getCredential("new-cred-id")
+    const cred = await getCredential("new-cred-id")
     expect(cred).toBeDefined()
     expect(cred!.credentialId).toBe("new-cred-id")
     expect(cred!.counter).toBe(0)
@@ -184,24 +176,18 @@ describe("auth-verify API", () => {
   })
 
   it("returns 400 for missing credentialId", async () => {
-    const res = await authVerify(makeRequest({ email: "user@test.com", assertion: {} }))
-    expect(res.status).toBe(400)
-  })
-
-  it("returns 400 for missing email", async () => {
-    const res = await authVerify(makeRequest({ credentialId: "cred-id", assertion: {} }))
+    const res = await authVerify(makeRequest({ assertion: {} }))
     expect(res.status).toBe(400)
   })
 
   it("returns 400 for missing assertion", async () => {
-    const res = await authVerify(makeRequest({ credentialId: "cred-id", email: "user@test.com" }))
+    const res = await authVerify(makeRequest({ credentialId: "cred-id" }))
     expect(res.status).toBe(400)
   })
 
   it("returns 400 for unknown credential", async () => {
     const res = await authVerify(makeRequest({
       credentialId: "unknown-cred",
-      email: "user@test.com",
       assertion: { response: { clientDataJSON: btoa(JSON.stringify({ challenge: "x" })) } },
     }))
     expect(res.status).toBe(400)
@@ -209,17 +195,32 @@ describe("auth-verify API", () => {
     expect(data.error).toBe("credential_not_found")
   })
 
-  it("returns 400 when challenge not stored (replay)", async () => {
-    // Store credential first
+  it("returns 400 when tempKey is missing", async () => {
     const { storeCredential } = await import("@/lib/passkey/store")
-    storeCredential("cred-id-123", {
+    await storeCredential("cred-id-123", {
       publicKey: new Uint8Array(32).fill(1),
       counter: 0,
     })
 
     const res = await authVerify(makeRequest({
       credentialId: "cred-id-123",
-      email: "user@test.com",
+      assertion: { response: { clientDataJSON: btoa(JSON.stringify({ challenge: "x" })) } },
+    }))
+    expect(res.status).toBe(400)
+    const data = await res.json()
+    expect(data.error).toBe("challenge_mismatch")
+  })
+
+  it("returns 400 when challenge not stored (replay)", async () => {
+    const { storeCredential } = await import("@/lib/passkey/store")
+    await storeCredential("cred-id-123", {
+      publicKey: new Uint8Array(32).fill(1),
+      counter: 0,
+    })
+
+    const res = await authVerify(makeRequest({
+      credentialId: "cred-id-123",
+      tempKey: "nonexistent-key",
       assertion: { response: { clientDataJSON: btoa(JSON.stringify({ challenge: "never-stored" })) } },
     }))
     expect(res.status).toBe(400)
@@ -229,42 +230,42 @@ describe("auth-verify API", () => {
 
   it("returns verified response with pepper on success", async () => {
     const { storeCredential } = await import("@/lib/passkey/store")
-    storeCredential("cred-id-123", {
+    await storeCredential("cred-id-123", {
       publicKey: new Uint8Array(32).fill(1),
       counter: 0,
     })
 
-    // Generate auth options to store challenge
-    await generateOptions(makeRequest({ credentialId: "cred-id-123", mode: "authenticate" }))
+    const genRes = await generateOptions(makeRequest({ credentialId: "cred-id-123", mode: "authenticate" }))
+    const { tempKey } = await genRes.json()
 
     const res = await authVerify(makeRequest({
       credentialId: "cred-id-123",
-      email: "user@test.com",
+      tempKey,
       assertion: { response: { clientDataJSON: btoa(JSON.stringify({ challenge: "auth-challenge-xyz" })) } },
     }))
     expect(res.status).toBe(200)
     const data = await res.json()
     expect(data.verified).toBe(true)
-    expect(data.email).toBe("user@test.com")
     expect(data.pepper).toBeDefined()
   })
 
   it("updates counter after successful verification", async () => {
     const { storeCredential, getCredential } = await import("@/lib/passkey/store")
-    storeCredential("cred-counter-test", {
-      credentialId: "cred-counter-test",
+    await storeCredential("cred-counter-test", {
       publicKey: new Uint8Array(32).fill(1),
       counter: 0,
     })
 
-    await generateOptions(makeRequest({ credentialId: "cred-counter-test", mode: "authenticate" }))
+    const genRes = await generateOptions(makeRequest({ credentialId: "cred-counter-test", mode: "authenticate" }))
+    const { tempKey } = await genRes.json()
+
     await authVerify(makeRequest({
       credentialId: "cred-counter-test",
-      email: "user@test.com",
+      tempKey,
       assertion: { response: { clientDataJSON: btoa(JSON.stringify({ challenge: "auth-challenge-xyz" })) } },
     }))
 
-    const cred = getCredential("cred-counter-test")
+    const cred = await getCredential("cred-counter-test")
     expect(cred).toBeDefined()
     expect(cred!.counter).toBe(1)
   })
