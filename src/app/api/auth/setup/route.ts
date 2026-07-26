@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true, username });
   response.cookies.set("moistello_session", sessionToken, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60,
     path: "/",
