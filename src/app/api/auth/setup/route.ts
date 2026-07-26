@@ -15,9 +15,12 @@ function ensureFiles() {
   if (!fs.existsSync(SESSIONS_FILE)) fs.writeFileSync(SESSIONS_FILE, "[]");
 }
 
+// OWASP 2023 recommendation: minimum 600,000 iterations for PBKDF2-SHA512
+const PBKDF2_ITERATIONS = 600_000;
+
 function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
   const s = salt || crypto.randomBytes(16).toString("hex");
-  const hash = crypto.pbkdf2Sync(password, s, 100000, 64, "sha512").toString("hex");
+  const hash = crypto.pbkdf2Sync(password, s, PBKDF2_ITERATIONS, 64, "sha512").toString("hex");
   return { hash, salt: s };
 }
 

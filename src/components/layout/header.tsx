@@ -29,7 +29,7 @@ interface HeaderProps {
 export function Header({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) {
   const pathname = usePathname();
   const { isConnected, address } = useMultiWallet();
-  const { unreadCount } = useNotificationStore();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
   const { t } = useTranslate();
   const [showConnectModal, setShowConnectModal] = useState(false);
 

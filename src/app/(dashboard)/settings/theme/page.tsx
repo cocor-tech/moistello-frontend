@@ -18,7 +18,12 @@ function getThemeOptions(t: (key: string) => string) {
 
 export default function ThemeSettingsPage() {
   const { t } = useTranslate()
-  const { theme, setTheme, density, setDensity, fontSize, setFontSize } = useUIStore()
+  const theme = useUIStore((s) => s.theme);
+  const setTheme = useUIStore((s) => s.setTheme);
+  const density = useUIStore((s) => s.density);
+  const setDensity = useUIStore((s) => s.setDensity);
+  const fontSize = useUIStore((s) => s.fontSize);
+  const setFontSize = useUIStore((s) => s.setFontSize);
 
   return (
     <div className="max-w-lg mx-auto space-y-6">

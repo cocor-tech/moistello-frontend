@@ -39,9 +39,11 @@ interface NavGroup {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useUIStore();
-  const { user, isAuthenticated } = useAuthStore();
-  const { unreadCount } = useNotificationStore();
+  const theme = useUIStore((s) => s.theme);
+  const toggleTheme = useUIStore((s) => s.toggleTheme);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
   const { t } = useTranslate();
 
   const isDark = theme === "dark";

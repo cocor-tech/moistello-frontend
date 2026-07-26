@@ -34,9 +34,11 @@ interface MobileMenuProps {
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme } = useUIStore();
-  const { isAuthenticated, logout } = useAuthStore();
-  const { unreadCount } = useNotificationStore();
+  const theme = useUIStore((s) => s.theme);
+  const toggleTheme = useUIStore((s) => s.toggleTheme);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const logout = useAuthStore((s) => s.logout);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
   const isDark = theme === "dark";
   const { t } = useTranslate();
   const menuRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);

@@ -28,7 +28,8 @@ interface PublicLayoutProps {
 export function PublicLayout({ children }: PublicLayoutProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useUIStore();
+  const theme = useUIStore((s) => s.theme);
+  const toggleTheme = useUIStore((s) => s.toggleTheme);
   const { t } = useTranslate();
   const isDark = theme === "dark";
 

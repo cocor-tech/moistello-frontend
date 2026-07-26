@@ -5,8 +5,13 @@ import crypto from "crypto";
 
 const USERS_FILE = path.join(process.cwd(), "content", "users.json");
 
-function hashPassword(password: string, salt: string): string {
-  return crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
+// OWASP 2023 recommendation: minimum 600,000 iterations for PBKDF2-SHA512
+const PBKDF2_ITERATIONS = 600_000;
+// Legacy iteration count — used only to verify and migrate old hashes on login
+const PBKDF2_ITERATIONS_LEGACY = 100_000;
+
+function hashPassword(password: string, salt: string, iterations = PBKDF2_ITERATIONS): string {
+  return crypto.pbkdf2Sync(password, salt, iterations, 64, "sha512").toString("hex");
 }
 
 function createSession(userId: string): string {
@@ -42,7 +47,17 @@ export async function POST(request: NextRequest) {
 
   const hash = hashPassword(password, user.passwordSalt);
   if (hash !== user.passwordHash) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    // Check whether the stored hash was created with the legacy 100K iteration count.
+    // If it matches, accept the login and silently upgrade to 600K on the way through.
+    const legacyHash = hashPassword(password, user.passwordSalt, PBKDF2_ITERATIONS_LEGACY);
+    if (legacyHash !== user.passwordHash) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // Migrate: rewrite the stored hash at the current (600K) iteration count
+    const upgradedHash = hashPassword(password, user.passwordSalt);
+    user.passwordHash = upgradedHash;
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
   }
 
   const sessionToken = createSession(user.id);

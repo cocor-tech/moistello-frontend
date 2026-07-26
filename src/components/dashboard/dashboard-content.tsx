@@ -180,7 +180,7 @@ function ContributionTrendChart({ contributions }: { contributions: Contribution
   const dailyTotals = useMemo(() => {
     const map = new Map<string, number>()
     for (const c of contributions) {
-      const day = new Date(c.submittedAt).toISOString().slice(0, 10)
+      const day = new Date(c.createdAt).toISOString().slice(0, 10)
       map.set(day, (map.get(day) || 0) + c.amount)
     }
     const days = Array.from(map.keys()).sort().slice(-14)
@@ -230,8 +230,8 @@ function UpcomingPayoutsWidget({ payouts }: { payouts: Payout[] }) {
   const upcoming = useMemo(() => {
     const now = Date.now()
     return payouts
-      .filter((p) => new Date(p.executedAt).getTime() >= now)
-      .sort((a, b) => new Date(a.executedAt).getTime() - new Date(b.executedAt).getTime())
+      .filter((p) => new Date(p.createdAt).getTime() >= now)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       .slice(0, 5)
   }, [payouts])
 
@@ -255,7 +255,7 @@ function UpcomingPayoutsWidget({ payouts }: { payouts: Payout[] }) {
         <div className="space-y-3">
           {upcoming.map((p) => {
             const circleLabel = `Round ${p.roundNumber}`
-            const eta = new Date(p.executedAt)
+            const eta = new Date(p.createdAt)
             const isToday = eta.toDateString() === new Date().toDateString()
             return (
               <div key={p.id} className="glass-whisper rounded-xl p-3 flex items-center justify-between">
@@ -350,7 +350,7 @@ export default function DashboardContent() {
   const recentActivity = useMemo(() => {
     const items: { id: string; description: string; amount: string; date: string; type: "contribution" | "payout" }[] = []
     for (const c of contributions) {
-      items.push({ id: `c-${c.id}`, description: `Contribution in round ${c.roundNumber}`, amount: formatCurrency(c.amount, "USDC"), date: c.submittedAt, type: "contribution" })
+      items.push({ id: `c-${c.id}`, description: `Contribution in round ${c.roundNumber}`, amount: formatCurrency(c.amount, "USDC"), date: c.createdAt, type: "contribution" })
     }
     for (const p of payouts) {
       items.push({ id: `p-${p.id}`, description: `Payout received — round ${p.roundNumber}`, amount: formatCurrency(p.amount, "USDC"), date: p.createdAt, type: "payout" })

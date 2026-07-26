@@ -221,9 +221,9 @@ export function useContribute(circleId: string) {
           userId: "current-user",
           roundNumber: newContribution.roundNumber ?? previousCircle?.currentRound ?? 1,
           amount: newContribution.amount,
-          status: "completed",
+          status: "pending",
           onTime: true,
-          submittedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
         };
         queryClient.setQueryData<Contribution[]>(
           ["circle-rounds", circleId],
