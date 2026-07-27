@@ -126,8 +126,24 @@ export async function getCredential(credentialId: string): Promise<CredentialRec
   }
 }
 
+// Placeholder pepper used only for local development and tests. It was once
+// committed to the repository, so it must be treated as public: production
+// refuses to fall back to it and requires a real, rotated PASSKEY_SERVER_PEPPER.
+const DEV_FALLBACK_PEPPER = "moistello-passkey-pepper-v1"
+
 export function getPepper(): string {
-  return process.env.PASSKEY_SERVER_PEPPER || "moistello-passkey-pepper-v1"
+  const pepper = process.env.PASSKEY_SERVER_PEPPER
+  if (pepper) return pepper
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "PASSKEY_SERVER_PEPPER is not set. This value seeds Stellar key derivation " +
+        "and has no safe default — generate one with `openssl rand -hex 32` and " +
+        "set it in the deployment environment."
+    )
+  }
+
+  return DEV_FALLBACK_PEPPER
 }
 
 export function getRpId(): string {
