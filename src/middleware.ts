@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { buildCsp, generateNonce } from "@/lib/security/csp"
+import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/session-cookies"
 
 // Protected routes that require authentication
 const PROTECTED_PATHS = ["/circles", "/communities", "/wallet", "/settings", "/profile", "/notifications", "/contributions", "/payouts"]
@@ -9,7 +10,7 @@ const PROTECTED_PATHS = ["/circles", "/communities", "/wallet", "/settings", "/p
 export const NONCE_HEADER = "x-nonce"
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("moistello_token")?.value
+  const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
   const { pathname } = request.nextUrl
 
   // A nonce is minted per request and travels two ways: forward on the request

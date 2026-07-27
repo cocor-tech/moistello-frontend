@@ -79,8 +79,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
         patch("/users/me", { preferredLanguage: lang }).then(() => {
           const updatedUser = { ...state.user!, preferredLanguage: lang }
           import("@/stores/auth-store").then(({ useAuthStore: store }) => {
-            const s = store.getState()
-            if (s.token) s.setTokens(s.token, s.refreshToken ?? "", updatedUser)
+            store.getState().updateUser(updatedUser)
           })
         }).catch((e) => { console.warn("[locale] Failed to persist language preference:", e) })
       })

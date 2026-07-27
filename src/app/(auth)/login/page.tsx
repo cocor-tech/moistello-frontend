@@ -54,7 +54,9 @@ export default function LoginPage() {
       }
 
       if (body?.token) {
-        useAuthStore.getState().setTokens(body.token, body.refreshToken ?? "", body.user)
+        // Awaited so the session cookie exists before the middleware sees the
+        // navigation below and bounces us back to /login.
+        await useAuthStore.getState().setTokens(body.token, body.refreshToken ?? "", body.user)
         addToast({ type: "success", title: "Welcome back" })
         router.replace("/")
       } else {
@@ -91,7 +93,7 @@ export default function LoginPage() {
       const verifyRes: any = await post("/auth/passkey/verify", { credentialId, signature })
       const verifyBody = verifyRes?.data ?? verifyRes
       if (verifyBody?.token) {
-        useAuthStore.getState().setTokens(verifyBody.token, verifyBody.refreshToken ?? "", verifyBody.user)
+        await useAuthStore.getState().setTokens(verifyBody.token, verifyBody.refreshToken ?? "", verifyBody.user)
         addToast({ type: "success", title: "Welcome back" })
         router.replace("/")
       }

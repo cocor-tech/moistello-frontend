@@ -475,7 +475,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
             const token = d.token
             const refreshToken = d.refreshToken ?? token
 
-            useAuthStore.getState().setTokens(token, refreshToken, d.user as unknown as User | undefined)
+            await useAuthStore.getState().setTokens(token, refreshToken, d.user as unknown as User | undefined)
 
             recordMetric("auth.sign.completed", 1, { mode: get().mode })
 

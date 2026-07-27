@@ -67,7 +67,7 @@ export default function RegisterPage() {
       const res: any = await post("/auth/register/verify", { email: email.trim(), code })
       const body = res?.data ?? res
       if (body?.token) {
-        useAuthStore.getState().setTokens(body.token, body.refreshToken ?? "", body.user)
+        await useAuthStore.getState().setTokens(body.token, body.refreshToken ?? "", body.user)
         // Claim a name before showing profile step
         let claimed = ""
         try {

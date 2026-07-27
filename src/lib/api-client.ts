@@ -5,6 +5,11 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios"
 import { API_BASE_URL } from "./constants"
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+} from "./auth/token-store"
 
 function getCsrfToken(): string {
   if (typeof document === "undefined") return ""
@@ -26,33 +31,16 @@ const apiClient = axios.create({
   },
 })
 
-function getAccessToken(): string | null {
-  if (typeof document === "undefined") return null
-
-  const cookieMatch = document.cookie.match(
-    /(?:^|;\s*)moistello_token=([^;]*)/
-  )
-  if (cookieMatch?.[1]) return cookieMatch[1]
-
-  try {
-    return localStorage.getItem("moistello_token")
-  } catch {
-    return null
-  }
-}
-
-function setAccessToken(token: string): void {
-  if (typeof document === "undefined") return
-  document.cookie = `moistello_token=${token}; path=/; max-age=86400; SameSite=Lax`
-  try {
-    localStorage.setItem("moistello_token", token)
-  } catch (e) {
-    console.warn("[api] localStorage unavailable for token storage:", e)
-  }
-}
-
 let refreshInFlight: Promise<string> | null = null
 
+/**
+ * Mints a new access token.
+ *
+ * The refresh token is held in an `HttpOnly` cookie that only this app's own
+ * origin receives, so the exchange is delegated to /api/auth/refresh, which
+ * reads the cookie server-side. Nothing here ever sees the refresh token; the
+ * access token that comes back is held in memory for the life of the tab.
+ */
 async function refreshAccessToken(): Promise<string> {
   if (refreshInFlight) {
     return refreshInFlight
@@ -60,34 +48,9 @@ async function refreshAccessToken(): Promise<string> {
 
   refreshInFlight = (async () => {
     try {
-      let refreshToken: string | null = null
+      const response = await axios.post("/api/auth/refresh")
 
-      if (typeof document !== "undefined") {
-        const cookieMatch = document.cookie.match(
-          /(?:^|;\s*)moistello_refresh=([^;]*)/
-        )
-        if (cookieMatch?.[1]) {
-          refreshToken = cookieMatch[1]
-        }
-
-        if (!refreshToken) {
-          try {
-            refreshToken = localStorage.getItem("moistello_refresh")
-          } catch {
-            // localStorage unavailable — will throw below
-          }
-        }
-      }
-
-      if (!refreshToken) {
-        throw new Error("No refresh token available")
-      }
-
-      const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-        refreshToken,
-      })
-
-      const newToken = response.data?.data?.token || response.data?.token
+      const newToken = response.data?.token
       if (!newToken) {
         throw new Error("No token in refresh response")
       }
@@ -140,22 +103,14 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         if (typeof window !== "undefined") {
-          document.cookie =
-            "moistello_token=; path=/; max-age=0; SameSite=Lax"
-          document.cookie =
-            "moistello_refresh=; path=/; max-age=0; SameSite=Lax"
+          clearAccessToken()
+          // The session cookies are HttpOnly, so only the server can drop
+          // them. Wait for that before leaving, otherwise the middleware may
+          // still see a stale cookie and bounce us straight back in.
           try {
-            localStorage.removeItem("moistello_token")
-            localStorage.removeItem("moistello_refresh")
+            await axios.delete("/api/auth/session")
           } catch (e) {
-            console.warn("[api] Failed to clear tokens on refresh failure:", e)
-          }
-          // Also clear auth-store token keys so checkAuth doesn't loop
-          try {
-            localStorage.removeItem("moistello_access_token")
-            localStorage.removeItem("moistello_refresh_token")
-          } catch (e) {
-            console.warn("[api] Failed to clear legacy tokens on refresh failure:", e)
+            console.warn("[api] Failed to clear session on refresh failure:", e)
           }
           window.location.href = "/login"
         }
