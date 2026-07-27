@@ -233,25 +233,26 @@ export function useContribute(circleId: string) {
 
       return { previousCircle, previousRounds };
     },
-    onError: (_err, _newContribution, context) => {
+    onError: (err, _newContribution, context) => {
+      // Roll the optimistic update back before surfacing the failure, so the
+      // UI is not still showing a contribution that never landed.
       if (context?.previousCircle) {
         queryClient.setQueryData(["circle", circleId], context.previousCircle);
       }
       if (context?.previousRounds) {
         queryClient.setQueryData(["circle-rounds", circleId], context.previousRounds);
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["circle", circleId] });
-      queryClient.invalidateQueries({ queryKey: ["circle-rounds", circleId] });
-    },
-    onError: (err) => {
+
       console.error("[useContribute] Failed to contribute:", err);
       addToast({
         type: "error",
         title: "Failed to contribute",
         description: extractErrorMessage(err, "Could not submit contribution. Please try again."),
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["circle", circleId] });
+      queryClient.invalidateQueries({ queryKey: ["circle-rounds", circleId] });
     },
   });
 }
