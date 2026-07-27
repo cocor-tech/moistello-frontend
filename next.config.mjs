@@ -50,6 +50,10 @@ const nextConfig = {
     return [
       {
         source: "/(.*)",
+        // Content-Security-Policy is deliberately absent here: it carries a
+        // per-request nonce for the root layout's inline scripts, so it is
+        // built and attached in src/middleware.ts instead. Static headers that
+        // do not vary per request belong below.
         headers: [
           {
             key: "X-Frame-Options",

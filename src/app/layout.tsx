@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { headers } from "next/headers"
 import { Space_Grotesk } from "next/font/google"
 import { Inter } from "next/font/google"
 import { JetBrains_Mono } from "next/font/google"
@@ -92,16 +93,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Minted by middleware for this request. Every inline script below must
+  // carry it or the Content-Security-Policy will refuse to execute it.
+  const nonce = headers().get("x-nonce") ?? undefined
+
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
 <head>
          <script
+            nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: `(function(){try{var t=localStorage.getItem('moistello_theme');if(t){var p=JSON.parse(t);if(p.state&&p.state.theme==='light'){document.documentElement.classList.remove('dark')}else if(p.state&&p.state.theme==='system'){if(!window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.remove('dark')}}if(p.state&&p.state.density){document.documentElement.setAttribute('data-density',p.state.density)}if(p.state&&p.state.fontSize){document.documentElement.setAttribute('data-font-size',p.state.fontSize)}}else{document.documentElement.setAttribute('data-density','comfortable');document.documentElement.setAttribute('data-font-size','medium')}}catch(e){console.warn('[layout] Failed to apply theme:',e)}})()`,
             }}
           />
          <script
            type="application/ld+json"
+           nonce={nonce}
            dangerouslySetInnerHTML={{
              __html: JSON.stringify({
                "@context": "https://schema.org",
@@ -117,6 +124,7 @@ export default function RootLayout({
          />
          <script
            type="application/ld+json"
+           nonce={nonce}
            dangerouslySetInnerHTML={{
              __html: JSON.stringify({
                "@context": "https://schema.org",
@@ -133,6 +141,7 @@ export default function RootLayout({
          />
          <script
             type="text/javascript"
+            nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: `
 (function(m,e,t,r,i,k,a){
