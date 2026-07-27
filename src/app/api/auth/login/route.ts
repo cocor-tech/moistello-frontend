@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { blockInProduction } from "@/lib/security/dev-only-route";
 
 const USERS_FILE = path.join(process.cwd(), "content", "users.json");
 
@@ -26,6 +27,10 @@ function createSession(userId: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Local-development scaffolding — authenticates against a flat JSON file.
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   const body = await request.json();
   const { username, password } = body;
 

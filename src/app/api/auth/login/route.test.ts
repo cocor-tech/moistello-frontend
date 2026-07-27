@@ -7,6 +7,7 @@
  *  - Wrong password rejected (both hash formats checked, neither matches)
  *  - Missing fields rejected (400)
  *  - Unknown username rejected (401)
+ *  - Route is unreachable in production (404)
  */
 
 import crypto from "crypto"
@@ -158,5 +159,17 @@ describe("POST /api/auth/login", () => {
     expect(res.status).toBe(200)
     const setCookie = res.headers.get("set-cookie") ?? ""
     expect(setCookie).toMatch(/moistello_session=/)
+  })
+
+  it("is unreachable in production even with valid credentials", async () => {
+    setupFsMock([...users600k])
+    vi.stubEnv("NODE_ENV", "production")
+
+    const res = await POST(makeRequest({ username: "alice", password: "correct-horse" }))
+    expect(res.status).toBe(404)
+    const setCookie = res.headers.get("set-cookie") ?? ""
+    expect(setCookie).not.toMatch(/moistello_session=/)
+
+    vi.unstubAllEnvs()
   })
 })

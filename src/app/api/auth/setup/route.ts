@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { blockInProduction } from "@/lib/security/dev-only-route";
 
 const TOKENS_FILE = path.join(process.cwd(), "content", "setup-tokens.json");
 const USERS_FILE = path.join(process.cwd(), "content", "users.json");
@@ -35,6 +36,12 @@ function createSession(userId: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Local-development scaffolding — mints admin users into a flat JSON file.
+  // Guarded alongside the login and session routes it shares storage with;
+  // leaving it reachable would let anyone with a setup token create an admin.
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   ensureFiles();
 
   const body = await request.json();

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { blockInProduction } from "@/lib/security/dev-only-route";
 
 const SESSIONS_FILE = path.join(process.cwd(), "content", "sessions.json");
 const USERS_FILE = path.join(process.cwd(), "content", "users.json");
 
 export async function GET(request: NextRequest) {
+  // Local-development scaffolding — resolves sessions from a flat JSON file.
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
   const cookie = request.cookies.get("moistello_session");
   if (!cookie) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
