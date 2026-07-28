@@ -244,6 +244,11 @@ export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
   },
 
   connect: async (walletId: WalletId) => {
+    /* ── Duplicate-connect guard — ignore a double-click while this wallet is already connecting ── */
+    if (get().wallets[walletId]?.status === "connecting") {
+      return;
+    }
+
     /* ── Offline guard ─────────────────────────────────────────── */
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       const offlineError: WalletError = {
