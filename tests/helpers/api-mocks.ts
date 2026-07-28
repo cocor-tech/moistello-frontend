@@ -241,19 +241,19 @@ export class ApiMocker {
   }
 
   /**
-   * Mock session check endpoint
+   * Mock session check endpoint.
+   *
+   * Matches the real /api/auth/session GET handler which returns
+   * { authenticated: true, token, expiresAt } so that the auth store's
+   * rehydrateAccessToken() can restore the in-memory token.
    */
   async mockSession(): Promise<void> {
     await this.mockEndpoint('**/api/auth/session', {
       status: 200,
       body: {
         authenticated: true,
-        user: {
-          id: 'user-123',
-          email: 'test@example.com',
-          displayName: 'Test User',
-          moiScore: 50,
-        },
+        token: 'mock-jwt-token',
+        expiresAt: Date.now() + 3600000,
       },
     })
   }

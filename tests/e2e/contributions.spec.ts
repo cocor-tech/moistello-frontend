@@ -6,11 +6,6 @@ test.describe('Contributions Flow', () => {
     const mocker = createApiMocker(page)
     await mocker.mockSession()
     await mocker.mockCirclesList()
-    
-    // Set auth state
-    await page.addInitScript(() => {
-      localStorage.setItem('moistello_auth_token', 'mock-token')
-    })
   })
 
   test('should display contributions list with mocked API', async ({ page }: { page: any }) => {

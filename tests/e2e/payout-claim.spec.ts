@@ -6,11 +6,6 @@ test.describe('Payout Claim Flow', () => {
     const mocker = createApiMocker(page)
     await mocker.mockSession()
     await mocker.mockCirclesList()
-    
-    // Set auth state
-    await page.addInitScript(() => {
-      localStorage.setItem('moistello_auth_token', 'mock-token')
-    })
   })
 
   test('should display payouts list with mocked API', async ({ page }: { page: any }) => {

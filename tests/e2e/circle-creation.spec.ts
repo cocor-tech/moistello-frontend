@@ -5,11 +5,6 @@ test.describe('Circle Creation Flow', () => {
   test.beforeEach(async ({ page }: { page: any }) => {
     const mocker = createApiMocker(page)
     await mocker.mockSession()
-    
-    // Set auth state
-    await page.addInitScript(() => {
-      localStorage.setItem('moistello_auth_token', 'mock-token')
-    })
   })
 
   test('should create a circle through the wizard with mocked API', async ({ page }: { page: any }) => {

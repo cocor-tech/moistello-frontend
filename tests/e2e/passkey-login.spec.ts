@@ -112,11 +112,6 @@ test.describe('Passkey Login Flow', () => {
     const mocker = createApiMocker(page)
     await mocker.mockSession()
 
-    // Set auth state in localStorage
-    await page.addInitScript(() => {
-      localStorage.setItem('moistello_auth_token', 'mock-token')
-    })
-
     await page.goto('/login')
 
     // Should redirect to home
