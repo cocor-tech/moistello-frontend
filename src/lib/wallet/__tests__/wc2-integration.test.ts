@@ -8,6 +8,7 @@ vi.mock("../features", () => ({
   isPasskeyEnabled: () => false,
   isHardwareWalletEnabled: () => false,
   isWalletConnectEnabled: () => true,
+  isExtensionWalletsEnabled: () => false,
   isFeatureEnabled: (flag: string) => flag === "NEXT_PUBLIC_FEATURE_WALLETCONNECT",
 }))
 

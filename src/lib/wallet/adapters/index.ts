@@ -1,5 +1,5 @@
 import { getWalletRegistry } from "../registry"
-import { isPasskeyEnabled, isHardwareWalletEnabled, isWalletConnectEnabled } from "../features"
+import { isPasskeyEnabled, isHardwareWalletEnabled, isWalletConnectEnabled, isExtensionWalletsEnabled } from "../features"
 
 export { createWalletConnectAdapter } from "./walletconnect"
 export { createPasskeyAdapter } from "./passkey"
@@ -27,15 +27,19 @@ export async function initializeWalletAdapters(): Promise<void> {
     registry.register(createPasskeyAdapter())
   }
 
-  // Browser extensions always available
+  // Freighter always available
   const { createFreighterAdapter } = await import("./freighter")
   registry.register(createFreighterAdapter())
-  const { createXBullAdapter } = await import("./xbull")
-  registry.register(createXBullAdapter())
-  const { createRabetAdapter } = await import("./rabet")
-  registry.register(createRabetAdapter())
-  const { createAlbedoAdapter } = await import("./albedo")
-  registry.register(createAlbedoAdapter())
+
+  // xBull, Rabet, Albedo: gated by feature flag
+  if (isExtensionWalletsEnabled()) {
+    const { createXBullAdapter } = await import("./xbull")
+    registry.register(createXBullAdapter())
+    const { createRabetAdapter } = await import("./rabet")
+    registry.register(createRabetAdapter())
+    const { createAlbedoAdapter } = await import("./albedo")
+    registry.register(createAlbedoAdapter())
+  }
 
   // Hardware wallet: gated by feature flag
   if (isHardwareWalletEnabled()) {

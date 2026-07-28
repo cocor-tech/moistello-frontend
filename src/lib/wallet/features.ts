@@ -25,3 +25,7 @@ export function isHardwareWalletEnabled(): boolean {
 export function isWalletConnectEnabled(): boolean {
   return isFeatureEnabled("NEXT_PUBLIC_FEATURE_WALLETCONNECT")
 }
+
+export function isExtensionWalletsEnabled(): boolean {
+  return isFeatureEnabled("NEXT_PUBLIC_FEATURE_EXTENSION_WALLETS")
+}
