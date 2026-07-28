@@ -3,21 +3,14 @@
 import React from "react"
 import { motion } from "framer-motion"
 import {
-  Award,
-  Check,
-  Lock,
-  ChevronUp,
-  Sparkles,
-
-
-  Crown,
-  Gem,
-  Star,
-  Medal,
+  Award, Check, Lock, ChevronUp, Sparkles,
+  Crown, Gem, Star, Medal, TrendingUp,
+  Users, DollarSign, Shield, Vote, Building2,
 } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { formatNumber } from "@/lib/formatters"
 
 type TierLevel = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond"
 
@@ -30,58 +23,59 @@ interface TierVisual {
   borderColor: string
   badgeVariant: "default" | "warning" | "info" | "success" | "premium"
   accentColor: string
+  dotColor: string
 }
 
 const tierVisuals: Record<TierLevel, TierVisual> = {
   Bronze: {
-    level: "Bronze",
-    icon: Medal,
+    level: "Bronze", icon: Medal,
     textGradient: "from-amber-500 to-orange-600",
     glow: "shadow-[0_0_30px_rgba(245,158,11,0.3)]",
     bgGradient: "from-amber-950/40 to-orange-950/30",
     borderColor: "border-amber-500/30",
     badgeVariant: "default",
     accentColor: "bg-amber-500",
+    dotColor: "bg-amber-500",
   },
   Silver: {
-    level: "Silver",
-    icon: Star,
+    level: "Silver", icon: Star,
     textGradient: "from-slate-300 to-white",
     glow: "shadow-[0_0_30px_rgba(203,213,225,0.3)]",
     bgGradient: "from-slate-900/40 to-slate-800/30",
     borderColor: "border-slate-400/30",
     badgeVariant: "info",
     accentColor: "bg-slate-400",
+    dotColor: "bg-slate-400",
   },
   Gold: {
-    level: "Gold",
-    icon: Crown,
+    level: "Gold", icon: Crown,
     textGradient: "from-yellow-300 to-amber-400",
     glow: "shadow-[0_0_30px_rgba(234,179,8,0.4)]",
     bgGradient: "from-yellow-950/40 to-amber-900/30",
     borderColor: "border-yellow-500/40",
     badgeVariant: "warning",
     accentColor: "bg-yellow-500",
+    dotColor: "bg-yellow-500",
   },
   Platinum: {
-    level: "Platinum",
-    icon: Gem,
+    level: "Platinum", icon: Gem,
     textGradient: "from-cyan-300 to-blue-400",
     glow: "shadow-[0_0_30px_rgba(6,182,212,0.3)]",
     bgGradient: "from-cyan-950/40 to-blue-950/30",
     borderColor: "border-cyan-400/30",
     badgeVariant: "success",
     accentColor: "bg-cyan-400",
+    dotColor: "bg-cyan-400",
   },
   Diamond: {
-    level: "Diamond",
-    icon: Sparkles,
+    level: "Diamond", icon: Sparkles,
     textGradient: "from-violet-300 to-purple-400",
     glow: "shadow-[0_0_30px_rgba(139,92,246,0.4)]",
     bgGradient: "from-violet-950/40 to-purple-950/30",
     borderColor: "border-violet-400/40",
     badgeVariant: "premium",
     accentColor: "bg-violet-400",
+    dotColor: "bg-violet-400",
   },
 }
 
@@ -127,6 +121,20 @@ const BENEFITS: Record<TierLevel, string[]> = {
   ],
 }
 
+const BENEFIT_ICONS: Record<string, React.ElementType> = {
+  "Create circles": Users,
+  "Contribute up": DollarSign,
+  "Basic collateral": Shield,
+  "Reduced collateral": Shield,
+  "Low collateral": Shield,
+  "Minimal collateral": Shield,
+  "Zero collateral": Shield,
+  "Access to auction": Vote,
+  "Vote payout": Vote,
+  "Governance proposal": Building2,
+  "Early feature": Sparkles,
+}
+
 export interface TierCardProps {
   score: number
   streak: number
@@ -143,173 +151,9 @@ function getTierIndex(score: number): number {
   return 4
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: "easeOut" as const },
-  },
-}
-
-function TierBadgeGlow({
-  level,
-  size = "lg",
-}: {
-  level: TierLevel
-  size?: "lg" | "sm"
-}) {
-  const visuals = tierVisuals[level]
-  const Icon = visuals.icon
-  const isLarge = size === "lg"
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.03 }}
-      className={cn(
-        "relative flex flex-col items-center justify-center rounded-3xl border",
-        visuals.bgGradient,
-        visuals.borderColor,
-        visuals.glow,
-        isLarge ? "w-36 h-36 p-4" : "w-16 h-16 p-2",
-      )}
-    >
-      {level === "Gold" && (
-        <motion.div
-          className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
-          aria-hidden="true"
-        >
-          <motion.div
-            className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-            animate={{ x: ["-100%", "200%"] }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "linear",
-              repeatDelay: 0.8,
-            }}
-          />
-        </motion.div>
-      )}
-      {level === "Platinum" && (
-        <motion.div
-          className="absolute inset-0 rounded-3xl"
-          animate={{ boxShadow: ["0 0 20px rgba(6,182,212,0.2)", "0 0 40px rgba(6,182,212,0.5)", "0 0 20px rgba(6,182,212,0.2)"] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-        />
-      )}
-      {level === "Diamond" && (
-        <motion.div
-          className="absolute inset-0 rounded-3xl border-2 border-transparent"
-          style={{
-            background: "linear-gradient(90deg, #a78bfa, #818cf8, #22d3ee, #34d399, #a78bfa) border-box",
-            WebkitMask: "linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)",
-            WebkitMaskComposite: "xor",
-            maskComposite: "exclude",
-          }}
-          animate={{ backgroundPosition: ["0% 50%", "200% 50%"] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-        />
-      )}
-      {level === "Silver" && (
-        <motion.div
-          className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
-          aria-hidden="true"
-        >
-          {Array.from({ length: 6 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute h-px w-2 bg-white/40 rounded-full"
-              style={{
-                left: `${15 + (i * 13)}%`,
-                top: `${10 + (i % 3) * 30}%`,
-              }}
-              animate={{ opacity: [0.2, 0.8, 0.2] }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                delay: i * 0.3,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </motion.div>
-      )}
-      <Icon
-        className={cn(
-          "mb-1",
-          isLarge ? "h-10 w-10" : "h-5 w-5",
-          "drop-shadow-[0_0_6px_currentColor]",
-        )}
-        style={{
-          color:
-            level === "Bronze"
-              ? "#f59e0b"
-              : level === "Silver"
-                ? "#cbd5e1"
-                : level === "Gold"
-                  ? "#eab308"
-                  : level === "Platinum"
-                    ? "#22d3ee"
-                    : "#a78bfa",
-        }}
-      />
-      <span
-        className={cn(
-          "font-heading font-bold bg-clip-text text-transparent bg-gradient-to-r",
-          visuals.textGradient,
-          isLarge ? "text-sm" : "text-[10px]",
-        )}
-      >
-        {level}
-      </span>
-    </motion.div>
-  )
-}
-
-function NextTierGhost({ level }: { level: TierLevel | null }) {
-  if (!level) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Sparkles className="h-4 w-4 text-aurora-violet" />
-        <span className="font-heading font-semibold">Max Tier Reached</span>
-      </div>
-    )
-  }
-
-  const visuals = tierVisuals[level]
-  const Icon = visuals.icon
-
-  return (
-    <div className="flex items-center gap-2 opacity-30">
-      <div
-        className={cn(
-          "flex items-center justify-center rounded-xl border w-10 h-10",
-          visuals.bgGradient,
-          visuals.borderColor,
-        )}
-      >
-        <Icon className="h-5 w-5 text-muted-foreground" />
-      </div>
-      <div>
-        <span className="text-xs font-heading font-semibold text-muted-foreground">
-          {level}
-        </span>
-        <p className="text-2xs text-muted-foreground">Next tier</p>
-      </div>
-    </div>
-  )
+function getBenefitIcon(benefit: string): React.ElementType {
+  const key = Object.keys(BENEFIT_ICONS).find((k) => benefit.startsWith(k))
+  return key ? BENEFIT_ICONS[key] : Award
 }
 
 export function TierCard({ score }: TierCardProps) {
@@ -317,14 +161,12 @@ export function TierCard({ score }: TierCardProps) {
   const currentTier = TIER_ORDER[tierIndex]
   const nextTier = tierIndex < 4 ? TIER_ORDER[tierIndex + 1] : null
   const visuals = tierVisuals[currentTier]
+  const Icon = visuals.icon
 
   const threshold = TIER_THRESHOLDS[tierIndex]
   const range = threshold.max - threshold.min
   const progress = Math.max(0, Math.min(100, ((score - threshold.min) / range) * 100))
-  const pointsToNext =
-    nextTier !== null
-      ? TIER_THRESHOLDS[tierIndex + 1].min - score
-      : 0
+  const pointsToNext = nextTier !== null ? TIER_THRESHOLDS[tierIndex + 1].min - score : 0
 
   const currentBenefits = BENEFITS[currentTier]
   const lockedBenefits = nextTier ? BENEFITS[nextTier] : []
@@ -334,136 +176,216 @@ export function TierCard({ score }: TierCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="glass-premium rounded-2xl p-6 md:p-8 holo-border depth-4"
+      className="border border-white/10 rounded-xl overflow-hidden"
     >
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-      >
-        {/* LEFT COLUMN: Tier Badge + Progress */}
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-col items-center lg:items-start gap-5"
-        >
-          <div className="flex items-center gap-4">
-            <TierBadgeGlow level={currentTier} size="lg" />
-            <div className="hidden lg:block">
-              <span className="text-5xl font-heading font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                {score}
-              </span>
-              <p className="text-xs text-muted-foreground mt-0.5 font-body">
-                Your MoiScore
-              </p>
-            </div>
-          </div>
+      {/* ═══ HERO: Current Tier ═══ */}
+      <div className={cn("relative overflow-hidden p-6 md:p-8", visuals.bgGradient)}>
+        <div className={cn("absolute inset-0", visuals.glow, "opacity-30")} />
+        <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-white/[0.03] blur-3xl pointer-events-none" />
 
-          <div className="lg:hidden text-center">
-            <span className="text-4xl font-heading font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-              {score}
-            </span>
-            <p className="text-xs text-muted-foreground mt-0.5 font-body">
-              Your MoiScore
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className={cn(
+              "flex items-center justify-center rounded-2xl border-2 w-20 h-20 md:w-24 md:h-24",
+              visuals.bgGradient, visuals.borderColor,
+            )}>
+              <Icon className="h-10 w-10 md:h-12 md:w-12 drop-shadow-[0_0_8px_currentColor]"
+                style={{ color: currentTier === "Bronze" ? "#f59e0b" : currentTier === "Silver" ? "#cbd5e1" : currentTier === "Gold" ? "#eab308" : currentTier === "Platinum" ? "#22d3ee" : "#a78bfa" }}
+              />
+            </div>
+          </motion.div>
+
+          <div className="flex-1 text-center md:text-left">
+            <div className="flex flex-wrap items-center gap-3 justify-center md:justify-start">
+              <h2 className={cn(
+                "font-heading text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r",
+                visuals.textGradient,
+              )}>
+                {currentTier}
+              </h2>
+              <Badge variant={visuals.badgeVariant} size="md">{formatNumber(score)}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              MoiScore: {formatNumber(score)} / 1,000
             </p>
           </div>
 
-          <div className="w-full space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-2xs font-heading font-semibold text-muted-foreground uppercase tracking-wider">
-                Progress to{" "}
-                <span className={cn("bg-clip-text text-transparent bg-gradient-to-r", tierVisuals[nextTier ?? currentTier].textGradient)}>
-                  {nextTier ?? "Max"}
-                </span>
-              </span>
-              <span className="text-2xs font-mono text-muted-foreground">
-                {Math.round(progress)}%
-              </span>
+          {nextTier && (
+            <div className="flex items-center gap-2 opacity-60">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Next</p>
+                <p className={cn(
+                  "text-sm font-heading font-semibold bg-clip-text text-transparent bg-gradient-to-r",
+                  tierVisuals[nextTier].textGradient,
+                )}>
+                  {nextTier}
+                </p>
+              </div>
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
             </div>
-            <Progress
-              value={progress}
-              variant="premium"
-              size="lg"
-            />
-            {pointsToNext > 0 ? (
-              <p className="text-xs text-muted-foreground font-body">
-                <span className="font-heading font-bold text-foreground">
-                  {pointsToNext}
-                </span>{" "}
-                points to {nextTier}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground font-body flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-aurora-violet" />
-                Maximum tier achieved
-              </p>
-            )}
-          </div>
+          )}
+        </div>
+      </div>
 
-          <div className="flex items-center gap-3 mt-1">
-            <Badge variant={visuals.badgeVariant} size="md" className={visuals.glow}>
-              {currentTier}
-            </Badge>
-            {nextTier && (
-              <>
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                <NextTierGhost level={nextTier} />
-              </>
-            )}
-          </div>
-        </motion.div>
+      {/* ═══ PROGRESS BAR ═══ */}
+      <div className="px-6 md:px-8 py-5 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-heading font-semibold text-muted-foreground uppercase tracking-wider">
+            Progress to {nextTier ?? "Max"}
+          </span>
+          <span className="text-xs font-mono text-muted-foreground">{Math.round(progress)}%</span>
+        </div>
+        <Progress value={progress} variant="premium" size="lg" />
+        <div className="flex items-center justify-between mt-1.5">
+          <span className="text-2xs text-muted-foreground/60">{formatNumber(threshold.min)}</span>
+          <span className="text-2xs text-muted-foreground/60">{formatNumber(threshold.max)}</span>
+        </div>
+        {pointsToNext > 0 ? (
+          <p className="text-sm text-muted-foreground mt-3 flex items-center gap-1.5">
+            <TrendingUp className="h-4 w-4 text-aurora-violet" />
+            <span className="font-heading font-bold text-foreground">{formatNumber(pointsToNext)}</span>
+            points needed for {nextTier}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground mt-3 flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-amber-400" />
+            Maximum tier achieved
+          </p>
+        )}
+      </div>
 
-        {/* RIGHT COLUMN: Benefits */}
-        <motion.div variants={itemVariants} className="space-y-5">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Award className="h-5 w-5 gradient-text" />
-              <h3 className="font-heading text-base font-semibold text-foreground dark:text-white">
-                Your Benefits
-              </h3>
-            </div>
-            <ul className="space-y-2.5">
-              {currentBenefits.map((benefit) => (
-                <motion.li
+      {/* ═══ BENEFITS: Current & Locked ═══ */}
+      <div className="p-6 md:p-8 space-y-6">
+        <div>
+          <h3 className="font-heading text-base font-semibold text-foreground flex items-center gap-2 mb-4">
+            <Award className="h-5 w-5 text-emerald-400" />
+            Your {currentTier} Benefits
+          </h3>
+          <div className="grid gap-2.5">
+            {currentBenefits.map((benefit) => {
+              const BIcon = getBenefitIcon(benefit)
+              return (
+                <motion.div
                   key={benefit}
-                  variants={itemVariants}
-                  className="flex items-start gap-2.5 text-sm text-foreground/90 font-body"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-3 text-sm text-foreground/90"
                 >
-                  <span className="mt-0.5 shrink-0 rounded-full bg-emerald-500/15 p-0.5">
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15">
+                    <BIcon className="h-3.5 w-3.5 text-emerald-400" />
                   </span>
                   {benefit}
-                </motion.li>
-              ))}
-            </ul>
+                </motion.div>
+              )
+            })}
           </div>
+        </div>
 
-          {lockedBenefits.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                <h4 className="font-heading text-sm font-semibold text-muted-foreground">
-                  Locked &mdash; {nextTier} Benefits
-                </h4>
-              </div>
-              <ul className="space-y-2">
-                {lockedBenefits.map((benefit) => (
-                  <motion.li
-                    key={benefit}
-                    variants={itemVariants}
-                    className="flex items-start gap-2.5 text-sm text-muted-foreground/60 font-body"
-                  >
-                    <span className="mt-0.5 shrink-0 rounded-full bg-muted/40 p-0.5">
+        {lockedBenefits.length > 0 && (
+          <div className="border-t border-dotted border-white/[0.06] pt-6">
+            <h4 className="font-heading text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4">
+              <Lock className="h-4 w-4" />
+              Locked — {nextTier} Benefits
+            </h4>
+            <div className="grid gap-2.5">
+              {lockedBenefits.map((benefit) => {
+                const BIcon = getBenefitIcon(benefit)
+                return (
+                  <div key={benefit} className="flex items-center gap-3 text-sm text-muted-foreground/60">
+                    <span className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-muted/30">
                       <Lock className="h-3 w-3 text-muted-foreground/40" />
                     </span>
                     {benefit}
-                  </motion.li>
-                ))}
-              </ul>
+                  </div>
+                )
+              })}
             </div>
-          )}
-        </motion.div>
-      </motion.div>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ ALL TIERS OVERVIEW (timeline) ═══ */}
+      <div className="border-t border-white/[0.06] px-6 md:px-8 py-6">
+        <h4 className="font-heading text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-5">
+          Tier Progression Ladder
+        </h4>
+        <div className="relative">
+          <div className="absolute left-[17px] top-1 bottom-1 w-px bg-white/10" />
+
+          <div className="space-y-0">
+            {TIER_ORDER.map((tier, i) => {
+              const t = tierVisuals[tier]
+              const TIcon = t.icon
+              const isCurrent = i === tierIndex
+              const isUnlocked = i <= tierIndex
+              const isLocked = i > tierIndex
+
+              return (
+                <div key={tier} className="relative flex items-start gap-4 pb-5 last:pb-0 pl-1">
+                  <div className={cn(
+                    "relative z-10 mt-1 h-[14px] w-[14px] rounded-full border-2 shrink-0",
+                    isCurrent && "ring-2 ring-offset-2 ring-offset-background scale-125",
+                    isCurrent && t.borderColor,
+                    isUnlocked && !isCurrent && `${t.accentColor} border-transparent`,
+                    isLocked && "border-white/20 bg-transparent",
+                  )}>
+                    {isUnlocked && !isCurrent && (
+                      <Check className="h-2.5 w-2.5 text-white absolute inset-0 m-auto" />
+                    )}
+                  </div>
+
+                  <div className={cn(
+                    "flex-1 flex items-center justify-between gap-3",
+                    isLocked && "opacity-40",
+                  )}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg shrink-0",
+                        isUnlocked ? t.bgGradient : "bg-white/5",
+                      )}>
+                        <TIcon className={cn("h-4 w-4", isUnlocked ? "" : "text-muted-foreground")}
+                          style={isUnlocked ? { color: tier === "Bronze" ? "#f59e0b" : tier === "Silver" ? "#cbd5e1" : tier === "Gold" ? "#eab308" : tier === "Platinum" ? "#22d3ee" : "#a78bfa" } : {}}
+                        />
+                      </div>
+                      <div>
+                        <p className={cn(
+                          "text-sm font-heading font-semibold",
+                          isCurrent
+                            ? cn("bg-clip-text text-transparent bg-gradient-to-r", t.textGradient)
+                            : isUnlocked ? "text-foreground" : "text-muted-foreground",
+                        )}>
+                          {tier}
+                        </p>
+                        <p className="text-2xs text-muted-foreground">
+                          {formatNumber(TIER_THRESHOLDS[i].min)}–{formatNumber(TIER_THRESHOLDS[i].max)} pts
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      {isCurrent && (
+                        <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-aurora-violet">
+                          Current
+                        </span>
+                      )}
+                      {isUnlocked && !isCurrent && (
+                        <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Unlocked
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
     </motion.div>
   )
 }
