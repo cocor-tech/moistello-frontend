@@ -45,6 +45,7 @@ function makeRequest(body: unknown, ip = nextIp()) {
       "Content-Type": "application/json",
       "x-forwarded-for": ip,
       Cookie: "moistello_session=session-token",
+      Origin: "http://localhost:1110",
     },
     body: JSON.stringify(body),
   })
@@ -53,7 +54,7 @@ function makeRequest(body: unknown, ip = nextIp()) {
 function makeUnauthenticatedRequest(body: unknown) {
   return new NextRequest("http://localhost:1110/api/auth/passkey/test", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Origin: "http://localhost:1110" },
     body: JSON.stringify(body),
   })
 }

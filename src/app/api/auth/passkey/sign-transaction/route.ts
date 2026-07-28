@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCredential, getPepper } from "@/lib/passkey/store"
 import { checkRateLimit, requireAuthenticatedUser } from "@/lib/passkey/auth-guard"
-import { deriveStellarKeypair, secureZeroMemory } from "@/lib/crypto/key-derivation"
+import { deriveStellarKeypair, signWithSeed, publicKeyToStellarAddress, secureZeroMemory } from "@/lib/crypto/key-derivation"
 
 // Read from env so production can set the correct passphrase without a code change.
 // Defaults to Testnet for local development.
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 })
     }
 
-    const { Keypair, Transaction, xdr: stellarXdr } = await import("@stellar/stellar-base")
+    const { Transaction, xdr: stellarXdr } = await import("@stellar/stellar-base")
 
     let envelope
     try {
@@ -81,11 +81,14 @@ export async function POST(req: NextRequest) {
 
     // The Stellar secret key is derived server-side only for the duration of
     // this signing operation and is zeroed immediately after use — it is
-    // never serialized into a response or persisted anywhere.
+    // never serialized into a response or persisted anywhere. Signing goes
+    // through the raw seed directly (signWithSeed + addSignature) rather than
+    // Keypair.fromRawEd25519Seed(), which would retain its own unzeroed copy
+    // of the secret in memory for the lifetime of the Keypair object.
     const keypair = await deriveStellarKeypair(credentialId, getPepper())
     try {
-      const kp = Keypair.fromRawEd25519Seed(Buffer.from(keypair.secretKey))
-      tx.sign(kp)
+      const signature = await signWithSeed(tx.hash(), keypair.secretKey)
+      tx.addSignature(publicKeyToStellarAddress(keypair.publicKey), Buffer.from(signature).toString("base64"))
     } finally {
       secureZeroMemory(keypair.secretKey)
     }
