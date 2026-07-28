@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowUpRight, ArrowDownRight, Wallet as WalletIcon, Settings, Clock, ArrowRight, ListOrdered, BookCopy, ExternalLink, QrCode, Copy, Check } from "lucide-react"
+import { ArrowUpRight, ArrowDownRight, ArrowDownLeft, Wallet as WalletIcon, Settings, Clock, ArrowRight, ListOrdered, BookCopy, ExternalLink, QrCode, Copy, Check, Landmark, Banknote } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { CopyButton } from "@/components/shared/copy-button"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { formatAddress } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
 import { useMultiWallet } from "@/hooks/use-multi-wallet"
 import { useUIStore } from "@/stores/ui-store"
+import { copyToClipboard } from "@/lib/clipboard"
 
 interface BalanceInfo {
   xlm: string
@@ -36,6 +37,9 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<BalanceInfo | null>(null)
   const [transactions, setTransactions] = useState<TransactionItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [showReceive, setShowReceive] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [wallet, setWallet] = useState<{ publicKey: string } | null>(null)
   const addToast = useUIStore((s) => s.addToast)
 
   useEffect(() => {
@@ -81,6 +85,12 @@ export default function WalletPage() {
       }
     }
     load()
+    // Also fetch wallet info for receive modal
+    get("/wallets").then((res) => {
+      const d = (res as Record<string, unknown>)?.data as Record<string, unknown> ?? res as Record<string, unknown>
+      const list = (d?.wallets ?? []) as { publicKey: string }[]
+      if (list.length > 0) setWallet(list[0])
+    }).catch(() => {})
   }, [])
 
   const walletId = address ?? ""
@@ -181,9 +191,14 @@ export default function WalletPage() {
         <Button variant="primary" size="md" onClick={() => setShowReceive(true)} leftIcon={<ArrowDownRight className="h-4 w-4" />}>
           Receive
         </Button>
+        <Link href="/wallet/deposit">
+          <Button variant="outline" size="md" leftIcon={<ArrowDownLeft className="h-4 w-4" />}>
+            Deposit
+          </Button>
+        </Link>
         <Link href="/wallet/withdraw">
           <Button variant="outline" size="md" leftIcon={<ArrowUpRight className="h-4 w-4" />}>
-            Send
+            Withdraw
           </Button>
         </Link>
         <Link href="/wallet/settings">
@@ -267,7 +282,21 @@ export default function WalletPage() {
 
       {/* Navigation links to sub-pages */}
       <div className="border-t border-white/[0.06] pt-6 space-y-2">
-        <Link href="/wallet/transactions" className="flex items-center justify-between px-1 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors group">
+        <Link href="/wallet/deposit" className="flex items-center justify-between px-1 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors group">
+          <span className="flex items-center gap-3">
+            <ArrowDownLeft className="h-4 w-4 text-emerald-400" />
+            Deposit via Bank Transfer
+          </span>
+          <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+        <Link href="/wallet/withdraw" className="flex items-center justify-between px-1 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors group border-t border-white/[0.04]">
+          <span className="flex items-center gap-3">
+            <ArrowUpRight className="h-4 w-4 text-amber-400" />
+            Withdraw to Bank
+          </span>
+          <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+        <Link href="/wallet/transactions" className="flex items-center justify-between px-1 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors group border-t border-white/[0.04]">
           <span className="flex items-center gap-3">
             <ListOrdered className="h-4 w-4" />
             Transactions

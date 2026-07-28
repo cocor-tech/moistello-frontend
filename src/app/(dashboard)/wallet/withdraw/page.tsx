@@ -1,283 +1,633 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { ArrowLeft, ArrowUpRight, CheckCircle, Loader2, ExternalLink, AlertCircle, Shield, Copy, Check } from "lucide-react"
+import {
+  ArrowLeft, Wallet, DollarSign, Banknote,
+  ArrowUpRight, Loader2, AlertCircle, CheckCircle,
+  ExternalLink, Copy, Check, ChevronRight,
+  Landmark, Shield, Key,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
-import { post } from "@/lib/api-client"
+import { post, get } from "@/lib/api-client"
 import { useUIStore } from "@/stores/ui-store"
-import { isValidStellarAddress } from "@/lib/stellar/validate-address"
-import { getDailySpending, isKnownAddress, markAddressKnown, detectSuspiciousAddress, DAILY_LIMIT_USDC, recordSpending } from "@/lib/stellar/security"
-import { SecurityWarning } from "@/components/wallet/security-warnings"
-import { AddressBookModal } from "@/components/wallet/address-book-modal"
 import { copyToClipboard } from "@/lib/clipboard"
+import { cn } from "@/lib/cn"
+
+type WithdrawStep =
+  | "wallet"     // 1 — Select source wallet/asset
+  | "amount"     // 2 — Enter USDC amount + bank details
+  | "confirm"    // 3 — Review & confirm
+  | "otp"        // 4 — OTP verification
+  | "success"    // 5 — Done
+
+const STEPS: WithdrawStep[] = ["wallet", "amount", "confirm", "otp", "success"]
+const STEP_LABELS = ["Wallet", "Amount", "Confirm", "OTP", "Success"]
+
+interface WalletOption {
+  id: string
+  label: string
+  balance: number
+  asset: string
+}
+
+interface BankOption {
+  code: string
+  name: string
+}
+
+interface WithdrawQuote {
+  estimatedNgn: number
+  rate: number
+  spread: number
+  yellowCardAddress: string
+  withdrawId: string
+}
+
+const NIGERIAN_BANKS: BankOption[] = [
+  { code: "044", name: "Access Bank" },
+  { code: "035", name: "ALAT by Wema" },
+  { code: "023", name: "Citibank Nigeria" },
+  { code: "063", name: "Diamond Bank" },
+  { code: "050", name: "Ecobank Nigeria" },
+  { code: "011", name: "First Bank of Nigeria" },
+  { code: "214", name: "FCMB" },
+  { code: "070", name: "Fidelity Bank" },
+  { code: "058", name: "GTBank" },
+  { code: "301", name: "Heritage Bank" },
+  { code: "082", name: "Keystone Bank" },
+  { code: "076", name: "Polaris Bank" },
+  { code: "101", name: "Providus Bank" },
+  { code: "221", name: "Stanbic IBTC Bank" },
+  { code: "068", name: "Standard Chartered" },
+  { code: "232", name: "Sterling Bank" },
+  { code: "032", name: "Union Bank of Nigeria" },
+  { code: "033", name: "United Bank for Africa" },
+  { code: "215", name: "Unity Bank" },
+  { code: "035", name: "Wema Bank" },
+  { code: "057", name: "Zenith Bank" },
+  { code: "000", name: "Other Bank" },
+]
+
+const ASSET_OPTIONS: { value: string; label: string; icon: string }[] = [
+  { value: "USDC", label: "USD Coin", icon: "💵" },
+  { value: "XLM", label: "Stellar Lumens", icon: "✨" },
+]
 
 export default function WithdrawPage() {
-  const searchParams = useSearchParams()
   const addToast = useUIStore((s) => s.addToast)
 
-  const [step, setStep] = useState<"form" | "preview" | "signing" | "done" | "error">("form")
-  const [destination, setDestination] = useState("")
-  const [destinationLabel, setDestinationLabel] = useState("")
+  const [step, setStep] = useState<WithdrawStep>("wallet")
   const [asset, setAsset] = useState("USDC")
-  const [amount, setAmount] = useState("")
-  const [memo, setMemo] = useState("")
-  const [passkeySeed, setPasskeySeed] = useState("")
-  const [txHash, setTxHash] = useState("")
+  const [amountUsdc, setAmountUsdc] = useState("")
+  const [selectedBank, setSelectedBank] = useState("")
+  const [accountNumber, setAccountNumber] = useState("")
+  const [accountName, setAccountName] = useState("")
+  const [quote, setQuote] = useState<WithdrawQuote | null>(null)
+  const [loading, setLoading] = useState(false)
   const [errMsg, setErrMsg] = useState("")
-  const [confirmedAddress, setConfirmedAddress] = useState(false)
-  const [showBook, setShowBook] = useState(false)
-  const [ownAddress, setOwnAddress] = useState("")
-  const [copiedDest, setCopiedDest] = useState(false)
+  const [wallets, setWallets] = useState<WalletOption[]>([])
+  const [selectedWallet, setSelectedWallet] = useState<string>("")
+  const [otp, setOtp] = useState(["", "", "", "", "", ""])
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Pre-fill from query params (address book "Send" button)
-  useEffect(() => {
-    const addr = searchParams.get("address")
-    const label = searchParams.get("label")
-    if (addr) { setDestination(addr); setDestinationLabel(label || "") }
-  }, [searchParams])
+  const stepIndex = STEPS.indexOf(step)
 
-  // Derive passkey seed
+  // Fetch wallet balances on mount
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("moistello_passkey_credential") || "{}")
-      if (stored.credentialId) {
-        crypto.subtle.digest("SHA-256", new TextEncoder().encode(stored.credentialId)).then((buf) => {
-          setPasskeySeed(Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""))
-        })
+    get<Record<string, unknown>>("/wallets/balance").then((res) => {
+      const d = (res as Record<string, unknown>)?.data ?? res
+      const list: WalletOption[] = []
+      if (d) {
+        const usdc = parseFloat(String((d as Record<string, string>).usdc ?? "0"))
+        const xlm = parseFloat(String((d as Record<string, string>).xlm ?? "0"))
+        list.push({ id: "usdc-wallet", label: "USDC Wallet", balance: usdc, asset: "USDC" })
+        list.push({ id: "xlm-wallet", label: "XLM Wallet", balance: xlm, asset: "XLM" })
       }
-    } catch (e) {
-      console.warn("[withdraw] Failed to read passkey credential:", e)
+      setWallets(list)
+      if (list.length > 0 && !selectedWallet) {
+        setSelectedWallet(list[0].id)
+        setAsset(list[0].asset)
+      }
+    }).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selectedWalletData = wallets.find((w) => w.id === selectedWallet)
+
+  // ── 2. Get quote ──
+  const handleGetQuote = useCallback(async () => {
+    const amt = parseFloat(amountUsdc)
+    if (!amt || amt <= 0) {
+      addToast({ type: "error", title: "Invalid amount" })
+      return
     }
-  }, [])
-
-  // Fetch own wallet address for self-send detection
-  useEffect(() => {
-    import("@/lib/api-client").then(({ get }) => {
-      get("/wallets").then((res: unknown) => {
-        const d = (res as Record<string, unknown>)?.data as Record<string, unknown> ?? res as Record<string, unknown>
-        const list = (d?.wallets ?? []) as { publicKey: string }[]
-        if (list.length > 0) setOwnAddress(list[0].publicKey)
-      }).catch((e) => { console.warn("[withdraw] Failed to load own wallet address:", e) })
-    })
-  }, [])
-
-  const copyDest = async () => {
-    const success = await copyToClipboard(destination)
-    if (success) {
-      setCopiedDest(true)
-      setTimeout(() => setCopiedDest(false), 2000)
+    if (selectedWalletData && amt > selectedWalletData.balance) {
+      addToast({ type: "error", title: "Insufficient balance" })
+      return
     }
-  }
-
-  // ── SECURITY: Validate form before preview ──
-  const handlePreview = () => {
-    if (!destination.trim()) { addToast({ type: "error", title: "Missing destination", description: "Enter a Stellar address." }); return }
-    if (!isValidStellarAddress(destination.trim())) { addToast({ type: "error", title: "Invalid address", description: "Enter a valid Stellar public key (G...)." }); return }
-    if (!amount || Number(amount) <= 0) { addToast({ type: "error", title: "Invalid amount", description: "Enter a valid amount." }); return }
-    if (Number(amount) > DAILY_LIMIT_USDC && asset === "USDC") { addToast({ type: "error", title: "Daily limit", description: `Max $${DAILY_LIMIT_USDC} USDC per day.` }); return }
-    setStep("preview")
-  }
-
-  // ── SECURITY CHECKS (computed) ──
-  const destinationError = destination ? detectSuspiciousAddress(destination, ownAddress) : null
-  const isFirstTime = destination ? !isKnownAddress(destination) : false
-  const spending = getDailySpending()
-  const remainingDaily = Math.max(0, DAILY_LIMIT_USDC - spending.totalUsdc)
-  const isLargeAmount = Number(amount) > 500
-  const isMajority = Number(amount) > remainingDaily * 0.8
-
-  const handleConfirm = async () => {
-    if (isFirstTime && !confirmedAddress) { addToast({ type: "error", title: "Confirm address", description: "Check the box to confirm this is a new destination." }); return }
-    setStep("signing")
+    if (!selectedBank) {
+      addToast({ type: "error", title: "Select a bank" })
+      return
+    }
+    if (!accountNumber || accountNumber.length < 10) {
+      addToast({ type: "error", title: "Valid account number required" })
+      return
+    }
+    if (!accountName.trim()) {
+      addToast({ type: "error", title: "Account name required" })
+      return
+    }
+    setLoading(true)
     setErrMsg("")
     try {
-      const res = await post("/wallets/withdraw", {
-        destination: destination.trim(),
+      const res = await post<Record<string, unknown>>("/wallet/withdraw/quote", {
         asset,
-        amount: Number(amount),
-        passkeySeed,
-        memo: memo.trim() || undefined,
+        amount: amt,
+        bankCode: selectedBank,
+        accountNumber,
+        accountName: accountName.trim(),
       })
-      const raw = res as unknown as Record<string, unknown>
-      const hash = ((raw?.data as Record<string, unknown>)?.txHash ?? raw?.txHash ?? "") as string
-      setTxHash(hash)
-      markAddressKnown(destination.trim())
-      recordSpending(Number(amount), asset)
-      setStep("done")
-      addToast({ type: "success", title: "Sent!", description: "Transaction submitted to Stellar." })
+      const data = res?.data ?? res
+      const q: WithdrawQuote = {
+        estimatedNgn: Number(data.estimatedNgn ?? data.estimatedNgn ?? 0),
+        rate: Number(data.rate ?? 0),
+        spread: Number(data.spread ?? 1.5),
+        yellowCardAddress: String(data.yellowCardAddress ?? data.destinationAddress ?? ""),
+        withdrawId: String(data.withdrawId ?? data.id ?? ""),
+      }
+      if (!q.estimatedNgn) throw new Error("Failed to get quote")
+      setQuote(q)
+      setStep("confirm")
     } catch (err) {
-      const msg = (err && typeof err === "object" && "message" in err) ? (err as { message: string }).message : "Transaction failed"
+      const msg = (err && typeof err === "object" && "message" in err)
+        ? (err as { message: string }).message
+        : "Quote failed"
       setErrMsg(msg)
-      setStep("error")
+    } finally {
+      setLoading(false)
+    }
+  }, [amountUsdc, selectedWalletData, selectedBank, accountNumber, accountName, asset, addToast])
+
+  // ── 3. Confirm & submit ──
+  const handleConfirm = useCallback(async () => {
+    if (!quote) return
+    setLoading(true)
+    setErrMsg("")
+    try {
+      await post(`/wallet/withdraw/${quote.withdrawId}/submit`, {
+        otpSent: true,
+      })
+      setStep("otp")
+    } catch (err) {
+      const msg = (err && typeof err === "object" && "message" in err)
+        ? (err as { message: string }).message
+        : "Submission failed"
+      setErrMsg(msg)
+    } finally {
+      setLoading(false)
+    }
+  }, [quote])
+
+  // ── 4. Verify OTP ──
+  const handleVerifyOtp = useCallback(async () => {
+    const code = otp.join("")
+    if (code.length !== 6) {
+      addToast({ type: "error", title: "Enter complete OTP" })
+      return
+    }
+    if (!quote) return
+    setLoading(true)
+    setErrMsg("")
+    try {
+      await post(`/wallet/withdraw/${quote.withdrawId}/verify`, { otp: code })
+      setStep("success")
+      addToast({ type: "success", title: "Withdrawal confirmed!" })
+    } catch (err) {
+      const msg = (err && typeof err === "object" && "message" in err)
+        ? (err as { message: string }).message
+        : "OTP verification failed"
+      setErrMsg(msg)
+    } finally {
+      setLoading(false)
+    }
+  }, [otp, quote, addToast])
+
+  const handleOtpChange = (index: number, val: string) => {
+    if (!/^\d*$/.test(val)) return
+    const next = [...otp]
+    next[index] = val.slice(-1)
+    setOtp(next)
+    if (val && index < 5) {
+      otpRefs.current[index + 1]?.focus()
     }
   }
 
-  const selectFromBook = (addr: string, label: string) => {
-    setDestination(addr)
-    setDestinationLabel(label)
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus()
+    }
   }
 
+  const selectedBankName = NIGERIAN_BANKS.find((b) => b.code === selectedBank)?.name ?? ""
+
   return (
-    <div className="space-y-6 max-w-lg mx-auto">
+    <div className="space-y-6 max-w-xl mx-auto">
+      {/* ── Back + Title ── */}
       <div className="flex items-center gap-3">
-        <Link href="/wallet" className="text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="h-5 w-5" /></Link>
+        <Link href="/wallet" className="text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
         <div>
-          <h1 className="font-heading text-xl font-bold text-foreground">Withdraw</h1>
-          <p className="text-sm text-muted-foreground">Send crypto to another Stellar wallet</p>
+          <h1 className="font-heading text-xl font-bold text-foreground">Withdraw to Bank</h1>
+          <p className="text-sm text-muted-foreground">Cash out USDC to your Nigerian bank account</p>
         </div>
       </div>
 
-      {/* ══════════ FORM STEP ══════════ */}
-      {step === "form" && (
-        <div className="border border-white/10 rounded-xl p-6 space-y-5">
-          {/* Destination */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Destination Address</label>
-              <button onClick={() => setShowBook(true)} className="text-xs text-aurora-violet hover:underline">Address Book</button>
-            </div>
-            <div className="relative">
-              <input
-                value={destination}
-                onChange={(e) => { setDestination(e.target.value); setDestinationLabel("") }}
-                placeholder="G..."
-                className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-4 pr-20 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-aurora-violet/50"
-              />
-              {destination && (
-                <button onClick={copyDest} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  {copiedDest ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                </button>
+      {/* ── Step indicator pills ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {STEP_LABELS.map((label, i) => (
+          <div key={label} className="flex items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all",
+                i < stepIndex && "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+                i === stepIndex && "bg-aurora-violet/20 text-aurora-violet border border-aurora-violet/30",
+                i > stepIndex && "bg-white/5 text-muted-foreground/50 border border-white/10",
               )}
-            </div>
-            {destinationLabel && <p className="text-xs text-muted-foreground mt-1">{destinationLabel}</p>}
-            {destination && isValidStellarAddress(destination) && (
-              <p className="text-xs text-emerald-400 mt-1">Valid Stellar address ✓</p>
+            >
+              {i < stepIndex ? "✓" : i + 1}
+              {label}
+            </span>
+            {i < STEPS.length - 1 && (
+              <ChevronRight className="h-3 w-3 text-muted-foreground/30" />
             )}
           </div>
+        ))}
+      </div>
 
-          {/* Security warnings */}
-          {destinationError && <SecurityWarning type="danger" title="Suspicious Address" message={destinationError} />}
-          {isFirstTime && destination && isValidStellarAddress(destination) && (
-            <SecurityWarning type="warning" title="First-Time Destination" message="You haven't sent to this address before. Verify every character carefully before proceeding." />
-          )}
-
-          {/* Asset + Amount */}
-          <div className="grid grid-cols-2 gap-4">
-            <Select label="Asset" options={[{ value: "USDC", label: "USDC" }, { value: "XLM", label: "XLM" }]} value={asset} onChange={setAsset} />
-            <div>
-              <Input label="Amount" type="number" min={0} step="any" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
-              <button onClick={() => setAmount(String(remainingDaily))} className="text-xs text-aurora-violet hover:underline mt-1">Max</button>
+      {/* ══════════ 1. SELECT WALLET ══════════ */}
+      {step === "wallet" && (
+        <div className="space-y-5">
+          {/* Floating decorative blob */}
+          <div className="relative overflow-hidden rounded-xl border border-white/10">
+            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-aurora-violet/8 blur-2xl pointer-events-none" />
+            <div className="relative z-10 p-6 space-y-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Select Source
+              </p>
+              {wallets.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {wallets.map((w) => (
+                    <button
+                      key={w.id}
+                      onClick={() => {
+                        setSelectedWallet(w.id)
+                        setAsset(w.asset)
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between p-4 rounded-xl border transition-all",
+                        selectedWallet === w.id
+                          ? "bg-aurora-violet/10 border-aurora-violet/30"
+                          : "bg-white/[0.02] border-white/10 hover:border-white/20",
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-xl text-lg",
+                          w.asset === "USDC" ? "bg-emerald-500/15" : "bg-aurora-violet/15",
+                        )}>
+                          {w.asset === "USDC" ? "💵" : "✨"}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-foreground">{w.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Balance: {w.balance.toFixed(4)} {w.asset}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                        selectedWallet === w.id
+                          ? "border-aurora-violet bg-aurora-violet"
+                          : "border-white/20",
+                      )}>
+                        {selectedWallet === w.id && (
+                          <Check className="h-3 w-3 text-white" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="text-xs text-muted-foreground flex justify-between">
-            <span>Daily remaining: ${remainingDaily.toFixed(2)} USDC</span>
-            <span>Balance check ✓</span>
-          </div>
-
-          <Input label="Memo (optional)" value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="Invoice # or note" />
-
-          <Button variant="primary" size="lg" className="w-full" onClick={handlePreview} leftIcon={<Shield className="h-4 w-4" />}>
-            Preview & Security Check
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
+            onClick={() => setStep("amount")}
+            disabled={!selectedWallet}
+          >
+            Continue
           </Button>
-
-          <AddressBookModal isOpen={showBook} onClose={() => setShowBook(false)} onSelect={selectFromBook} />
         </div>
       )}
 
-      {/* ══════════ PREVIEW STEP ══════════ */}
-      {step === "preview" && (
+      {/* ══════════ 2. AMOUNT + BANK DETAILS ══════════ */}
+      {step === "amount" && (
         <div className="space-y-5">
-          {isFirstTime && (
-            <SecurityWarning type="danger" title="New Destination — Verify Carefully" message="This address has not been used before. Check each character." />
-          )}
-          {isLargeAmount && (
-            <SecurityWarning type="warning" title="Large Transaction" message={`$${Number(amount).toFixed(2)} is a significant amount. Double-check the destination.`} />
-          )}
-          {isMajority && (
-            <SecurityWarning type="info" title="Most of Your Daily Limit" message="This uses most of your remaining daily spending capacity." />
-          )}
-
-          <div className="border border-white/10 rounded-xl divide-y divide-white/[0.06]">
-            <div className="px-5 py-4">
-              <p className="text-xs text-muted-foreground mb-1">Destination</p>
-              <code className="text-sm font-mono text-foreground break-all">{destination}</code>
-              {destinationLabel && <p className="text-xs text-aurora-violet mt-1">{destinationLabel}</p>}
-            </div>
-            <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-sm text-muted-foreground">Asset</span><span className="text-sm text-foreground">{asset}</span>
-            </div>
-            <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-sm text-muted-foreground">Amount</span><span className="text-sm font-semibold text-foreground">{Number(amount).toFixed(2)} {asset}</span>
-            </div>
-            {memo && <div className="flex items-center justify-between px-5 py-4"><span className="text-sm text-muted-foreground">Memo</span><span className="text-sm text-foreground">{memo}</span></div>}
-            <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-sm text-muted-foreground">Network Fee</span><span className="text-sm text-foreground">&lt; $0.001</span>
+          {/* Amount card */}
+          <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent p-6">
+            <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-emerald-500/8 blur-3xl pointer-events-none" />
+            <div className="relative z-10 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Amount to withdraw
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-emerald-400">{asset}</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={amountUsdc}
+                  onChange={(e) => setAmountUsdc(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 bg-transparent text-3xl font-bold font-heading text-foreground border-none outline-none placeholder:text-muted-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  autoFocus
+                />
+              </div>
+              {selectedWalletData && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Available</span>
+                  <span className="text-foreground">{selectedWalletData.balance.toFixed(4)} {asset}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {isFirstTime && (
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input type="checkbox" checked={confirmedAddress} onChange={() => setConfirmedAddress(!confirmedAddress)} className="mt-0.5 h-4 w-4 accent-aurora-violet" />
-              <span className="text-xs text-muted-foreground leading-relaxed">I confirm this destination address is correct. I understand that crypto transactions are irreversible.</span>
-            </label>
+          {/* Bank details — dotted dividers style */}
+          <div className="border border-white/10 rounded-xl overflow-hidden">
+            <div className="p-5 space-y-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                <Landmark className="h-3.5 w-3.5" />
+                Bank Account
+              </p>
+
+              {/* Bank selector — pills */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-2 block">Bank</label>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+                  {NIGERIAN_BANKS.map((b) => (
+                    <button
+                      key={b.code}
+                      onClick={() => setSelectedBank(b.code)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
+                        selectedBank === b.code
+                          ? "bg-aurora-violet/20 border-aurora-violet/40 text-aurora-violet"
+                          : "bg-white/5 border-white/10 text-muted-foreground hover:border-white/30",
+                      )}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dotted separator */}
+              <div className="border-t border-dotted border-white/10" />
+
+              <Input
+                label="Account Number"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="0123456789"
+                maxLength={10}
+              />
+
+              <div className="border-t border-dotted border-white/10" />
+
+              <Input
+                label="Account Name"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="John Doe"
+              />
+            </div>
+          </div>
+
+          {/* Summary estimate */}
+          {amountUsdc && parseFloat(amountUsdc) > 0 && (
+            <div className="flex items-center justify-between bg-white/[0.03] rounded-xl px-5 py-3.5">
+              <span className="text-xs text-muted-foreground">You&apos;ll receive approx.</span>
+              <span className="text-sm font-semibold text-foreground">
+                ₦{(parseFloat(amountUsdc) * 1550).toLocaleString()}
+              </span>
+            </div>
+          )}
+
+          {errMsg && (
+            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {errMsg}
+            </div>
           )}
 
           <div className="flex gap-3">
-            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep("form")}>Cancel</Button>
-            <Button variant="primary" size="lg" className="flex-1" onClick={handleConfirm} leftIcon={<ArrowUpRight className="h-4 w-4" />}>
-              {isFirstTime ? "Confirm & Send" : "Send"}
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep("wallet")}>
+              Back
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              className="flex-1"
+              onClick={handleGetQuote}
+              isLoading={loading}
+              disabled={!amountUsdc || !selectedBank || !accountNumber || !accountName.trim()}
+            >
+              Get Quote
             </Button>
           </div>
         </div>
       )}
 
-      {/* ══════════ SIGNING ══════════ */}
-      {step === "signing" && (
-        <div className="border border-white/10 rounded-xl p-10 text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin text-aurora-violet mx-auto" />
-          <p className="text-sm text-foreground">Biometric verification required. Signing and submitting...</p>
-          <p className="text-xs text-muted-foreground">Your device will prompt you to authenticate with your passkey.</p>
-        </div>
-      )}
+      {/* ══════════ 3. CONFIRM ══════════ */}
+      {step === "confirm" && quote && (
+        <div className="space-y-5">
+          {/* Shield banner */}
+          <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-400/20 rounded-xl px-5 py-4">
+            <Shield className="h-5 w-5 text-amber-400 shrink-0" />
+            <p className="text-xs text-amber-300">
+              Review the details below. Withdrawals are processed by Yellow Card and
+              sent to your bank account within minutes.
+            </p>
+          </div>
 
-      {/* ══════════ ERROR ══════════ */}
-      {step === "error" && (
-        <div className="border border-red-500/20 rounded-xl p-6 text-center space-y-4">
-          <AlertCircle className="h-10 w-10 text-red-400 mx-auto" />
-          <p className="text-sm text-red-400">{errMsg}</p>
-          <div className="flex gap-2 justify-center">
-            <Button variant="outline" size="md" onClick={() => setStep("form")}>Try Again</Button>
-            <Link href="/wallet/transactions"><Button variant="outline" size="md">View History</Button></Link>
+          {/* Summary card */}
+          <div className="border border-white/10 rounded-xl divide-y divide-dotted divide-white/[0.06]">
+            <div className="flex justify-between px-5 py-4">
+              <span className="text-sm text-muted-foreground">Sending</span>
+              <span className="text-sm font-semibold text-foreground">{parseFloat(amountUsdc).toFixed(2)} {asset}</span>
+            </div>
+            <div className="flex justify-between px-5 py-4">
+              <span className="text-sm text-muted-foreground">You receive</span>
+              <span className="text-sm font-semibold text-emerald-400">₦{quote.estimatedNgn.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between px-5 py-4">
+              <span className="text-sm text-muted-foreground">Rate</span>
+              <span className="text-sm text-foreground">1 {asset} ≈ ₦{(quote.estimatedNgn / parseFloat(amountUsdc)).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between px-5 py-4">
+              <span className="text-sm text-muted-foreground">Spread</span>
+              <span className="text-sm text-foreground">{quote.spread}%</span>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-muted-foreground mb-1">Destination Bank</p>
+              <p className="text-sm font-medium text-foreground">{selectedBankName}</p>
+              <p className="text-sm text-foreground">{accountNumber}</p>
+              <p className="text-sm text-muted-foreground">{accountName}</p>
+            </div>
+          </div>
+
+          {errMsg && (
+            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {errMsg}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button variant="outline" size="lg" className="flex-1" onClick={() => setStep("amount")}>
+              Edit
+            </Button>
+            <Button variant="primary" size="lg" className="flex-1" onClick={handleConfirm} isLoading={loading}>
+              Confirm & Request OTP
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ══════════ SUCCESS ══════════ */}
-      {step === "done" && (
-        <div className="border border-emerald-500/20 rounded-xl p-8 text-center space-y-4">
-          <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto" />
-          <p className="font-heading text-lg font-semibold text-foreground">Transaction Submitted</p>
-          <p className="text-sm text-muted-foreground">Sent {Number(amount).toFixed(2)} {asset}</p>
-          <div className="bg-white/5 rounded-xl px-4 py-3">
-            <code className="text-xs font-mono text-aurora-cyan break-all">{txHash}</code>
+      {/* ══════════ 4. OTP ══════════ */}
+      {step === "otp" && (
+        <div className="space-y-6">
+          <div className="border border-white/10 rounded-xl p-8 text-center space-y-5">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-aurora-violet/15 mx-auto">
+              <Key className="h-7 w-7 text-aurora-violet" />
+            </div>
+            <div>
+              <p className="font-heading text-lg font-semibold text-foreground">Enter OTP</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                A 6-digit code was sent to your registered email
+              </p>
+            </div>
+
+            {/* OTP input row */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpRefs.current[i] = el }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  className={cn(
+                    "w-10 sm:w-12 h-12 sm:h-14 text-center text-xl font-bold font-heading text-foreground",
+                    "bg-white/5 border rounded-xl outline-none transition-all",
+                    "focus:border-aurora-violet focus:ring-1 focus:ring-aurora-violet/30",
+                    digit ? "border-aurora-violet/50" : "border-white/10",
+                  )}
+                />
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Didn&apos;t receive it?{" "}
+              <button className="text-aurora-violet hover:underline">Resend</button>
+            </p>
           </div>
-          <div className="flex gap-3 justify-center">
-            <a href={`https://stellar.expert/explorer/testnet/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-aurora-cyan hover:underline">
-              <ExternalLink className="h-3 w-3" /> Stellar.Expert
-            </a>
-            <Link href="/wallet/transactions" className="inline-flex items-center gap-1 text-xs text-aurora-cyan hover:underline">Transaction History</Link>
-          </div>
-          <Link href="/wallet"><Button variant="primary" size="md">Back to Wallet</Button></Link>
+
+          {errMsg && (
+            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {errMsg}
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
+            onClick={handleVerifyOtp}
+            isLoading={loading}
+            disabled={otp.join("").length !== 6}
+          >
+            Verify & Complete Withdrawal
+          </Button>
         </div>
       )}
 
-      {step !== "signing" && step !== "done" && (
-        <Link href="/wallet" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="h-3.5 w-3.5" /> Back to Wallet</Link>
+      {/* ══════════ 5. SUCCESS ══════════ */}
+      {step === "success" && quote && (
+        <div className="space-y-6">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500/20 via-emerald-400/5 to-background border border-emerald-500/25 p-8 text-center space-y-4">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+            <div className="relative z-10 space-y-4">
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 mx-auto">
+                <CheckCircle className="h-8 w-8 text-emerald-400" />
+              </div>
+              <div>
+                <p className="font-heading text-2xl font-bold gradient-text-extended">Withdrawal Complete</p>
+                <p className="text-lg font-semibold text-foreground mt-2">
+                  ₦{quote.estimatedNgn.toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  sent to {selectedBankName} • {accountNumber}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/[0.03] rounded-xl divide-y divide-dotted divide-white/[0.06]">
+            <div className="flex justify-between px-5 py-3.5 text-sm">
+              <span className="text-muted-foreground">Amount sent</span>
+              <span className="text-foreground">{parseFloat(amountUsdc).toFixed(2)} {asset}</span>
+            </div>
+            <div className="flex justify-between px-5 py-3.5 text-sm">
+              <span className="text-muted-foreground">You received</span>
+              <span className="text-emerald-400 font-medium">₦{quote.estimatedNgn.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between px-5 py-3.5 text-sm">
+              <span className="text-muted-foreground">Reference</span>
+              <span className="font-mono text-xs text-foreground">{quote.withdrawId}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/wallet" className="flex-1">
+              <Button variant="primary" size="lg" className="w-full">Back to Wallet</Button>
+            </Link>
+            <Link href="/wallet/transactions" className="flex-1">
+              <Button variant="outline" size="lg" className="w-full" leftIcon={<ExternalLink className="h-4 w-4" />}>
+                View History
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom back link */}
+      {step !== "success" && step !== "otp" && (
+        <Link href="/wallet" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Wallet
+        </Link>
       )}
     </div>
   )
