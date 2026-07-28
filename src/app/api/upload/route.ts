@@ -77,6 +77,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check for slug collision before writing
+  const filename = `${slug}.md`;
+  const filePath = path.join(PAGES_DIR, filename);
+
+  if (fs.existsSync(filePath)) {
+    const overwrite = request.nextUrl.searchParams.get("overwrite");
+    if (overwrite !== "true") {
+      return NextResponse.json(
+        {
+          error: `A page with slug "${slug}" already exists. Add ?overwrite=true to confirm overwrite.`,
+          slug,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   // Read content
   const buffer = await file.arrayBuffer();
   let content = new TextDecoder().decode(buffer);
@@ -113,10 +130,7 @@ export async function POST(request: NextRequest) {
     ].join("\n");
   }
 
-  // Write the file (always as .md for consistency)
-  const filename = `${slug}.md`;
-  const filePath = path.join(PAGES_DIR, filename);
-
+  // Write the file (checked for collision above)
   try {
     fs.writeFileSync(filePath, content, "utf-8");
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
