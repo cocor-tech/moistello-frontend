@@ -5,18 +5,28 @@ import { bytesToHex } from "@noble/hashes/utils.js"
 /**
  * Serves the session HMAC key to the client.
  *
- * If WALLET_HMAC_KEY is set (production), return it verbatim so HMACs are
- * stable across page loads and server restarts.
+ * The key MUST be set via WALLET_HMAC_KEY in production. Without it, HMACs
+ * would differ on every server instance, invalidating all stored sessions.
  *
- * If unset (dev), generate a random key per request so the client still gets
- * a key while being obviously non-deterministic (servers must set the env var
- * for production to avoid invalidating sessions on every cold start).
+ * In development the endpoint falls back to a per-request random key so the
+ * client still gets a key while being obviously non-deterministic (local
+ * development only — sessions are short-lived).
  */
 export async function GET() {
   const fromEnv = process.env.WALLET_HMAC_KEY
-  const keyHex = fromEnv && fromEnv.length >= 32
-    ? fromEnv
-    : bytesToHex(randomBytes(32))
 
-  return NextResponse.json({ keyHex })
+  if (fromEnv && fromEnv.length >= 32) {
+    return NextResponse.json({ keyHex: fromEnv })
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Server misconfiguration: WALLET_HMAC_KEY is not set" },
+      { status: 500 },
+    )
+  }
+
+  // Development fallback — random key per request. Sessions will not survive
+  // a page reload, but that is acceptable for local work.
+  return NextResponse.json({ keyHex: bytesToHex(randomBytes(32)) })
 }

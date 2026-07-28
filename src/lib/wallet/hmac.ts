@@ -9,6 +9,9 @@ import { bytesToHex } from "@noble/hashes/utils.js"
  * exposure) while still allowing synchronous HMAC computation client-side
  * after the key is cached.
  *
+ * The endpoint returns 500 in production if WALLET_HMAC_KEY is unset — the
+ * server must be configured before any HMAC-dependent feature works.
+ *
  * The module starts fetching the key immediately on import.  The synchronous
  * `computeHmacSha256()` call below returns before the fetch completes only
  * during the narrow window between module init and first response — after
