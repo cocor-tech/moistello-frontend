@@ -16,7 +16,7 @@ fix:
   resolve_conflicts: true        # AI-resolve merge conflicts against full codebase
   fix_failing_ci: true           # AI-fix CI failures (tests/lint/build) on PRs and main
   wait_for_off_peak: true        # wait until DeepSeek off-peak hours before spending tokens
-  model: opencode-go/deepseek-v4-flash  # cheapest capable coding model (off-peak $0.22/$0.66)
+  model: opencode-go/glm-5.2  # cheap open-weight model, no China opt-in required
 
 # Guardrail: only auto-merge PRs that are NOT marked [wip] / draft.
 ignore_title_contains:

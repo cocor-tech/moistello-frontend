@@ -110,10 +110,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOT_TOKEN || github.token }}
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          OPENCODE_MODEL: ${{ secrets.OPENCODE_MODEL || 'opencode-go/deepseek-v4-flash' }}
+          OPENCODE_MODEL: ${{ secrets.OPENCODE_MODEL || 'opencode-go/glm-5.2' }}
         run: |
           git config user.name "moistello-bot[bot]"
           git config user.email "bot@users.noreply.github.com"
+
+          # Authenticate opencode to your opencode-go workspace using the secret.
+          mkdir -p ~/.local/share/opencode
+          cat > ~/.local/share/opencode/auth.json << JSON
+          {
+            "opencode-go": {
+              "type": "api",
+              "key": "${{ secrets.OPENCODE_API_KEY }}"
+            }
+          }
+          JSON
 
           # Install opencode CLI (cached above).
           npm install -g opencode-ai 2>/dev/null || npx opencode --version >/dev/null 2>&1 || true
@@ -174,11 +185,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOT_TOKEN || github.token }}
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          OPENCODE_MODEL: ${{ secrets.OPENCODE_MODEL || 'opencode-go/deepseek-v4-flash' }}
+          OPENCODE_MODEL: ${{ secrets.OPENCODE_MODEL || 'opencode-go/glm-5.2' }}
         run: |
           git config user.name "moistello-bot[bot]"
           git config user.email "bot@users.noreply.github.com"
           git checkout "${{ github.event.workflow_run.head_branch }}"
+
+          # Authenticate opencode to your opencode-go workspace using the secret.
+          mkdir -p ~/.local/share/opencode
+          cat > ~/.local/share/opencode/auth.json << JSON
+          {
+            "opencode-go": {
+              "type": "api",
+              "key": "${{ secrets.OPENCODE_API_KEY }}"
+            }
+          }
+          JSON
 
           npm install -g opencode-ai 2>/dev/null || npx opencode --version >/dev/null 2>&1 || true
 
