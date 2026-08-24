@@ -122,7 +122,6 @@ jobs:
           # inspect the whole codebase and resolve the conflict correctly.
           opencode run \
             --model "${OPENCODE_MODEL}" \
-            --agent-plan \
             "The repository is mid-rebase with merge conflicts against branch
              ${{ github.event.pull_request.base.ref }} on PR #${{ github.event.pull_request.number }}.
              Use the full codebase as context. Resolve every conflict correctly so that both
@@ -185,7 +184,6 @@ jobs:
 
           opencode run \
             --model "${OPENCODE_MODEL}" \
-            --agent-plan \
             "CI failed on branch ${{ github.event.workflow_run.head_branch }} (commit ${{ github.event.workflow_run.head_sha }}).
              Inspect the full repository, run the failing commands (npm run lint, npx tsc --noEmit,
              npm run test -- --run, npm run build) to reproduce, fix the root cause(s), and make CI green.
