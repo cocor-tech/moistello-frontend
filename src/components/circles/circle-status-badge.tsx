@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import type { CircleStatus } from "@/types";
@@ -25,10 +26,15 @@ interface CircleStatusBadgeProps {
   className?: string;
 }
 
-export function CircleStatusBadge({ status, className }: CircleStatusBadgeProps) {
+export const CircleStatusBadge = memo(function CircleStatusBadge({
+  status,
+  className,
+}: CircleStatusBadgeProps) {
   return (
     <Badge variant={variantMap[status]} size="sm" className={cn(className)}>
       {labelMap[status]}
     </Badge>
   );
-}
+});
+
+CircleStatusBadge.displayName = "CircleStatusBadge";
