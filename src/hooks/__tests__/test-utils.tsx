@@ -6,6 +6,7 @@ export function createQueryWrapper() {
     defaultOptions: {
       queries: {
         retry: false,
+        throwOnError: false,
       },
     },
   })

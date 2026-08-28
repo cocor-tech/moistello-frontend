@@ -128,6 +128,23 @@ function syncConvenienceState(
   };
 }
 
+async function runConnectionProbes(
+  sessions: Array<{ walletId: WalletId }>,
+  probe: (walletId: WalletId) => Promise<void>,
+  concurrency = 4
+): Promise<void> {
+  const queue = [...sessions]
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const session = queue.shift()
+      if (session) {
+        await probe(session.walletId)
+      }
+    }
+  })
+  await Promise.all(workers)
+}
+
 export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
   activeWalletId: null,
   wallets: {},
@@ -199,22 +216,20 @@ export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
           ...syncConvenienceState({ activeWalletId: nextActiveId, wallets }),
         });
 
-        for (const s of sessions) {
-          const adapter = getWalletRegistry().getAdapter(s.walletId);
-          if (adapter) {
-            adapter
-              .isConnected()
-              .then((connected) => {
-                get().updateWalletStatus(
-                  s.walletId,
-                  connected ? "connected" : "disconnected"
-                );
-              })
-              .catch(() => {
-                get().updateWalletStatus(s.walletId, "disconnected");
-              });
+        await runConnectionProbes(sessions, async (walletId) => {
+          const adapter = getWalletRegistry().getAdapter(walletId);
+          if (!adapter) return;
+
+          try {
+            const connected = await adapter.isConnected();
+            get().updateWalletStatus(
+              walletId,
+              connected ? "connected" : "disconnected"
+            );
+          } catch {
+            get().updateWalletStatus(walletId, "disconnected");
           }
-        }
+        });
       }
 
       await get().scanWallets();
@@ -426,11 +441,16 @@ export const useMultiWalletStore = create<MultiWalletState>()((set, get) => ({
       set((state) => {
         const existing = state.wallets[walletId];
         if (existing) {
-          return {
+          const next = {
             wallets: {
               ...state.wallets,
               [walletId]: { ...existing, balance },
             },
+            activeWalletId: state.activeWalletId,
+          };
+          return {
+            ...next,
+            ...syncConvenienceState(next),
           };
         }
         return state;

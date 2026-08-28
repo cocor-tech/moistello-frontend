@@ -11,6 +11,7 @@ import {
   DollarSign,
   TrendingUp,
   AlertCircle,
+  ArrowUpDown,
 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { get } from "@/lib/api-client"
@@ -85,9 +86,24 @@ function SummaryCard({
 
 export default function PayoutsPage() {
   const [page, setPage] = useState(1)
+  const [sortBy, setSortBy] = useState<"createdAt" | "amount" | "roundNumber">("createdAt")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
+  const [circleId, setCircleId] = useState("")
+  const [payoutType, setPayoutType] = useState("all")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
   const limit = 20
 
-  const { data, isLoading, isError } = usePayouts({ page, limit })
+  const { data, isLoading, isError } = usePayouts({
+    page,
+    limit,
+    sortBy,
+    sortDir,
+    circleId,
+    payoutType: payoutType as "all" | "random" | "fixed" | "auction" | "vote",
+    dateFrom,
+    dateTo,
+  })
 
   const { data: circlesData } = useQuery({
     queryKey: ["circles", "payouts-filter"],
@@ -117,6 +133,21 @@ export default function PayoutsPage() {
     return `Loaded ${payouts.length} payout${payouts.length === 1 ? "" : "s"}${pageInfo}.`
   }, [isLoading, isError, payouts.length, meta])
 
+  const resetPage = <T,>(setter: (value: T) => void, value: T) => {
+    setter(value)
+    setPage(1)
+  }
+
+  const toggleSort = (field: "createdAt" | "amount" | "roundNumber") => {
+    setPage(1)
+    if (sortBy === field) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"))
+    } else {
+      setSortBy(field)
+      setSortDir(field === "createdAt" ? "desc" : "asc")
+    }
+  }
+
   return (
     <div className="space-y-6">
       <LiveRegion message={statusMessage} />
@@ -138,6 +169,71 @@ export default function PayoutsPage() {
           icon={<TrendingUp className="h-6 w-6" />}
           gradient="from-aurora-indigo to-aurora-violet"
         />
+      </div>
+
+      <div className="glass rounded-2xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+        <label className="space-y-1 text-xs font-heading tracking-wider uppercase text-muted-foreground">
+          Circle
+          <select
+            value={circleId}
+            onChange={(event) => resetPage(setCircleId, event.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm normal-case text-foreground"
+          >
+            <option value="">All circles</option>
+            {circles.map((circle) => (
+              <option key={circle.id} value={circle.id}>
+                {circle.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-xs font-heading tracking-wider uppercase text-muted-foreground">
+          Type
+          <select
+            value={payoutType}
+            onChange={(event) => resetPage(setPayoutType, event.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm normal-case text-foreground"
+          >
+            <option value="all">All types</option>
+            <option value="fixed">Fixed</option>
+            <option value="random">Random</option>
+            <option value="auction">Auction</option>
+            <option value="vote">Vote</option>
+          </select>
+        </label>
+        <label className="space-y-1 text-xs font-heading tracking-wider uppercase text-muted-foreground">
+          From
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(event) => resetPage(setDateFrom, event.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm normal-case text-foreground"
+          />
+        </label>
+        <label className="space-y-1 text-xs font-heading tracking-wider uppercase text-muted-foreground">
+          To
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(event) => resetPage(setDateTo, event.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm normal-case text-foreground"
+          />
+        </label>
+        <Button
+          variant="outline"
+          className="self-end"
+          onClick={() => {
+            setCircleId("")
+            setPayoutType("all")
+            setDateFrom("")
+            setDateTo("")
+            setSortBy("createdAt")
+            setSortDir("desc")
+            setPage(1)
+          }}
+        >
+          Reset
+        </Button>
       </div>
 
       {isLoading ? (
@@ -177,18 +273,33 @@ export default function PayoutsPage() {
             <div className="flex-1 text-2xs font-heading tracking-wider uppercase text-muted-foreground">
               Circle
             </div>
-            <div className="w-16 text-2xs font-heading tracking-wider uppercase text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => toggleSort("roundNumber")}
+              className="w-16 inline-flex items-center gap-1 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground"
+            >
               Round
-            </div>
-            <div className="w-28 text-2xs font-heading tracking-wider uppercase text-muted-foreground">
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleSort("amount")}
+              className="w-28 inline-flex items-center gap-1 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground"
+            >
               Amount
-            </div>
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
             <div className="w-24 text-2xs font-heading tracking-wider uppercase text-muted-foreground">
               Fee
             </div>
-            <div className="w-28 text-2xs font-heading tracking-wider uppercase text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => toggleSort("createdAt")}
+              className="w-28 inline-flex items-center gap-1 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground"
+            >
               Date
-            </div>
+              <ArrowUpDown className="h-3 w-3" />
+            </button>
             <div className="w-36 text-2xs font-heading tracking-wider uppercase text-muted-foreground">
               Transaction
             </div>

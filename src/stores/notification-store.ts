@@ -23,8 +23,17 @@ function computeUnreadCount(notifications: Notification[]): number {
   return notifications.filter((n) => !n.isRead).length;
 }
 
+function isUnauthorizedError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    (error as { response?: { status?: number } }).response?.status === 401
+  )
+}
+
 export const useNotificationStore = create<NotificationStore>()(
-  (set) => ({
+  (set, get) => ({
     notifications: [],
     unreadCount: 0,
     isLoading: false,
@@ -48,18 +57,27 @@ export const useNotificationStore = create<NotificationStore>()(
     },
 
     markAsRead: async (id: string) => {
+      const previous = get().notifications;
+      set((state) => {
+        const notifications = state.notifications.map((n) =>
+          n.id === id ? { ...n, isRead: true } : n
+        );
+        return {
+          notifications,
+          unreadCount: computeUnreadCount(notifications),
+        };
+      });
+
       try {
         await apiPatch(`/notifications/${id}/read`);
-        set((state) => {
-          const notifications = state.notifications.map((n) =>
-            n.id === id ? { ...n, isRead: true } : n
-          );
-          return {
-            notifications,
-            unreadCount: computeUnreadCount(notifications),
-          };
-        });
       } catch (e) {
+        set({
+          notifications: previous,
+          unreadCount: computeUnreadCount(previous),
+        })
+        if (isUnauthorizedError(e) && typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("auth:required"))
+        }
         console.warn("[notifications] Failed to mark notification as read:", e)
       }
     },
