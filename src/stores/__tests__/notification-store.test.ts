@@ -97,6 +97,46 @@ describe("useNotificationStore", () => {
       expect(patch).toHaveBeenCalledWith("/notifications/n1/read");
     });
 
+    it("rolls back optimistic state when the API rejects the update", async () => {
+      const { patch } = await import("@/lib/api-client");
+      vi.mocked(patch).mockRejectedValueOnce(new Error("Unauthorized") as never);
+      const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      useNotificationStore.setState({
+        notifications: [
+          makeNotification({ id: "n1", isRead: false }),
+          makeNotification({ id: "n2", isRead: false }),
+        ],
+        unreadCount: 2,
+      });
+
+      await useNotificationStore.getState().markAsRead("n1");
+
+      expect(useNotificationStore.getState().notifications.find((n) => n.id === "n1")?.isRead).toBe(false);
+      expect(useNotificationStore.getState().unreadCount).toBe(2);
+      consoleWarn.mockRestore();
+    });
+
+    it("signals re-authentication when an optimistic read fails with 401", async () => {
+      const { patch } = await import("@/lib/api-client");
+      const authRequired = vi.fn();
+      window.addEventListener("auth:required", authRequired);
+      vi.mocked(patch).mockRejectedValueOnce({ response: { status: 401 } } as never);
+      const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      useNotificationStore.setState({
+        notifications: [makeNotification({ id: "n1", isRead: false })],
+        unreadCount: 1,
+      });
+
+      await useNotificationStore.getState().markAsRead("n1");
+
+      expect(authRequired).toHaveBeenCalledTimes(1);
+      expect(useNotificationStore.getState().unreadCount).toBe(1);
+      window.removeEventListener("auth:required", authRequired);
+      consoleWarn.mockRestore();
+    });
+
     it("does not change unread count if notification was already read", async () => {
       const { patch } = await import("@/lib/api-client");
       vi.mocked(patch).mockResolvedValueOnce({} as never);
