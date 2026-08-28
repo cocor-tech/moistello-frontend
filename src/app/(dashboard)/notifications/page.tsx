@@ -1,8 +1,14 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  useListMotion,
+  defaultItemVariants,
+  STAGGER_CHILDREN_LIMIT,
+} from "@/lib/motion/list";
+import { useReducedMotion } from "framer-motion";
 import {
   Bell,
   BellOff,
@@ -18,19 +24,19 @@ import {
   Archive,
   CheckSquare,
   Square,
-} from "lucide-react"
-import Link from "next/link"
-import { useNotifications } from "@/hooks/use-notifications"
-import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatRelativeTime } from "@/lib/formatters"
-import { cn } from "@/lib/cn"
-import { patch } from "@/lib/api-client"
-import { useUIStore } from "@/stores/ui-store"
-import type { Notification } from "@/types"
+} from "lucide-react";
+import Link from "next/link";
+import { useNotifications } from "@/hooks/use-notifications";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatRelativeTime } from "@/lib/formatters";
+import { cn } from "@/lib/cn";
+import { patch } from "@/lib/api-client";
+import { useUIStore } from "@/stores/ui-store";
+import type { Notification } from "@/types";
 
 const iconMap: Record<string, React.ReactNode> = {
   contribution: <ArrowUp className="h-4 w-4" />,
@@ -43,7 +49,7 @@ const iconMap: Record<string, React.ReactNode> = {
   system: <Info className="h-4 w-4" />,
   warning: <AlertTriangle className="h-4 w-4" />,
   penalty: <Shield className="h-4 w-4" />,
-}
+};
 
 const gradientMap: Record<string, string> = {
   contribution: "from-emerald-500/30 to-green-600/30",
@@ -56,7 +62,7 @@ const gradientMap: Record<string, string> = {
   system: "from-white/5 to-white/10",
   warning: "from-red-500/30 to-amber-500/30",
   penalty: "from-red-500/30 to-amber-500/30",
-}
+};
 
 const iconColorMap: Record<string, string> = {
   contribution: "text-emerald-400",
@@ -69,7 +75,7 @@ const iconColorMap: Record<string, string> = {
   system: "text-muted-foreground",
   warning: "text-red-400",
   penalty: "text-red-400",
-}
+};
 
 const TYPE_GROUPS: Record<string, string> = {
   contribution: "Contributions",
@@ -82,7 +88,7 @@ const TYPE_GROUPS: Record<string, string> = {
   system: "System",
   warning: "Alerts",
   penalty: "Alerts",
-}
+};
 
 const TYPE_FILTERS = [
   { value: "all", label: "All" },
@@ -91,12 +97,9 @@ const TYPE_FILTERS = [
   { value: "circle", label: "Circles" },
   { value: "system", label: "System" },
   { value: "warning", label: "Alerts" },
-]
+];
 
-const itemVariants = {
-  hidden: { opacity: 0, x: -12 },
-  show: { opacity: 1, x: 0 },
-}
+const itemVariants = defaultItemVariants;
 
 function NotificationItem({
   notification,
@@ -105,28 +108,28 @@ function NotificationItem({
   selected,
   onToggleSelect,
 }: {
-  notification: Notification
-  onMarkRead: (id: string) => void
-  onClick: (n: Notification) => void
-  selected: boolean
-  onToggleSelect: (id: string) => void
+  notification: Notification;
+  onMarkRead: (id: string) => void;
+  onClick: (n: Notification) => void;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
 }) {
   const handleClick = () => {
-    if (!notification.isRead) onMarkRead(notification.id)
-    onClick(notification)
-  }
+    if (!notification.isRead) onMarkRead(notification.id);
+    onClick(notification);
+  };
 
   const link =
     notification.data &&
     typeof notification.data === "object" &&
     "link" in notification.data
       ? String(notification.data.link)
-      : null
+      : null;
 
-  const icon = iconMap[notification.type] ?? <Bell className="h-4 w-4" />
-  const grad = gradientMap[notification.type] ?? gradientMap.system
-  const icol = iconColorMap[notification.type] ?? iconColorMap.system
-  const isUnread = !notification.isRead
+  const icon = iconMap[notification.type] ?? <Bell className="h-4 w-4" />;
+  const grad = gradientMap[notification.type] ?? gradientMap.system;
+  const icol = iconColorMap[notification.type] ?? iconColorMap.system;
+  const isUnread = !notification.isRead;
 
   return (
     <motion.div
@@ -139,65 +142,98 @@ function NotificationItem({
       {/* Bulk select checkbox */}
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onToggleSelect(notification.id) }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelect(notification.id);
+        }}
         className="mt-2 shrink-0 text-muted-foreground hover:text-foreground"
       >
-        {selected ? <CheckSquare className="h-4 w-4 text-aurora-violet" /> : <Square className="h-4 w-4" />}
+        {selected ? (
+          <CheckSquare className="h-4 w-4 text-aurora-violet" />
+        ) : (
+          <Square className="h-4 w-4" />
+        )}
       </button>
 
-      <button type="button" onClick={handleClick} className="flex items-start gap-4 flex-1 min-w-0 text-left">
+      <button
+        type="button"
+        onClick={handleClick}
+        className="flex items-start gap-4 flex-1 min-w-0 text-left"
+      >
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-          {isUnread && (
-            <motion.span
-              layoutId="unread-dot"
-              className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-aurora-cyan animate-pulse"
-            />
-          )}
-          <div className={cn("flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br", grad)}>
+          {isUnread &&
+            // layout animations are expensive on large lists; only enable when under threshold
+            (!largeList ? (
+              <motion.span
+                layoutId="unread-dot"
+                className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-aurora-cyan animate-pulse"
+              />
+            ) : (
+              <span className="absolute -left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-aurora-cyan" />
+            ))}
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br",
+              grad,
+            )}
+          >
             <span className={icol}>{icon}</span>
           </div>
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className={cn("text-sm truncate font-body", isUnread ? "font-semibold text-foreground dark:text-white" : "font-medium text-muted-foreground")}>
+            <p
+              className={cn(
+                "text-sm truncate font-body",
+                isUnread
+                  ? "font-semibold text-foreground dark:text-white"
+                  : "font-medium text-muted-foreground",
+              )}
+            >
               {notification.title}
             </p>
             <span className="shrink-0 text-[11px] text-muted-foreground font-body">
-              {notification.sentAt ? formatRelativeTime(notification.sentAt) : formatRelativeTime(notification.createdAt)}
+              {notification.sentAt
+                ? formatRelativeTime(notification.sentAt)
+                : formatRelativeTime(notification.createdAt)}
             </span>
           </div>
           {notification.body && (
-            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2 font-body">{notification.body}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2 font-body">
+              {notification.body}
+            </p>
           )}
           {link && (
-            <span className="mt-1 inline-block text-xs gradient-text font-body">View details &rarr;</span>
+            <span className="mt-1 inline-block text-xs gradient-text font-body">
+              View details &rarr;
+            </span>
           )}
         </div>
       </button>
     </motion.div>
-  )
+  );
 }
 
 export default function NotificationsPage() {
-  const router = useRouter()
-  const addToast = useUIStore((s) => s.addToast)
+  const router = useRouter();
+  const addToast = useUIStore((s) => s.addToast);
   const {
     notifications,
     isLoading,
     markAsRead,
     markAllAsRead,
     fetchNotifications,
-  } = useNotifications()
-  const [filter, setFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
-  const [markingAll, setMarkingAll] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [archiving, setArchiving] = useState(false)
+  } = useNotifications();
+  const [filter, setFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [markingAll, setMarkingAll] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
-    fetchNotifications()
-  }, [fetchNotifications])
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const handleNotificationClick = useCallback(
     (notification: Notification) => {
@@ -206,81 +242,119 @@ export default function NotificationsPage() {
         typeof notification.data === "object" &&
         "link" in notification.data
           ? String(notification.data.link)
-          : null
-      if (link) router.push(link)
+          : null;
+      if (link) router.push(link);
     },
     [router],
-  )
+  );
 
   const handleMarkAllRead = async () => {
-    setMarkingAll(true)
+    setMarkingAll(true);
     try {
-      await markAllAsRead()
+      await markAllAsRead();
     } finally {
-      setMarkingAll(false)
+      setMarkingAll(false);
     }
-  }
+  };
 
   // Compute filtered notifications first
   const filteredNotifications = useMemo(() => {
-    let result = notifications
+    const start = typeof performance !== "undefined" ? performance.now() : 0;
+    let result = notifications;
     if (filter === "unread") {
-      result = result.filter((n) => !n.isRead)
+      result = result.filter((n) => !n.isRead);
     }
     if (typeFilter !== "all") {
       result = result.filter((n) => {
-        const group = TYPE_GROUPS[n.type] ?? "Other"
-        return group.toLowerCase() === typeFilter || n.type.startsWith(typeFilter)
-      })
+        const group = TYPE_GROUPS[n.type] ?? "Other";
+        return (
+          group.toLowerCase() === typeFilter || n.type.startsWith(typeFilter)
+        );
+      });
     }
-    return result
-  }, [notifications, filter, typeFilter])
+    const end = typeof performance !== "undefined" ? performance.now() : 0;
+    if (notifications.length > 200) {
+      // lightweight measurement to help diagnose filter perf on large lists
+      // eslint-disable-next-line no-console
+      console.log(
+        `[perf] filtered ${notifications.length} -> ${result.length} in ${Math.max(0, end - start).toFixed(1)}ms`,
+      );
+    }
+    return result;
+  }, [notifications, filter, typeFilter]);
 
   // Group notifications by type category
   const groupedNotifications = useMemo(() => {
-    const groups: Record<string, Notification[]> = {}
+    const groups: Record<string, Notification[]> = {};
     for (const n of filteredNotifications) {
-      const groupKey = TYPE_GROUPS[n.type] ?? "Other"
-      if (!groups[groupKey]) groups[groupKey] = []
-      groups[groupKey].push(n)
+      const groupKey = TYPE_GROUPS[n.type] ?? "Other";
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(n);
     }
-    return groups
-  }, [filteredNotifications])
+    return groups;
+  }, [filteredNotifications]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.size === filteredNotifications.length) {
-      setSelectedIds(new Set())
+      setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredNotifications.map((n) => n.id)))
+      setSelectedIds(new Set(filteredNotifications.map((n) => n.id)));
     }
-  }
+  };
 
   const handleBulkArchive = async () => {
-    setArchiving(true)
+    setArchiving(true);
     try {
       await Promise.all(
-        Array.from(selectedIds).map((id) => patch(`/notifications/${id}/read`).catch(() => {}))
-      )
-      addToast({ type: "success", title: "Archived", description: `${selectedIds.size} notification(s) archived.` })
-      setSelectedIds(new Set())
-      fetchNotifications()
+        Array.from(selectedIds).map((id) =>
+          patch(`/notifications/${id}/read`).catch(() => {}),
+        ),
+      );
+      addToast({
+        type: "success",
+        title: "Archived",
+        description: `${selectedIds.size} notification(s) archived.`,
+      });
+      setSelectedIds(new Set());
+      fetchNotifications();
     } catch {
-      addToast({ type: "error", title: "Archive failed" })
+      addToast({ type: "error", title: "Archive failed" });
     } finally {
-      setArchiving(false)
+      setArchiving(false);
     }
-  }
+  };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const totalFiltered = filteredNotifications.length;
+  const { shouldReduce, variants } = useListMotion(totalFiltered);
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (totalFiltered <= 200) return;
+    let last =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+    const handler = () => {
+      const now =
+        typeof performance !== "undefined" ? performance.now() : Date.now();
+      // eslint-disable-next-line no-console
+      console.log(
+        `[perf][scroll] ${totalFiltered} items, dt=${(now - last).toFixed(1)}ms`,
+      );
+      last = now;
+    };
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, [totalFiltered]);
 
   return (
     <div className="space-y-6">
@@ -315,7 +389,10 @@ export default function NotificationsPage() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="unread" className="rounded-lg text-sm font-body">
+            <TabsTrigger
+              value="unread"
+              className="rounded-lg text-sm font-body"
+            >
               Unread
               {unreadCount > 0 && (
                 <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-aurora-cyan/20 px-1.5 text-xs text-aurora-cyan animate-pulse-glow">
@@ -335,7 +412,9 @@ export default function NotificationsPage() {
                 onClick={() => setTypeFilter(tf.value)}
                 className={cn(
                   "px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors",
-                  typeFilter === tf.value ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground",
+                  typeFilter === tf.value
+                    ? "bg-white/10 text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {tf.label}
@@ -344,7 +423,11 @@ export default function NotificationsPage() {
           </div>
 
           <Link href="/notifications/archive">
-            <Button variant="outline" size="sm" className="glass-whisper text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="glass-whisper text-xs"
+            >
               Archive
             </Button>
           </Link>
@@ -354,10 +437,18 @@ export default function NotificationsPage() {
       {/* Bulk actions bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 px-4 py-3 glass rounded-xl">
-          <button type="button" onClick={toggleSelectAll} className="text-xs text-muted-foreground hover:text-foreground">
-            {selectedIds.size === filteredNotifications.length ? "Deselect all" : "Select all"}
+          <button
+            type="button"
+            onClick={toggleSelectAll}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            {selectedIds.size === filteredNotifications.length
+              ? "Deselect all"
+              : "Select all"}
           </button>
-          <span className="text-xs text-muted-foreground">{selectedIds.size} selected</span>
+          <span className="text-xs text-muted-foreground">
+            {selectedIds.size} selected
+          </span>
           <Button
             variant="outline"
             size="sm"
@@ -398,19 +489,23 @@ export default function NotificationsPage() {
         />
       ) : (
         <motion.div
-          initial="hidden"
-          animate="show"
-          variants={{ show: { transition: { staggerChildren: 0.03 } } }}
+          initial={shouldReduce ? undefined : "hidden"}
+          animate={shouldReduce ? undefined : "show"}
+          variants={variants}
           className="glass-premium rounded-2xl overflow-hidden holo-border"
         >
           <div className="divide-y divide-border">
-            {(Object.entries(groupedNotifications) as [string, Notification[]][]).map(([group, items]) => (
+            {(
+              Object.entries(groupedNotifications) as [string, Notification[]][]
+            ).map(([group, items]) => (
               <div key={group}>
                 {/* Group header */}
                 <div className="px-5 py-3 bg-white/[0.02] border-b border-white/[0.04]">
                   <h4 className="text-xs font-heading font-semibold text-muted-foreground uppercase tracking-wider">
                     {group}
-                    <span className="ml-2 text-xs font-normal text-muted-foreground/60">({items.length})</span>
+                    <span className="ml-2 text-xs font-normal text-muted-foreground/60">
+                      ({items.length})
+                    </span>
                   </h4>
                 </div>
                 {items.map((notification) => (
@@ -421,6 +516,7 @@ export default function NotificationsPage() {
                     onClick={handleNotificationClick}
                     selected={selectedIds.has(notification.id)}
                     onToggleSelect={toggleSelect}
+                    largeList={totalFiltered > STAGGER_CHILDREN_LIMIT}
                   />
                 ))}
               </div>
@@ -429,5 +525,5 @@ export default function NotificationsPage() {
         </motion.div>
       )}
     </div>
-  )
+  );
 }

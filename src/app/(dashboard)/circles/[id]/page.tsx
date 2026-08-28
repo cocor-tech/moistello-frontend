@@ -1,9 +1,11 @@
-"use client"
+"use client";
 
-import React, { useState, useMemo } from "react"
-import { useParams } from "next/navigation"
-import Link from "next/link"
-import { motion } from "framer-motion"
+import React, { useState, useMemo } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { useListMotion } from "@/lib/motion/list";
+import { useReducedMotion } from "framer-motion";
 import {
   DollarSign,
   Clock,
@@ -21,41 +23,42 @@ import {
   Check,
   Play,
   AlertCircle,
-} from "lucide-react"
-import { useCircle, useCircleMembers, useContribute, useJoinCircle, useStartCircle } from "@/hooks/use-circles"
-import { useCirclePayouts } from "@/hooks/use-payouts"
-import { useAuth } from "@/hooks/use-auth"
-import { useUIStore } from "@/stores/ui-store"
-import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
-import { Button } from "@/components/ui/button"
-import { Modal } from "@/components/ui/modal"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
-import { formatCurrency, formatDate } from "@/lib/formatters"
-import { copyToClipboard } from "@/lib/clipboard"
-import { cn } from "@/lib/cn"
-import type { Payout } from "@/types"
-import { CircleMembersPreview } from "./circle-members-preview"
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-}
+} from "lucide-react";
+import {
+  useCircle,
+  useCircleMembers,
+  useContribute,
+  useJoinCircle,
+  useStartCircle,
+} from "@/hooks/use-circles";
+import { useCirclePayouts } from "@/hooks/use-payouts";
+import { useAuth } from "@/hooks/use-auth";
+import { useUIStore } from "@/stores/ui-store";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency, formatDate } from "@/lib/formatters";
+import { copyToClipboard } from "@/lib/clipboard";
+import { cn } from "@/lib/cn";
+import type { Payout } from "@/types";
+import { CircleMembersPreview } from "./circle-members-preview";
 
 const cardItem = {
   hidden: { opacity: 0, y: 12, scale: 0.96 },
   show: { opacity: 1, y: 0, scale: 1 },
-}
+};
 
 function GlassStatCard({
   label,
   value,
   icon,
 }: {
-  label: string
-  value: string
-  icon: React.ReactNode
+  label: string;
+  value: string;
+  icon: React.ReactNode;
 }) {
   return (
     <motion.div
@@ -77,108 +80,129 @@ function GlassStatCard({
         </div>
       </div>
     </motion.div>
-  )
+  );
 }
 
 export default function CircleDetailPage() {
-  const params = useParams()
-  const circleId = params.id as string
+  const params = useParams();
+  const circleId = params.id as string;
 
-  const { user } = useAuth()
-  const { data: circle, isLoading, isError } = useCircle(circleId)
-  const { data: members = [] } = useCircleMembers(circleId)
-  const { data: payoutData, isLoading: payoutsLoading, isError: payoutsError } = useCirclePayouts(circleId, { limit: 5 })
-  const contribute = useContribute(circleId)
-  const joinCircle = useJoinCircle()
-  const startCircle = useStartCircle()
-  const addToast = useUIStore((s) => s.addToast)
+  const { user } = useAuth();
+  const { data: circle, isLoading, isError } = useCircle(circleId);
+  const { data: members = [] } = useCircleMembers(circleId);
+  const {
+    data: payoutData,
+    isLoading: payoutsLoading,
+    isError: payoutsError,
+  } = useCirclePayouts(circleId, { limit: 5 });
+  const contribute = useContribute(circleId);
+  const joinCircle = useJoinCircle();
+  const startCircle = useStartCircle();
+  const addToast = useUIStore((s) => s.addToast);
 
-  const [showContributeModal, setShowContributeModal] = useState(false)
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  const [inviteCode, setInviteCode] = useState("")
-  const [inviteCopied, setInviteCopied] = useState(false)
-  const [inviteLoading, setInviteLoading] = useState(false)
-  const [inviteError, setInviteError] = useState("")
-  const [joinLoading, setJoinLoading] = useState(false)
-  const [joinError, setJoinError] = useState<string | null>(null)
+  const [showContributeModal, setShowContributeModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
-  const [showJoinCodeModal, setShowJoinCodeModal] = useState(false)
-  const [joinCodeValue, setJoinCodeValue] = useState("")
-  const [joinCodeLoading, setJoinCodeLoading] = useState(false)
-  const [joinCodeError, setJoinCodeError] = useState<string | null>(null)
+  const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
+  const [joinCodeValue, setJoinCodeValue] = useState("");
+  const [joinCodeLoading, setJoinCodeLoading] = useState(false);
+  const [joinCodeError, setJoinCodeError] = useState<string | null>(null);
 
-  const isOrganizer = user?.id === circle?.organizerId
-  const isMember = members.some((m) => m.userId === user?.id)
-  const recentPayouts = payoutData?.payouts ?? []
+  const isOrganizer = user?.id === circle?.organizerId;
+  const isMember = members.some((m) => m.userId === user?.id);
+  const recentPayouts = payoutData?.payouts ?? [];
   const canJoin =
-    circle && !isMember && (circle.status === "pending" || circle.status === "active")
-  const canContribute = isMember && circle?.status === "active"
+    circle &&
+    !isMember &&
+    (circle.status === "pending" || circle.status === "active");
+  const canContribute = isMember && circle?.status === "active";
 
   const handleJoin = async () => {
-    setJoinLoading(true)
-    setJoinError(null)
+    setJoinLoading(true);
+    setJoinError(null);
     try {
-      await joinCircle.mutateAsync({ circleId })
-      setJoinLoading(false)
+      await joinCircle.mutateAsync({ circleId });
+      setJoinLoading(false);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        ?? (err instanceof Error ? err.message : "Failed to join circle")
-      setJoinError(msg)
-      setJoinLoading(false)
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ??
+        (err instanceof Error ? err.message : "Failed to join circle");
+      setJoinError(msg);
+      setJoinLoading(false);
     }
-  }
+  };
 
   const handleJoinWithCode = async () => {
-    if (!joinCodeValue.trim()) return
-    setJoinCodeLoading(true)
-    setJoinCodeError(null)
+    if (!joinCodeValue.trim()) return;
+    setJoinCodeLoading(true);
+    setJoinCodeError(null);
     try {
-      await joinCircle.mutateAsync({ circleId, payload: { inviteCode: joinCodeValue.trim() } as Record<string, unknown> })
-      setShowJoinCodeModal(false)
-      setJoinCodeValue("")
+      await joinCircle.mutateAsync({
+        circleId,
+        payload: { inviteCode: joinCodeValue.trim() } as Record<
+          string,
+          unknown
+        >,
+      });
+      setShowJoinCodeModal(false);
+      setJoinCodeValue("");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        ?? (err instanceof Error ? err.message : "Invalid invite code")
-      setJoinCodeError(msg)
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ??
+        (err instanceof Error ? err.message : "Invalid invite code");
+      setJoinCodeError(msg);
     } finally {
-      setJoinCodeLoading(false)
+      setJoinCodeLoading(false);
     }
-  }
+  };
 
   const handleGenerateInvite = async () => {
-    setInviteLoading(true)
-    setShowInviteModal(true)
+    setInviteLoading(true);
+    setShowInviteModal(true);
     try {
-      const { post } = await import("@/lib/api-client")
-      const res = await post<Record<string, unknown>>(`/circles/${circleId}/invites`, { maxUses: 10, ttlHours: 24 })
-      const body = res?.data as Record<string, unknown> ?? res
-      const inv = body?.invite as Record<string, unknown> ?? body
-      const code = String(inv?.code ?? "")
-      setInviteCode(code)
+      const { post } = await import("@/lib/api-client");
+      const res = await post<Record<string, unknown>>(
+        `/circles/${circleId}/invites`,
+        { maxUses: 10, ttlHours: 24 },
+      );
+      const body = (res?.data as Record<string, unknown>) ?? res;
+      const inv = (body?.invite as Record<string, unknown>) ?? body;
+      const code = String(inv?.code ?? "");
+      setInviteCode(code);
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-        ?? (err instanceof Error ? err.message : "Failed to generate invite code")
-      setInviteError(msg)
-      setInviteCode("error-generating-code")
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ??
+        (err instanceof Error ? err.message : "Failed to generate invite code");
+      setInviteError(msg);
+      setInviteCode("error-generating-code");
     } finally {
-      setInviteLoading(false)
+      setInviteLoading(false);
     }
-  }
+  };
 
   const handleCopyInvite = async () => {
-    const success = await copyToClipboard(inviteCode)
+    const success = await copyToClipboard(inviteCode);
     if (success) {
-      setInviteCopied(true)
-      setTimeout(() => setInviteCopied(false), 2000)
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
     }
-  }
+  };
 
   const freqLabel = circle
     ? circle.frequency.charAt(0).toUpperCase() + circle.frequency.slice(1)
-    : ""
+    : "";
 
   const overviewCards = useMemo(() => {
-    if (!circle) return []
+    if (!circle) return [];
     return [
       {
         label: "Contribution",
@@ -192,7 +216,9 @@ export default function CircleDetailPage() {
       },
       {
         label: "Payout Type",
-        value: circle.payoutType.charAt(0).toUpperCase() + circle.payoutType.slice(1),
+        value:
+          circle.payoutType.charAt(0).toUpperCase() +
+          circle.payoutType.slice(1),
         icon: <Shield className="h-4 w-4" />,
       },
       {
@@ -212,23 +238,29 @@ export default function CircleDetailPage() {
           : "Not a member",
         icon: <Hash className="h-4 w-4" />,
       },
-    ]
-  }, [circle, freqLabel, members, isMember, user])
+    ];
+  }, [circle, freqLabel, members, isMember, user]);
+  const { shouldReduce: overviewShouldReduce, variants: overviewVariants } =
+    useListMotion(overviewCards.length);
+  const overviewReducedMotion = useReducedMotion();
 
   const handleContribute = () => {
-    if (!circle) return
+    if (!circle) return;
     contribute.mutate(
       { amount: circle.contributionAmount },
       { onSuccess: () => setShowContributeModal(false) },
-    )
-  }
+    );
+  };
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <PageHeader
           title=""
-          breadcrumbs={[{ label: "Circles", href: "/circles" }, { label: "..." }]}
+          breadcrumbs={[
+            { label: "Circles", href: "/circles" },
+            { label: "..." },
+          ]}
         />
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -238,7 +270,7 @@ export default function CircleDetailPage() {
         <Skeleton variant="card" className="h-32 rounded-2xl" />
         <Skeleton variant="card" className="h-48 rounded-2xl" />
       </div>
-    )
+    );
   }
 
   if (isError || !circle) {
@@ -246,7 +278,10 @@ export default function CircleDetailPage() {
       <div className="space-y-6">
         <PageHeader
           title="Circle Not Found"
-          breadcrumbs={[{ label: "Circles", href: "/circles" }, { label: "Not Found" }]}
+          breadcrumbs={[
+            { label: "Circles", href: "/circles" },
+            { label: "Not Found" },
+          ]}
         />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -265,7 +300,7 @@ export default function CircleDetailPage() {
           </Link>
         </motion.div>
       </div>
-    )
+    );
   }
 
   return (
@@ -280,13 +315,23 @@ export default function CircleDetailPage() {
         action={
           <div className="flex items-center gap-2">
             <Badge
-              variant={circle.status === "active" ? "success" : circle.status === "pending" ? "warning" : "default"}
+              variant={
+                circle.status === "active"
+                  ? "success"
+                  : circle.status === "pending"
+                    ? "warning"
+                    : "default"
+              }
             >
               {circle.status}
             </Badge>
             {isOrganizer && (
               <Link href={`/circles/${circleId}/settings`}>
-                <Button variant="outline" size="sm" leftIcon={<Settings className="h-4 w-4" />}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Settings className="h-4 w-4" />}
+                >
                   Manage
                 </Button>
               </Link>
@@ -297,16 +342,54 @@ export default function CircleDetailPage() {
 
       <div className="flex flex-wrap gap-1.5 pb-2">
         {[
-          { href: `/circles/${circleId}/activity`, label: "Activity", icon: "Activity" },
-          { href: `/circles/${circleId}/analytics`, label: "Analytics", icon: "BarChart3" },
-          { href: `/circles/${circleId}/schedule`, label: "Schedule", icon: "Calendar" },
-          { href: `/circles/${circleId}/comments`, label: "Comments", icon: "MessageSquare" },
-          { href: `/circles/${circleId}/members`, label: "Members", icon: "Users" },
-          { href: `/circles/${circleId}/rounds`, label: "Rounds", icon: "RotateCw" },
-          { href: `/circles/${circleId}/export`, label: "Export", icon: "Download" },
-          ...(isOrganizer ? [{ href: `/circles/${circleId}/settings`, label: "Settings", icon: "Settings" }] : []),
+          {
+            href: `/circles/${circleId}/activity`,
+            label: "Activity",
+            icon: "Activity",
+          },
+          {
+            href: `/circles/${circleId}/analytics`,
+            label: "Analytics",
+            icon: "BarChart3",
+          },
+          {
+            href: `/circles/${circleId}/schedule`,
+            label: "Schedule",
+            icon: "Calendar",
+          },
+          {
+            href: `/circles/${circleId}/comments`,
+            label: "Comments",
+            icon: "MessageSquare",
+          },
+          {
+            href: `/circles/${circleId}/members`,
+            label: "Members",
+            icon: "Users",
+          },
+          {
+            href: `/circles/${circleId}/rounds`,
+            label: "Rounds",
+            icon: "RotateCw",
+          },
+          {
+            href: `/circles/${circleId}/export`,
+            label: "Export",
+            icon: "Download",
+          },
+          ...(isOrganizer
+            ? [
+                {
+                  href: `/circles/${circleId}/settings`,
+                  label: "Settings",
+                  icon: "Settings",
+                },
+              ]
+            : []),
         ].map((link) => (
-          <Link key={link.href} href={link.href}
+          <Link
+            key={link.href}
+            href={link.href}
             className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-body font-medium glass-whisper text-muted-foreground hover:text-foreground hover:glass-premium transition-all"
           >
             {link.label}
@@ -315,9 +398,9 @@ export default function CircleDetailPage() {
       </div>
 
       <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
+        variants={overviewVariants}
+        initial={overviewShouldReduce ? undefined : "hidden"}
+        animate={overviewShouldReduce ? undefined : "show"}
         className="grid grid-cols-2 md:grid-cols-3 gap-4"
       >
         {overviewCards.map((card) => (
@@ -337,10 +420,10 @@ export default function CircleDetailPage() {
         <div className="glass rounded-2xl overflow-x-auto p-6">
           <div className="flex items-center gap-0 min-w-max">
             {Array.from({ length: circle.maxMembers }).map((_, i) => {
-              const roundNum = i + 1
-              const isCurrent = roundNum === circle.currentRound
-              const isCompleted = roundNum < circle.currentRound
-              const isUpcoming = roundNum > circle.currentRound
+              const roundNum = i + 1;
+              const isCurrent = roundNum === circle.currentRound;
+              const isCompleted = roundNum < circle.currentRound;
+              const isUpcoming = roundNum > circle.currentRound;
 
               return (
                 <div key={roundNum} className="flex items-center">
@@ -349,8 +432,10 @@ export default function CircleDetailPage() {
                       whileHover={{ scale: 1.15 }}
                       className={cn(
                         "relative flex h-10 w-10 items-center justify-center rounded-full text-sm font-heading font-semibold transition-all",
-                        isCompleted && "gradient-bg-extended text-white shadow-lg",
-                        isCurrent && "gradient-bg text-white animate-pulse-glow shadow-xl ring-4 ring-aurora-violet/30",
+                        isCompleted &&
+                          "gradient-bg-extended text-white shadow-lg",
+                        isCurrent &&
+                          "gradient-bg text-white animate-pulse-glow shadow-xl ring-4 ring-aurora-violet/30",
                         isUpcoming && "glass text-muted-foreground",
                       )}
                     >
@@ -377,7 +462,7 @@ export default function CircleDetailPage() {
                     />
                   )}
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -393,7 +478,8 @@ export default function CircleDetailPage() {
               onClick={() => setShowContributeModal(true)}
               className="h-14 w-full md:w-auto holo-glow"
             >
-              Contribute {formatCurrency(circle.contributionAmount, circle.currency)}
+              Contribute{" "}
+              {formatCurrency(circle.contributionAmount, circle.currency)}
             </Button>
           </motion.div>
         )}
@@ -427,10 +513,27 @@ export default function CircleDetailPage() {
             variant="premium"
             size="lg"
             leftIcon={<Play className="h-5 w-5" />}
-            onClick={() => startCircle.mutate(circleId, {
-            onSuccess: () => addToast({ type: "success", title: "Rounds started!", description: "Your circle is now active." }),
-            onError: (err) => { const m = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? (err instanceof Error ? err.message : "Failed to start"); addToast({ type: "error", title: "Failed to start", description: m }) },
-          })}
+            onClick={() =>
+              startCircle.mutate(circleId, {
+                onSuccess: () =>
+                  addToast({
+                    type: "success",
+                    title: "Rounds started!",
+                    description: "Your circle is now active.",
+                  }),
+                onError: (err) => {
+                  const m =
+                    (err as { response?: { data?: { error?: string } } })
+                      ?.response?.data?.error ??
+                    (err instanceof Error ? err.message : "Failed to start");
+                  addToast({
+                    type: "error",
+                    title: "Failed to start",
+                    description: m,
+                  });
+                },
+              })
+            }
             isLoading={startCircle.isPending}
           >
             Start Rounds
@@ -485,7 +588,10 @@ export default function CircleDetailPage() {
         {payoutsLoading ? (
           <div className="glass rounded-2xl overflow-hidden divide-y divide-border">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-4">
+              <div
+                key={i}
+                className="flex items-center justify-between px-5 py-4"
+              >
                 <div className="space-y-2">
                   <Skeleton variant="text" width="180px" />
                   <Skeleton variant="text" width="120px" />
@@ -568,19 +674,25 @@ export default function CircleDetailPage() {
       >
         <div className="space-y-3">
           <div className="glass-whisper rounded-xl p-3 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground font-body">Amount</span>
+            <span className="text-sm text-muted-foreground font-body">
+              Amount
+            </span>
             <span className="text-sm font-heading font-semibold text-foreground dark:text-white">
               {formatCurrency(circle.contributionAmount, circle.currency)}
             </span>
           </div>
           <div className="glass-whisper rounded-xl p-3 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground font-body">Circle</span>
+            <span className="text-sm text-muted-foreground font-body">
+              Circle
+            </span>
             <span className="text-sm font-heading font-semibold text-foreground dark:text-white">
               {circle.name}
             </span>
           </div>
           <div className="glass-whisper rounded-xl p-3 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground font-body">Round</span>
+            <span className="text-sm text-muted-foreground font-body">
+              Round
+            </span>
             <span className="text-sm font-heading font-semibold text-foreground dark:text-white">
               {circle.currentRound}
             </span>
@@ -593,7 +705,10 @@ export default function CircleDetailPage() {
 
       <Modal
         isOpen={showInviteModal}
-        onClose={() => { setShowInviteModal(false); setInviteCode("") }}
+        onClose={() => {
+          setShowInviteModal(false);
+          setInviteCode("");
+        }}
         title="Invite Members"
         description="Share this code with people you want to invite."
         size="sm"
@@ -604,9 +719,15 @@ export default function CircleDetailPage() {
               {inviteCode || (
                 <span className="inline-flex gap-1">
                   Generating
-                  <span className="animate-bounce [animation-delay:0ms]">.</span>
-                  <span className="animate-bounce [animation-delay:200ms]">.</span>
-                  <span className="animate-bounce [animation-delay:400ms]">.</span>
+                  <span className="animate-bounce [animation-delay:0ms]">
+                    .
+                  </span>
+                  <span className="animate-bounce [animation-delay:200ms]">
+                    .
+                  </span>
+                  <span className="animate-bounce [animation-delay:400ms]">
+                    .
+                  </span>
                 </span>
               )}
             </p>
@@ -616,21 +737,32 @@ export default function CircleDetailPage() {
               variant="primary"
               size="md"
               className="w-full"
-              leftIcon={inviteCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              leftIcon={
+                inviteCopied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )
+              }
               onClick={handleCopyInvite}
             >
               {inviteCopied ? "Copied!" : "Copy Code"}
             </Button>
           )}
           {inviteCode === "error-generating-code" && (
-            <p className="text-sm text-red-400 text-center">{inviteError || "Failed to generate invite code. Try again."}</p>
+            <p className="text-sm text-red-400 text-center">
+              {inviteError || "Failed to generate invite code. Try again."}
+            </p>
           )}
           {inviteCode && (
             <Button
               variant="outline"
               size="md"
               className="w-full"
-              onClick={() => { setShowInviteModal(false); setInviteCode("") }}
+              onClick={() => {
+                setShowInviteModal(false);
+                setInviteCode("");
+              }}
             >
               Close
             </Button>
@@ -640,7 +772,11 @@ export default function CircleDetailPage() {
 
       <Modal
         isOpen={showJoinCodeModal}
-        onClose={() => { setShowJoinCodeModal(false); setJoinCodeValue(""); setJoinCodeError(null) }}
+        onClose={() => {
+          setShowJoinCodeModal(false);
+          setJoinCodeValue("");
+          setJoinCodeError(null);
+        }}
         title="Enter Invite Code"
         description="This circle is private. Enter an invite code to join."
         size="sm"
@@ -669,5 +805,5 @@ export default function CircleDetailPage() {
         </div>
       </Modal>
     </div>
-  )
+  );
 }
