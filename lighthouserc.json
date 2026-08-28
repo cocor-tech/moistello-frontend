@@ -10,9 +10,9 @@
     },
     "assert": {
       "assertions": {
-        "largest-contentful-paint": ["error", {"maxNumericValue": 2500}],
-        "cumulative-layout-shift": ["error", {"maxNumericValue": 0.1}],
-        "total-byte-weight": ["error", {"maxNumericValue": 1500000}]
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
+        "total-byte-weight": ["error", { "maxNumericValue": 1500000 }]
       }
     }
   }
