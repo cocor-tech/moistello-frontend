@@ -1,16 +1,11 @@
 "use client";
 
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useId,
-} from "react";
+import React, { useEffect, useState, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 const sizeClasses = {
   sm: "max-w-sm",
@@ -42,25 +37,18 @@ export function Modal({
   className,
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
-  const modalRef = useRef<HTMLDivElement | null>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
   const uniqueId = useId();
   const titleId = uniqueId;
   const descriptionId = description ? `${uniqueId}-desc` : undefined;
 
   useEffect(() => {
     if (isOpen) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
       setMounted(true);
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
-      const timer = setTimeout(() => {
-        setMounted(false);
-        if (previousActiveElement.current && typeof previousActiveElement.current.focus === "function") {
-          previousActiveElement.current.focus();
-        }
-      }, 400);
+      const timer = setTimeout(() => setMounted(false), 400);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -68,42 +56,8 @@ export function Modal({
   useEffect(() => {
     return () => {
       document.body.style.overflow = "";
-      if (previousActiveElement.current && typeof previousActiveElement.current.focus === "function") {
-        previousActiveElement.current.focus();
-      }
     };
   }, []);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || !modalRef.current) return;
-
-      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      );
-      if (focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    },
-    [onClose],
-  );
 
   if (!mounted) return null;
 
@@ -130,7 +84,6 @@ export function Modal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            onKeyDown={handleKeyDown}
             tabIndex={-1}
             className={cn(
               "glass-flagship backdrop-blur-xl rounded-2xl w-full mx-2 md:mx-0 overflow-hidden",
@@ -149,7 +102,10 @@ export function Modal({
                     {title}
                   </h2>
                   {description && (
-                    <p id={descriptionId} className="mt-1 text-sm text-muted-foreground">
+                    <p
+                      id={descriptionId}
+                      className="mt-1 text-sm text-muted-foreground"
+                    >
                       {description}
                     </p>
                   )}
