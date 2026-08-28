@@ -7,6 +7,7 @@ import "./globals.css"
 import { QueryProvider } from "@/providers/query-provider"
 import { WsProvider } from "@/providers/ws-provider"
 import { ThemeProvider } from "@/providers/theme-provider"
+import { MotionProvider } from "@/providers/motion-provider"
 import { AuthProvider } from "@/providers/auth-provider"
 import { ToastProvider } from "@/providers/toast-provider"
 import { MonitoringProvider } from "@/providers/monitoring-provider"
@@ -151,15 +152,40 @@ export default function RootLayout({
          <script
             type="text/javascript"
             nonce={nonce}
+            async
+            defer
             dangerouslySetInnerHTML={{
               __html: `
-(function(m,e,t,r,i,k,a){
-  m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-  m[i].l=1*new Date();
-  for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-})(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109691925', 'ym');
-ym(109691925, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+(function(){
+  /* Yandex Metrika — loaded asynchronously so it never blocks LCP/CLS.
+     Wrapped in a consent check: if the user has declined analytics cookies
+     (stored as moistello_analytics_consent=false), we skip the initialisation
+     entirely. The tag.js script itself is fetched by the browser engine via
+     the dynamic <script async> insertion below, which means it does not
+     participate in the critical rendering path. */
+  try {
+    var consent = localStorage.getItem('moistello_analytics_consent');
+    if (consent === 'false') return;
+  } catch(e) {}
+  (function(m,e,t,r,i,k,a){
+    m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t);a=e.getElementsByTagName(t)[0];
+    k.async=1;k.defer=1;k.src=r;
+    a.parentNode.insertBefore(k,a);
+  })(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=109691925','ym');
+  ym(109691925,'init',{
+    ssr:true,
+    webvisor:true,
+    clickmap:true,
+    ecommerce:'dataLayer',
+    referrer:document.referrer,
+    url:location.href,
+    accurateTrackBounce:true,
+    trackLinks:true
+  });
+})();
               `,
             }}
           />
@@ -174,15 +200,17 @@ ym(109691925, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLa
         <QueryProvider>
           <WsProvider>
           <ThemeProvider>
-            <AuthProvider>
-              <LocaleProvider>
-                <ToastProvider>
-                  <MonitoringProvider>
-                    {children}
-                  </MonitoringProvider>
-                </ToastProvider>
-              </LocaleProvider>
-            </AuthProvider>
+            <MotionProvider>
+              <AuthProvider>
+                <LocaleProvider>
+                  <ToastProvider>
+                    <MonitoringProvider>
+                      {children}
+                    </MonitoringProvider>
+                  </ToastProvider>
+                </LocaleProvider>
+              </AuthProvider>
+            </MotionProvider>
           </ThemeProvider>
           </WsProvider>
         </QueryProvider>

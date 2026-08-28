@@ -1,9 +1,24 @@
 "use client";
 
-import { SwaggerUIPage } from "@/components/swagger-ui";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const SwaggerUIPage = dynamic(
+  () => import("@/components/swagger-ui").then((mod) => mod.SwaggerUIPage),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-8 w-1/3 rounded-lg" />
+        <Skeleton className="h-4 w-2/3 rounded-lg" />
+        <Skeleton className="h-[450px] w-full rounded-2xl" />
+      </div>
+    ),
+  }
+);
 
 export default function ApiDocsPage() {
   useEffect(() => {

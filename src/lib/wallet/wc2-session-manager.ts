@@ -1,6 +1,7 @@
 import type { NetworkType } from "./types"
 import { getRelayMonitor } from "./wc2-relay"
 import { getWC2SessionStore } from "./wc2-session-store"
+import { getSignClientClass } from "./wc2-sign-client"
 import { WC2_QR_EXPIRATION_MS } from "@/lib/constants"
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ""
@@ -108,7 +109,7 @@ class WCSessionOrchestrator {
     if (this.signClient) return this.signClient
     if (this.initPromise) return this.initPromise
     this.initPromise = (async () => {
-      const { SignClient } = await import("@walletconnect/sign-client")
+      const SignClient = await getSignClientClass()
       this.signClient = await SignClient.init({
         projectId: PROJECT_ID || undefined,
         relayUrl: RELAY_URL,
