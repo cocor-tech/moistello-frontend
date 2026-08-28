@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Users, Shield, Dices, ListOrdered, Gavel, Vote } from "lucide-react";
 import {
   Card,
@@ -42,7 +43,7 @@ interface CircleCardProps {
   className?: string;
 }
 
-export function CircleCard({ circle, onClick, className }: CircleCardProps) {
+export const CircleCard = memo(function CircleCard({ circle, onClick, className }: CircleCardProps) {
   const freqLabel = circle.frequency.charAt(0).toUpperCase() + circle.frequency.slice(1);
   const memberCount = circle.memberCount ?? 0;
   const totalRounds = circle.maxMembers;
@@ -117,4 +118,6 @@ export function CircleCard({ circle, onClick, className }: CircleCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+CircleCard.displayName = "CircleCard";

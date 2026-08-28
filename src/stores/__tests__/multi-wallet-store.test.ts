@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { WalletAdapter } from "@/lib/wallet/types";
+import type { WalletAdapter, WalletSession } from "@/lib/wallet/types";
 
-const { getAdapter, sessionConnect } = vi.hoisted(() => ({
+const { detect, getAdapter, sessionConnect, getAll, getActive, fetchBalanceWithBackoff } = vi.hoisted(() => ({
+  detect: vi.fn(() => []),
   getAdapter: vi.fn(),
   sessionConnect: vi.fn(),
+  getAll: vi.fn<() => WalletSession[]>(() => []),
+  getActive: vi.fn<() => WalletSession | null>(() => null),
+  fetchBalanceWithBackoff: vi.fn(),
 }));
 
 vi.mock("@/lib/wallet/registry", () => ({
   getWalletRegistry: () => ({
+    detect,
     getAdapter,
   }),
 }));
@@ -15,7 +20,19 @@ vi.mock("@/lib/wallet/registry", () => ({
 vi.mock("@/lib/wallet/session-manager", () => ({
   getSessionManager: () => ({
     connect: sessionConnect,
+    disconnect: vi.fn(),
+    switchTo: vi.fn(),
+    getAll,
+    getActive,
   }),
+}));
+
+vi.mock("@/lib/wallet/adapters", () => ({
+  initializeWalletAdapters: vi.fn(),
+}));
+
+vi.mock("@/lib/wallet/balance-cache", () => ({
+  fetchBalanceWithBackoff,
 }));
 
 import { useMultiWalletStore } from "@/stores/multi-wallet-store";
@@ -55,6 +72,9 @@ function createAdapter(
 describe("multi-wallet-store connect concurrency", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    detect.mockReturnValue([]);
+    getAll.mockReturnValue([]);
+    getActive.mockReturnValue(null);
     useMultiWalletStore.setState({
       activeWalletId: null,
       wallets: {},
@@ -136,5 +156,90 @@ describe("multi-wallet-store connect concurrency", () => {
     expect(Object.keys(useMultiWalletStore.getState().wallets)).toEqual([
       "freighter",
     ]);
+  });
+
+  it("checks saved wallet sessions with bounded parallel probes during init", async () => {
+    const slowProbe = deferred<boolean>();
+    const fastAdapter = createAdapter(vi.fn());
+    const slowAdapter = createAdapter(vi.fn());
+    fastAdapter.isConnected = vi.fn().mockResolvedValue(true);
+    slowAdapter.isConnected = vi.fn().mockReturnValue(slowProbe.promise);
+    getAll.mockReturnValue([
+      {
+        walletId: "freighter",
+        publicKey: "GFAST",
+        network: "testnet",
+        lastConnected: 2,
+      },
+      {
+        walletId: "xbull",
+        publicKey: "GSLOW",
+        network: "testnet",
+        lastConnected: 1,
+      },
+    ]);
+    getActive.mockReturnValue({
+      walletId: "freighter",
+      publicKey: "GFAST",
+      network: "testnet",
+      lastConnected: 2,
+    });
+    getAdapter.mockImplementation((walletId: string) =>
+      walletId === "freighter" ? fastAdapter : slowAdapter
+    );
+
+    const initPromise = useMultiWalletStore.getState().init();
+    await vi.waitFor(() => {
+      expect(fastAdapter.isConnected).toHaveBeenCalled();
+      expect(slowAdapter.isConnected).toHaveBeenCalled();
+    });
+
+    slowProbe.resolve(false);
+    await initPromise;
+
+    expect(useMultiWalletStore.getState().wallets.freighter.status).toBe("connected");
+    expect(useMultiWalletStore.getState().wallets.xbull.status).toBe("disconnected");
+    expect(useMultiWalletStore.getState()).toMatchObject({
+      activeWalletId: "freighter",
+      address: "GFAST",
+      isConnected: true,
+    });
+  });
+
+  it("resyncs convenience state after refreshing an active wallet balance", async () => {
+    const adapter = createAdapter(vi.fn());
+    fetchBalanceWithBackoff.mockResolvedValue({ xlm: "42", usdc: "7" });
+    useMultiWalletStore.setState({
+      activeWalletId: "freighter",
+      wallets: {
+        freighter: {
+          adapter,
+          publicKey: "GBALANCE",
+          network: "testnet",
+          balance: null,
+          lastConnected: Date.now(),
+          error: null,
+          status: "connected",
+        },
+      },
+      isConnected: false,
+      address: null,
+      activeAdapter: null,
+    });
+
+    await useMultiWalletStore.getState().refreshBalance("freighter");
+
+    expect(fetchBalanceWithBackoff).toHaveBeenCalledWith("GBALANCE", {
+      forceRefresh: false,
+    });
+    expect(useMultiWalletStore.getState()).toMatchObject({
+      isConnected: true,
+      address: "GBALANCE",
+      activeAdapter: adapter,
+    });
+    expect(useMultiWalletStore.getState().wallets.freighter.balance).toEqual({
+      xlm: "42",
+      usdc: "7",
+    });
   });
 });
