@@ -201,24 +201,45 @@ export function useContribute(circleId: string) {
         payload
       ),
     onMutate: async (newContribution) => {
+      // Cancel any outgoing refetches so they do not overwrite the optimistic update.
       await queryClient.cancelQueries({ queryKey: ["circle", circleId] });
       await queryClient.cancelQueries({ queryKey: ["circle-rounds", circleId] });
 
+      // Snapshot the current cache values so we can roll back on error.
       const previousCircle = queryClient.getQueryData<Circle | null>(["circle", circleId]);
       const previousRounds = queryClient.getQueryData<Contribution[]>(["circle-rounds", circleId]);
 
+      // ── Stable temp id ────────────────────────────────────────────────────
+      // Using crypto.randomUUID() (or a predictable prefix+timestamp fallback)
+      // gives a stable id for the lifetime of this mutation, unlike the raw
+      // `Date.now()` value which could collide under rapid firing.
+      const tempId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? `optimistic-${crypto.randomUUID()}`
+          : `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      // ── Optimistic circle update ──────────────────────────────────────────
       if (previousCircle) {
-        queryClient.setQueryData<Circle | null>(["circle", circleId], {
-          ...previousCircle,
-          totalContributions: (previousCircle.totalContributions ?? 0) + (newContribution.amount ?? 0),
+        queryClient.setQueryData<Circle | null>(["circle", circleId], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            totalContributions: (old.totalContributions ?? 0) + (newContribution.amount ?? 0),
+          };
         });
       }
 
+      // ── Optimistic rounds update ──────────────────────────────────────────
+      // Use a clearly synthetic sentinel so optimistic rows are never confused
+      // with server-confirmed rows.  The real userId is set once the server
+      // responds and the query is invalidated/refetched.
+      const optimisticUserId = "optimistic-pending";
+
       if (previousRounds) {
         const optimisticRound: Contribution = {
-          id: `temp-${Date.now()}`,
+          id: tempId,
           circleId,
-          userId: "current-user",
+          userId: optimisticUserId,
           roundNumber: newContribution.roundNumber ?? previousCircle?.currentRound ?? 1,
           amount: newContribution.amount,
           status: "pending",
@@ -227,20 +248,25 @@ export function useContribute(circleId: string) {
         };
         queryClient.setQueryData<Contribution[]>(
           ["circle-rounds", circleId],
-          [...previousRounds, optimisticRound]
+          (old) => [...(old ?? []), optimisticRound],
         );
       }
 
+      // Return snapshot context for rollback.
       return { previousCircle, previousRounds };
     },
     onError: (err, _newContribution, context) => {
-      // Roll the optimistic update back before surfacing the failure, so the
-      // UI is not still showing a contribution that never landed.
-      if (context?.previousCircle) {
-        queryClient.setQueryData(["circle", circleId], context.previousCircle);
-      }
-      if (context?.previousRounds) {
-        queryClient.setQueryData(["circle-rounds", circleId], context.previousRounds);
+      // ── Reliable rollback ─────────────────────────────────────────────────
+      // Restore regardless of whether snapshot values are non-null.  An
+      // undefined context means onMutate never ran (e.g. synchronous throw
+      // before any await), so we just invalidate to force a fresh fetch.
+      if (context) {
+        queryClient.setQueryData(["circle", circleId], context.previousCircle ?? null);
+        queryClient.setQueryData(["circle-rounds", circleId], context.previousRounds ?? []);
+      } else {
+        // Fallback: force a refetch so the UI is not stuck on stale data.
+        queryClient.invalidateQueries({ queryKey: ["circle", circleId] });
+        queryClient.invalidateQueries({ queryKey: ["circle-rounds", circleId] });
       }
 
       console.error("[useContribute] Failed to contribute:", err);
@@ -250,10 +276,18 @@ export function useContribute(circleId: string) {
         description: extractErrorMessage(err, "Could not submit contribution. Please try again."),
       });
     },
-    onSettled: () => {
+    onSuccess: (_data, _variables, _context) => {
+      // ── Single invalidation path ──────────────────────────────────────────
+      // Invalidate only on success so the server response replaces the
+      // optimistic entry.  onSettled previously ran invalidations on BOTH
+      // success and error paths, causing a double-invalidation on success
+      // (onSuccess would have been added later) and masking rollbacks on error.
       queryClient.invalidateQueries({ queryKey: ["circle", circleId] });
       queryClient.invalidateQueries({ queryKey: ["circle-rounds", circleId] });
     },
+    // onSettled intentionally omitted: invalidation is handled exclusively in
+    // onSuccess above and rollback + toast in onError, so there is no shared
+    // teardown logic that needs to run unconditionally.
   });
 }
 
