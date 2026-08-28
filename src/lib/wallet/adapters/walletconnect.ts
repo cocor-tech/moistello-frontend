@@ -1,6 +1,7 @@
 import type { WalletAdapter, WalletMeta, NetworkType, SignOptions } from "../types"
 import { getRelayMonitor, type RelayStatus } from "../wc2-relay"
 import { getWC2SessionStore } from "../wc2-session-store"
+import { getSignClientClass } from "../wc2-sign-client"
 import { WC2_QR_EXPIRATION_MS } from "@/lib/constants"
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ""
@@ -128,7 +129,7 @@ export function createWalletConnectAdapter(): WalletAdapter {
   async function getOrInitSignClient(): Promise<unknown> {
     if (wcSignClient) return wcSignClient
 
-    const { SignClient } = await import("@walletconnect/sign-client")
+    const SignClient = await getSignClientClass()
     const initStart = performance.now()
     wcSignClient = await SignClient.init({
       projectId: PROJECT_ID || undefined,
