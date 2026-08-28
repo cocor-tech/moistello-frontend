@@ -1,58 +1,104 @@
-import { hmac } from "@noble/hashes/hmac.js"
-import { sha256 } from "@noble/hashes/sha2.js"
-import { bytesToHex } from "@noble/hashes/utils.js"
+import { hmac } from "@noble/hashes/hmac.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
+
+let inMemoryKey: Uint8Array | null = null;
+
+const LOCALSTORAGE_KEY = "wallet:hmac:key";
+const LOCALSTORAGE_TS = "wallet:hmac:key:ts";
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function hexToBytes(hex: string): Uint8Array {
+  const raw = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2)
+    raw[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  return raw;
+}
+
+function saveKeyToStorage(hex: string) {
+  try {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(LOCALSTORAGE_KEY, hex);
+    localStorage.setItem(LOCALSTORAGE_TS, String(Date.now()));
+  } catch (e) {
+    // ignore storage failures
+  }
+}
+
+export function _setHmacKeyForTest(hex: string): void {
+  inMemoryKey = hexToBytes(hex);
+}
+
+export function clearHmacKeyCache(): void {
+  inMemoryKey = null;
+  try {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(LOCALSTORAGE_KEY);
+    localStorage.removeItem(LOCALSTORAGE_TS);
+  } catch (e) {
+    // ignore
+  }
+}
+
+function getCachedKey(): Uint8Array | null {
+  if (inMemoryKey) return inMemoryKey;
+  try {
+    if (typeof window === "undefined") return null;
+    const hex = localStorage.getItem(LOCALSTORAGE_KEY);
+    const ts = Number(localStorage.getItem(LOCALSTORAGE_TS) || "0");
+    if (!hex || !ts) return null;
+    if (Date.now() - ts > CACHE_TTL_MS) {
+      localStorage.removeItem(LOCALSTORAGE_KEY);
+      localStorage.removeItem(LOCALSTORAGE_TS);
+      return null;
+    }
+    const bytes = hexToBytes(hex);
+    inMemoryKey = bytes;
+    return bytes;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fetchKeyFromServer(): Promise<Uint8Array> {
+  if (typeof window === "undefined")
+    throw new Error("Cannot fetch HMAC key server-side");
+  const res = await fetch("/api/wallet/hmac/key");
+  if (!res.ok) throw new Error(`Failed to get HMAC key: ${res.status}`);
+  const body = (await res.json()) as { keyHex: string };
+  const bytes = hexToBytes(body.keyHex);
+  inMemoryKey = bytes;
+  saveKeyToStorage(body.keyHex);
+  return bytes;
+}
 
 /**
- * The HMAC key is stored server-side in the WALLET_HMAC_KEY env var and
- * served to the client once per page load via GET /api/wallet/hmac/key.
- * This keeps the key out of the JS bundle (eliminating the NEXT_PUBLIC_
- * exposure) while still allowing synchronous HMAC computation client-side
- * after the key is cached.
- *
- * The endpoint returns 500 in production if WALLET_HMAC_KEY is unset — the
- * server must be configured before any HMAC-dependent feature works.
- *
- * The module starts fetching the key immediately on import.  The synchronous
- * `computeHmacSha256()` call below returns before the fetch completes only
- * during the narrow window between module init and first response — after
- * that the key is cached and all calls are synchronous in practice.
+ * Ensure a usable key is available, loading from memory, storage or the
+ * server. Returns null if a key could not be obtained.
  */
-let hmacKey: Uint8Array | null = null
-
-// Only the browser can resolve a relative URL against a page origin. When
-// this module is imported server-side (SSR / route handlers), Node's fetch
-// would throw "Invalid URL" — skip the fetch there entirely; the cached-key
-// behaviour below already degrades gracefully to "" until a client loads.
-if (typeof window !== "undefined") {
-  fetch("/api/wallet/hmac/key")
-    .then((res) => {
-      if (!res.ok) throw new Error(`Failed to get HMAC key: ${res.status}`)
-      return res.json() as Promise<{ keyHex: string }>
-    })
-    .then(({ keyHex }) => {
-      const raw = new Uint8Array(keyHex.length / 2)
-      for (let i = 0; i < keyHex.length; i += 2) {
-        raw[i / 2] = parseInt(keyHex.substring(i, i + 2), 16)
-      }
-      hmacKey = raw
-    })
-    .catch((err) => console.warn("[hmac] Failed to load key — HMAC will fail until retry:", err))
-}
-
-export function computeHmacSha256(data: string): string {
-  if (!hmacKey) {
-    // Key not yet loaded — callers that hit this during the first render
-    // window will get a non-matching HMAC (treated as empty/no data by the
-    // verification logic).  The key will be cached before any write path
-    // runs (login, session persist), so the narrow race is benign.
-    return ""
+export async function ensureHmacKey(): Promise<Uint8Array | null> {
+  const cached = getCachedKey();
+  if (cached) return cached;
+  try {
+    return await fetchKeyFromServer();
+  } catch (err) {
+    console.warn(
+      "[hmac] Failed to load key — HMAC will fail until retry:",
+      err,
+    );
+    return null;
   }
-  return bytesToHex(hmac(sha256 as never, hmacKey, new TextEncoder().encode(data)))
 }
 
-/** @internal for testing — inject a fixed key so tests don't need the server. */
-export function _setHmacKeyForTest(hex: string): void {
-  const raw = new Uint8Array(hex.length / 2)
-  for (let i = 0; i < hex.length; i += 2) raw[i / 2] = parseInt(hex.substring(i, i + 2), 16)
-  hmacKey = raw
+export function computeHmacSha256Sync(data: string): string {
+  if (!inMemoryKey) return "";
+  return bytesToHex(
+    hmac(sha256 as never, inMemoryKey, new TextEncoder().encode(data)),
+  );
+}
+
+export async function computeHmacSha256(data: string): Promise<string> {
+  const key = await ensureHmacKey();
+  if (!key) return "";
+  return bytesToHex(hmac(sha256 as never, key, new TextEncoder().encode(data)));
 }
