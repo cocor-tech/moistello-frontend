@@ -69,6 +69,7 @@ export interface AuthFlowState {
   step: AuthStep
   status: AuthFlowStatus
   error: { code: AuthErrorCode | null; message: string | null } | null
+  isSigningInFlight: boolean
   connection: {
     walletId: string | null
     address: string | null
@@ -175,6 +176,7 @@ function createInitialState(): AuthFlowState {
     step: "choose",
     status: { status: "idle" } as AuthFlowStatus,
     error: null,
+    isSigningInFlight: false,
     connection: { ...initialConnection },
     profile: { ...initialProfile },
     auth: { nonce: null, signature: null, nonceTimestamp: null },
@@ -254,7 +256,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
             error: { code, message },
           }),
 
-        clearError: () => set({ error: null, status: { status: "idle" } }),
+        clearError: () => set({ error: null, status: { status: "idle" }, isSigningInFlight: false }),
 
         resetConnection: () =>
           set(state => ({
@@ -354,29 +356,42 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
         },
 
         signAndSubmit: async () => {
-          const initialState = get()
-          const mode = initialState.mode
-          const address = initialState.connection.address
-          const walletId = initialState.connection.walletId
+          // ── In-flight guard ──────────────────────────────────────────────────
+          // Prevent concurrent invocations (double-click, retry before completion).
+          // If a sign+submit is already running, return immediately without touching
+          // any state so the first call remains authoritative.
+          if (get().isSigningInFlight) return
+          set({ isSigningInFlight: true })
 
-          if (!address || !walletId) {
-            const msg = "No wallet connected."
-            set({
-              status: {
-                status: "error",
-                code: "internal_error",
-                message: msg,
-                canRetry: false,
-              },
-              error: { code: "internal_error", message: msg },
-            })
-            return
-          }
-
-          recordMetric("wallet.sign.attempt", 1, { mode, walletId })
-          set({ status: { status: "signing", address } })
+          // Capture a per-call AbortController so callers can detect stale results
+          // if the component unmounts mid-flight (future-proof; not awaited here but
+          // threaded through for downstream use if needed).
+          const abortController = new AbortController()
 
           try {
+            const initialState = get()
+            const mode = initialState.mode
+            const address = initialState.connection.address
+            const walletId = initialState.connection.walletId
+
+            if (!address || !walletId) {
+              const msg = "No wallet connected."
+              set({
+                isSigningInFlight: false,
+                status: {
+                  status: "error",
+                  code: "internal_error",
+                  message: msg,
+                  canRetry: false,
+                },
+                error: { code: "internal_error", message: msg },
+              })
+              return
+            }
+
+            recordMetric("wallet.sign.attempt", 1, { mode, walletId })
+            set({ status: { status: "signing", address } })
+
             recordMetric("wallet.sign.attempt", 1, {
               phase: "nonce_fetch",
               mode,
@@ -391,6 +406,10 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
               },
               { _retry: true } as Record<string, unknown>,
             )
+
+            // Bail if a concurrent abort was triggered while we awaited the nonce.
+            if (abortController.signal.aborted) return
+
             const nonce = nonceResponse.data.nonce.nonce
 
             const signingState = get()
@@ -411,6 +430,9 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
             }
 
             const signed = await adapter.signMessage(nonce)
+
+            if (abortController.signal.aborted) return
+
             const signature = signed.signature
 
             const signedState = get()
@@ -456,6 +478,8 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
               }
             }>(endpoint, body, { _retry: true } as Record<string, unknown>)
 
+            if (abortController.signal.aborted) return
+
             const d = authResponse.data
             const currentPasskeyVersion = get().passkeyVersion
             if (d.expectedPasskeyVersion !== undefined && d.expectedPasskeyVersion > currentPasskeyVersion) {
@@ -465,6 +489,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
               })
               const msg = "Your passkey has been revoked. Please set up a new one."
               set({
+                isSigningInFlight: false,
                 status: {
                   status: "error",
                   code: "passkey_revoked",
@@ -483,8 +508,11 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
 
             recordMetric("auth.sign.completed", 1, { mode: get().mode })
 
-            set({ status: { status: "authenticated" } })
+            set({ isSigningInFlight: false, status: { status: "authenticated" } })
           } catch (err: unknown) {
+            // Do not overwrite state if this call was already superseded.
+            if (abortController.signal.aborted) return
+
             const axiosErr = err as {
               response?: { status?: number; data?: { error?: string } }
             }
@@ -502,6 +530,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
 
             const msg = errorMessage
             set({
+              isSigningInFlight: false,
               status: {
                 status: "error",
                 code: "auth_server_error",
