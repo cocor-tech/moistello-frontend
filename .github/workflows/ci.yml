@@ -48,6 +48,36 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Bundle analysis (static)
+        run: |
+          # generate source maps for analysis (Next may need productionBrowserSourceMaps)
+          npx source-map-explorer "./.next/static/**/*.js" --json > bundle-report.json || echo "bundle analysis skipped"
+
+  perf:
+    name: Performance (Lighthouse + Bundle Budget)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build for perf
+        run: npm run build
+      - name: Start Next.js
+        run: |
+          nohup npm run start -- -p 8080 &
+          npx wait-on http://localhost:8080
+        env:
+          PORT: 8080
+      - name: Run Lighthouse CI
+        run: npx lhci autorun --config=lighthouserc.json
+      - name: Check JS bundle budget
+        run: node tools/check-bundle-size.js
+        env:
+          JS_BUDGET: 1200000
 
   # E2E tests run on the Playwright config (headless Chromium).
   e2e:

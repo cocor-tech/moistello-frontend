@@ -1,0 +1,19 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "url": ["http://localhost:8080/"],
+      "settings": {
+        "emulatedFormFactor": "desktop",
+        "throttlingMethod": "provided"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["error", {"maxNumericValue": 2500}],
+        "cumulative-layout-shift": ["error", {"maxNumericValue": 0.1}],
+        "total-byte-weight": ["error", {"maxNumericValue": 1500000}]
+      }
+    }
+  }
+}
