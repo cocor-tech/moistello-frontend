@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOptimisticMutation, OPTIMISTIC_PENDING_USER_ID } from "./use-optimistic-mutation";
+import { useOptimisticMutation, OPTIMISTIC_PENDING_USER_ID, createTempId } from "./use-optimistic-mutation";
 import { get, post } from "@/lib/api-client";
 import { useUIStore } from "@/stores/ui-store";
 import { queryKeys } from "@/lib/query-keys";
@@ -64,11 +64,9 @@ interface ContributePayload {
 function normalizeCircle(c: Record<string, unknown>): Circle {
   const out: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(c)) {
-    // Convert sql.NullString {String, Valid} → raw string or null
     if (val && typeof val === "object" && "Valid" in val && "String" in val) {
       out[key] = (val as { String: string }).String || null
     } else if (val && typeof val === "object" && "Valid" in val && "Time" in val) {
-      // Convert sql.NullTime {Time, Valid} → ISO string or null
       out[key] = (val as { Time: string }).Time || null
     } else {
       out[key] = val
@@ -195,96 +193,59 @@ export function useJoinCircle() {
 export function useContribute(circleId: string) {
   const addToast = useUIStore((s) => s.addToast);
 
-  return useOptimisticMutation<ContributePayload, ApiResponse<Contribution>>({
-    mutationFn: (payload: ContributePayload) =>
-      post<ApiResponse<Contribution>>(`/circles/${circleId}/contribute`, payload),
-    // Both the circle detail and its rounds list are optimistically updated
-    // and must be invalidated together.
+  return useOptimisticMutation<ContributePayload, Contribution>({
+    mutationFn: async (payload) => {
+      const response = await post<ApiResponse<Contribution>>(
+        `/circles/${circleId}/contribute`,
+        payload,
+      );
+      return response.data as Contribution;
+    },
     queryKeys: [
       queryKeys.circles.detail(circleId),
       queryKeys.circles.rounds(circleId),
+      ["contributions", circleId],
     ],
-    // Dedup: a double-click / rapid refire with the same round+amount is
-    // ignored while the first request is still pending, so the optimistic
-    // entry is never applied twice.
-    dedupeKey: (payload) =>
-      `${circleId}:${payload.roundNumber ?? "current"}:${payload.amount}`,
-    applyOptimistic: (newContribution, tempId, queryClient) => {
-      const previousCircle = queryClient.getQueryData<Circle | null>(queryKeys.circles.detail(circleId));
-      const previousRounds = queryClient.getQueryData<Contribution[]>(queryKeys.circles.rounds(circleId));
+    dedupeKey: (vars) => `contribute-${circleId}-${vars.roundNumber ?? "current"}-${vars.amount}`,
+    applyOptimistic: (variables, tempId, qc) => {
+      const circleKey = queryKeys.circles.detail(circleId);
+      const roundsKey = queryKeys.circles.rounds(circleId);
 
-      // ── Optimistic circle update ──────────────────────────────────────────
-      if (previousCircle) {
-        queryClient.setQueryData<Circle | null>(queryKeys.circles.detail(circleId), (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            totalContributions: (old.totalContributions ?? 0) + (newContribution.amount ?? 0),
-          };
+      const currentCircle = qc.getQueryData<Circle>(circleKey);
+      if (currentCircle) {
+        qc.setQueryData<Circle>(circleKey, {
+          ...currentCircle,
+          totalContributions: (currentCircle.totalContributions ?? 0) + variables.amount,
         });
       }
 
-      // ── Optimistic rounds update ──────────────────────────────────────────
-      // The synthetic sentinel userId comes from the shared utility so
-      // optimistic rows are never confused with server-confirmed rows across
-      // every hook. The real userId is set once the server responds and the
-      // query is invalidated/refetched.
-      if (previousRounds) {
-        const optimisticRound: Contribution = {
-          id: tempId,
-          circleId,
-          userId: OPTIMISTIC_PENDING_USER_ID,
-          roundNumber: newContribution.roundNumber ?? previousCircle?.currentRound ?? 1,
-          amount: newContribution.amount,
-          status: "pending",
-          onTime: true,
-          createdAt: new Date().toISOString(),
-        };
-        queryClient.setQueryData<Contribution[]>(
-          queryKeys.circles.rounds(circleId),
-          (old) => [...(old ?? []), optimisticRound],
-        );
-      }
+      const currentRounds = qc.getQueryData<CircleRound[]>(roundsKey) ?? [];
+      const newRound: CircleRound = {
+        id: tempId,
+        circleId,
+        userId: OPTIMISTIC_PENDING_USER_ID,
+        roundNumber: variables.roundNumber ?? currentCircle?.currentRound ?? 1,
+        amount: variables.amount,
+        status: "pending",
+        onTime: true,
+        submittedAt: new Date().toISOString(),
+      };
+      qc.setQueryData<CircleRound[]>(roundsKey, [...currentRounds, newRound]);
+    },
+    onSuccess: () => {
+      addToast({
+        type: "success",
+        title: "Contribution successful",
+        description: "Your contribution has been recorded.",
+      });
     },
     onError: (err) => {
       console.error("[useContribute] Failed to contribute:", err);
       addToast({
         type: "error",
-        title: "Failed to contribute",
-        description: extractErrorMessage(err, "Could not submit contribution. Please try again."),
+        title: "Contribution failed",
+        description: extractErrorMessage(err, "Could not record contribution. Please try again."),
       });
     },
-  });
-}
-
-export function useCircleMembers(circleId: string) {
-  return useQuery({
-    queryKey: queryKeys.circles.members(circleId),
-    queryFn: async () => {
-      const response = await get<ApiResponse<{ members: CircleMember[] }>>(
-        `/circles/${circleId}/members`
-      );
-      return response.data?.members ?? [];
-    },
-    enabled: !!circleId,
-  });
-}
-
-export function useCircleRounds(circleId: string) {
-  return useQuery({
-    queryKey: queryKeys.circles.rounds(circleId),
-    queryFn: async () => {
-      const response = await get<
-        ApiResponse<{
-          rounds: CircleRound[]
-          currentRound: number
-          totalMembers: number
-        }>
-      >(
-        `/circles/${circleId}/rounds`
-      );
-      return response.data?.rounds ?? [];
-    },
-    enabled: !!circleId,
   });
 }
