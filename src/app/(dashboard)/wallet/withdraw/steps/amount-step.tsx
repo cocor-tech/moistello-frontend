@@ -39,18 +39,20 @@ export function AmountStep({
       <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent p-6">
         <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-emerald-500/8 blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Amount to withdraw
-          </p>
+          <label htmlFor="withdraw-amount-input" className="text-xs font-medium text-muted-foreground uppercase tracking-wider block">
+            Amount to withdraw ({asset})
+          </label>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-emerald-400">{asset}</span>
             <input
+              id="withdraw-amount-input"
               type="number"
               inputMode="decimal"
               value={amountUsdc}
               onChange={(e) => setAmountUsdc(e.target.value)}
               placeholder="0.00"
               autoFocus
+              aria-label={`Amount to withdraw in ${asset}`}
               className="flex-1 bg-transparent text-3xl font-bold font-heading text-foreground border-none outline-none placeholder:text-muted-foreground/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
@@ -74,12 +76,14 @@ export function AmountStep({
           </p>
 
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Bank</label>
-            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+            <span className="text-xs text-muted-foreground mb-2 block" id="bank-selector-label">Select Bank</span>
+            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto" role="group" aria-labelledby="bank-selector-label">
               {NIGERIAN_BANKS.map((b) => (
                 <button
                   key={`${b.code}-${b.name}`}
+                  type="button"
                   onClick={() => setSelectedBank(b.code)}
+                  aria-pressed={selectedBank === b.code}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap",
                     selectedBank === b.code
@@ -96,6 +100,7 @@ export function AmountStep({
           <div className="border-t border-dotted border-white/10" />
 
           <Input
+            id="accountNumber"
             label="Account Number"
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -106,6 +111,7 @@ export function AmountStep({
           <div className="border-t border-dotted border-white/10" />
 
           <Input
+            id="accountName"
             label="Account Name"
             value={accountName}
             onChange={(e) => setAccountName(e.target.value)}
@@ -125,7 +131,7 @@ export function AmountStep({
       )}
 
       {errMsg && (
-        <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3" role="alert">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {errMsg}
         </div>
@@ -135,14 +141,7 @@ export function AmountStep({
         <Button variant="outline" size="lg" className="flex-1" onClick={onBack}>
           Back
         </Button>
-        <Button
-          variant="primary"
-          size="lg"
-          className="flex-1"
-          onClick={onGetQuote}
-          isLoading={loading}
-          disabled={!amountUsdc || !selectedBank || !accountNumber || !accountName.trim()}
-        >
+        <Button variant="primary" size="lg" className="flex-1" onClick={onGetQuote} isLoading={loading}>
           Get Quote
         </Button>
       </div>
