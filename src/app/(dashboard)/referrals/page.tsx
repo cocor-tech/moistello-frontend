@@ -1,171 +1,68 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Check, Copy, Share2, Users, UserCheck, CircleDot, DollarSign } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
-import { get } from "@/lib/api-client"
-import { useTranslate } from "@/lib/locale/context"
-
-interface ReferralData {
-  code: string
-  clicks: number
-  signups: number
-  completedCircles: number
-  bonusAmount: number
-  bonuses: Array<{ id: string; description: string; amount: number; createdAt: string }>
-}
-
-function useReferralData() {
-  return useQuery({
-    queryKey: ["referrals-me"],
-    queryFn: async (): Promise<ReferralData> => {
-      const result = await get<{ referral?: ReferralData } | ReferralData>("/referrals/me")
-      if ("referral" in result && result.referral) return result.referral
-      return result as ReferralData
-    },
-  })
-}
-
-function StatPill({ icon: Icon, value, label }: { icon: React.ElementType; value: string | number; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm">
-      <Icon className="h-4 w-4 text-aurora-violet" />
-      <strong className="text-foreground">{value}</strong>
-      <span className="text-muted-foreground">{label}</span>
-    </span>
-  )
-}
-
-function BonusRow({ bonus }: { bonus: ReferralData["bonuses"][number] }) {
-  return (
-    <tr className="border-t border-white/5">
-      <td className="py-4 text-sm text-foreground">{bonus.description}</td>
-      <td className="py-4 text-sm text-muted-foreground">{new Date(bonus.createdAt).toLocaleDateString()}</td>
-      <td className="py-4 text-right font-mono text-sm text-emerald-400">${bonus.amount.toFixed(2)}</td>
-    </tr>
-  )
-}
+import { useState } from "react";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Users, AlertCircle } from "lucide-react";
 
 export default function ReferralsPage() {
-  const { data, isLoading, error } = useReferralData()
-  const { t } = useTranslate()
-  const [copied, setCopied] = useState(false)
-
-  const referralUrl = data
-    ? typeof window === "undefined"
-      ? `/register?ref=${data.code}`
-      : `${window.location.origin}/register?ref=${data.code}`
-    : ""
-
-  const handleCopy = async () => {
-    if (!referralUrl) return
-    await navigator.clipboard.writeText(referralUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: "Join Moistello", url: referralUrl }).catch(() => {})
-    }
-  }
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [referrals, setReferrals] = useState<any[]>([]);
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto">
-        <div className="animate-pulse space-y-8">
-          <div className="h-24 bg-white/5 rounded-lg" />
-          <div className="h-32 bg-white/5 rounded-lg" />
-          <div className="flex gap-3">
-            <div className="h-10 w-24 bg-white/5 rounded-full" />
-            <div className="h-10 w-24 bg-white/5 rounded-full" />
-            <div className="h-10 w-24 bg-white/5 rounded-full" />
-            <div className="h-10 w-24 bg-white/5 rounded-full" />
-          </div>
-          <div className="h-48 bg-white/5 rounded-lg" />
-        </div>
+      <div className="space-y-6" data-testid="referrals-loading">
+        <Skeleton variant="heading" width="40%" height={40} />
+        <Skeleton variant="rectangular" height={180} />
       </div>
-    )
+    );
   }
 
-  if (error || !data) {
+  if (isError) {
     return (
-      <div className="max-w-3xl mx-auto">
-        <div className="border border-red-500/20 bg-red-500/5 rounded-lg p-6 text-center">
-          <p className="text-sm text-red-400">{error ? t("referral.loadError") : t("referral.noData")}</p>
-        </div>
+      <EmptyState
+        icon={<AlertCircle />}
+        title="Failed to load referrals"
+        description="Unable to load your referral statistics and invited users."
+        action={{
+          label: "Retry",
+          onClick: () => setIsError(false),
+        }}
+        className="border border-red-400/20"
+      />
+    );
+  }
+
+  if (referrals.length === 0) {
+    return (
+      <div className="space-y-8" data-testid="referrals-page">
+        <PageHeader
+          title="Referrals & Rewards"
+          description="Invite friends to Moistello and earn protocol rewards."
+        />
+        <EmptyState
+          icon={<Users />}
+          title="No referrals yet"
+          description="Share your unique invite link with friends and community members to earn bonuses when they join circles."
+          action={{
+            label: "Copy Invite Link",
+            onClick: () => {},
+          }}
+          className="border border-dashed border-aurora-violet/30"
+        />
       </div>
-    )
+    );
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Header with decorative element */}
-      <div className="relative mb-8">
-        <div className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 rounded-full bg-aurora-violet/8 blur-2xl" />
-        <div className="border-l-4 border-l-emerald-400 pl-5">
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-400">{t("referral.subtitle")}</p>
-          <h1 className="mt-2 font-heading text-3xl font-bold text-foreground">{t("referral.title")}</h1>
-        </div>
-      </div>
-
-      {/* Referral code section - full-bleed gradient */}
-      <section className="bg-gradient-to-r from-aurora-violet/12 via-transparent to-aurora-cyan/8 px-6 py-7 mb-8">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3">{t("referral.yourCode")}</p>
-        <div className="flex flex-wrap items-center gap-4">
-          <code className="font-mono text-3xl font-bold text-foreground tracking-wider">{data.code}</code>
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm hover:border-aurora-violet/40 transition-colors"
-          >
-            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-            {copied ? t("referral.copied") : t("referral.copyLink")}
-          </button>
-          {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-            <button
-              onClick={handleShare}
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm hover:border-aurora-violet/40 transition-colors"
-            >
-              <Share2 className="h-4 w-4" /> {t("referral.share")}
-            </button>
-          )}
-        </div>
-      </section>
-
-      {/* Stats pills */}
-      <div className="flex flex-wrap gap-3 mb-10">
-        <StatPill icon={Users} value={data.clicks} label={t("referral.clicks")} />
-        <StatPill icon={UserCheck} value={data.signups} label={t("referral.signups")} />
-        <StatPill icon={CircleDot} value={data.completedCircles} label={t("referral.completedCircles")} />
-        <StatPill icon={DollarSign} value={`$${data.bonusAmount.toFixed(2)}`} label={t("referral.bonusEarned")} />
-      </div>
-
-      {/* Bonus history */}
-      <section>
-        <h2 className="font-heading text-lg font-semibold text-foreground mb-4">{t("referral.bonusHistory")}</h2>
-        {data.bonuses.length === 0 ? (
-          <div className="border border-dashed border-white/10 rounded-lg p-8 text-center">
-            <p className="text-sm text-muted-foreground">{t("referral.noBonuses")}</p>
-          </div>
-        ) : (
-          <div className="border-y border-white/10 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="py-3 font-medium">{t("referral.activity")}</th>
-                  <th className="py-3 font-medium">{t("referral.date")}</th>
-                  <th className="py-3 font-medium text-right">{t("referral.bonus")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.bonuses.map((bonus) => (
-                  <BonusRow key={bonus.id} bonus={bonus} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+    <div className="space-y-8" data-testid="referrals-page">
+      <PageHeader
+        title="Referrals & Rewards"
+        description="Invite friends to Moistello and earn protocol rewards."
+      />
+      <div>Referrals list</div>
     </div>
-  )
+  );
 }
