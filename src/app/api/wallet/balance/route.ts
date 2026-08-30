@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { STELLAR_HORIZON_URL } from "@/lib/constants";
+import { validateStellarAddress } from "@/lib/stellar/validate-address";
 
 // Simple in-memory server cache for balance requests to reduce Horizon hits
 const serverBalanceCache = new Map<
@@ -20,8 +21,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Validate Stellar public key format (G... 56 chars)
-  if (!/^G[A-Z2-7]{55}$/.test(address)) {
+  // Validate Stellar public key format using the canonical validator
+  if (!validateStellarAddress(address)) {
     return NextResponse.json(
       { error: "Invalid Stellar public key address" },
       { status: 400 }

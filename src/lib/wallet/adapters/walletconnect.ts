@@ -1,609 +1,247 @@
-import type { WalletAdapter, WalletMeta, NetworkType, SignOptions } from "../types"
-import { getRelayMonitor, type RelayStatus } from "../wc2-relay"
+import { WalletAdapter, WalletAdapterMeta, ConnectOptions } from "../types"
+import { getRelayMonitor } from "../wc2-relay"
 import { getWC2SessionStore } from "../wc2-session-store"
-import { getSignClientClass } from "../wc2-sign-client"
-import { WC2_QR_EXPIRATION_MS } from "@/lib/constants"
+import { validateStellarAddress } from "@/lib/stellar/validate-address"
 
-const PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ""
-const RELAY_URL = "wss://relay.walletconnect.com"
-const METADATA = {
-  name: "Moistello",
-  description: "Decentralized savings circles on Stellar",
-  url: "https://moistello.com",
-  icons: ["https://moistello.com/logo.jpg"],
-}
+let signClientInstance: any = null
+let initPromise: Promise<any> | null = null
 
-const SIGN_TIMEOUT = 60_000
-const CONNECT_TIMEOUT = WC2_QR_EXPIRATION_MS
-const CONNECT_INIT_TIMEOUT = 60_000
+let _pairingUri: string | null = null
+let _pairingState = "idle"
+let _pairingError: string | null = null
 
-let _onPairingUri: ((uri: string) => void) | null = null
-let _onRelayStatusChange: ((status: RelayStatus) => void) | null = null
-
-interface WcConnectionController {
-  settle: () => void
-  reject: (reason: unknown) => void
-  cancel: () => void
-}
-
-let _activeConnection: WcConnectionController | null = null
-
-export function setOnPairingUri(handler: ((uri: string) => void) | null): void {
-  _onPairingUri = handler
-}
-
-export function getOnPairingUri(): ((uri: string) => void) | null {
-  return _onPairingUri
-}
-
-export function setOnRelayStatusChange(handler: ((status: RelayStatus) => void) | null): void {
-  _onRelayStatusChange = handler
-}
-
-function isBrowser(): boolean {
-  return typeof window !== "undefined"
-}
-
-function isValidStellarPublicKey(key: string): boolean {
-  return /^G[A-Z0-9]{55}$/.test(key)
-}
-
-function isXDRValid(xdr: string): boolean {
-  return typeof xdr === "string" && xdr.length > 20 && /^[A-Za-z0-9+/=]+$/.test(xdr)
-}
-
-function createTimeoutError(adapter: string, ms: number) {
-  return {
-    adapter,
-    code: "timeout" as const,
-    message: `Request timed out after ${ms / 1000}s. Check your wallet and try again.`,
+export function setOnPairingUri(uri: string | null) {
+  _pairingUri = uri
+  if (uri) {
+    _pairingState = "pairing"
+    _pairingError = null
+  } else {
+    _pairingState = "idle"
   }
 }
 
-function createNotConnectedError(adapter: string) {
-  return {
-    adapter,
-    code: "not_installed" as const,
-    message: "WalletConnect is not connected. Please connect your wallet first.",
-  }
+export function resetWcState() {
+  _pairingUri = null
+  _pairingState = "idle"
+  _pairingError = null
 }
 
-function createRelayDownError(adapter: string) {
-  return {
-    adapter,
-    code: "internal" as const,
-    message: "WalletConnect relay is unreachable. Try again later or use an extension wallet.",
-    cause: "Relay status: down",
-  }
+async function getOrInitSignClient() {
+  if (signClientInstance) return signClientInstance
+  if (initPromise) return initPromise
+
+  initPromise = (async () => {
+    const { SignClient } = await import("@walletconnect/sign-client")
+    const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id"
+    
+    signClientInstance = await SignClient.init({
+      projectId,
+      relayUrl: "wss://relay.walletconnect.com",
+      metadata: {
+        name: "Moistello",
+        description: "Decentralized ROSCA platform on Stellar",
+        url: typeof window !== "undefined" ? window.location.origin : "https://moistello.com",
+        icons: ["https://moistello.com/icon.png"],
+      },
+    })
+    return signClientInstance
+  })()
+
+  return initPromise
 }
 
-function createRejectedError(adapter: string) {
-  return {
-    adapter,
-    code: "user_rejected" as const,
-    message: "Connection rejected. Please approve the connection request in your wallet.",
-  }
-}
+export function createWalletConnectAdapter(): WalletAdapter & {
+  getPairingUri: () => string | null
+  getPairingState: () => string
+  getPairingError: () => string | null
+} {
+  let currentPublicKey: string | null = null
+  let currentSession: any = null
 
-function createNetworkMismatchError(adapter: string, chain: string, network: string) {
-  return {
-    adapter,
-    code: "network_mismatch" as const,
-    message: `Wallet is on ${chain} but expected ${network}`,
-    expected: network,
-    actual: chain,
-  }
-}
-
-function createInternalError(adapter: string, message: string, cause?: string) {
-  return {
-    adapter,
-    code: "internal" as const,
-    message,
-    ...(cause ? { cause } : {}),
-  }
-}
-
-function chainIdForNetwork(network: NetworkType): string {
-  return network === "mainnet" ? "stellar:pubnet" : "stellar:testnet"
-}
-
-function networkFromChainId(chainId: string): NetworkType {
-  return chainId === "stellar:pubnet" ? "mainnet" : "testnet"
-}
-
-let connectedPublicKey: string | null = null
-let connectedNetwork: NetworkType = "testnet"
-let sessionTopic: string | null = null
-let wcSignClient: unknown = null
-
-export function createWalletConnectAdapter(): WalletAdapter {
-  const meta: WalletMeta = {
+  const meta: WalletAdapterMeta = {
     id: "walletconnect",
     name: "WalletConnect",
     category: "mobile",
-    icon: "walletconnect-icon",
-    installUrl: "",
-    description: "Lobstr, Coinbase Wallet, Trust Wallet, MetaMask & 200+ more",
     priority: 0,
-    isAvailable: () => isBrowser(),
-  }
-
-  async function getOrInitSignClient(): Promise<unknown> {
-    if (wcSignClient) return wcSignClient
-
-    const SignClient = await getSignClientClass()
-    const initStart = performance.now()
-    wcSignClient = await SignClient.init({
-      projectId: PROJECT_ID || undefined,
-      relayUrl: RELAY_URL,
-      metadata: METADATA,
-    })
-    getRelayMonitor().recordOutcome(true, performance.now() - initStart)
-
-    const stored = getWC2SessionStore().getSession()
-    if (stored) {
-      try {
-        const signClient = wcSignClient as {
-          session: { getAll: () => Array<{ topic: string }> }
-        }
-        const sessions = signClient.session.getAll()
-        const matchingSession = sessions.find((s) => s.topic === stored.pairingTopic)
-        if (!matchingSession) {
-          getWC2SessionStore().clear()
-          connectedPublicKey = null
-          sessionTopic = null
-        } else {
-          connectedPublicKey = stored.publicKey
-          connectedNetwork = stored.network
-          sessionTopic = stored.pairingTopic
-        }
-      } catch (e) {
-        console.warn("[wc] Failed to restore session, clearing store:", e)
-        getWC2SessionStore().clear()
-      }
-    }
-
-    return wcSignClient
-  }
-
-  async function sendSignRequest(
-    method: string,
-    params: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    const relay = getRelayMonitor()
-    const startTime = performance.now()
-
-    if (!wcSignClient) {
-      throw createNotConnectedError("walletconnect")
-    }
-    if (relay.isDownForSign) {
-      throw createRelayDownError("walletconnect")
-    }
-
-    const signClient = wcSignClient as {
-      request: (opts: {
-        topic: string
-        chainId: string
-        request: { method: string; params: Record<string, unknown> }
-      }) => Promise<unknown>
-    }
-
-    const requestPromise = signClient.request({
-      topic: sessionTopic!,
-      chainId: chainIdForNetwork(connectedNetwork),
-      request: { method, params },
-    })
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        relay.recordOutcome(false, performance.now() - startTime)
-        reject(createTimeoutError("walletconnect", SIGN_TIMEOUT))
-      }, SIGN_TIMEOUT)
-    })
-
-    try {
-      const result = (await Promise.race([requestPromise, timeoutPromise])) as Record<string, unknown>
-      relay.recordOutcome(true, performance.now() - startTime)
-      return result
-    } catch (err: unknown) {
-      relay.recordOutcome(false, performance.now() - startTime)
-      const wcError = err as { code?: number; message?: string }
-      if (wcError?.code === 5000 || wcError?.message?.includes("rejected")) {
-        throw createRejectedError("walletconnect")
-      }
-      throw err
-    }
-  }
-
-  function createSessionHandler(
-    signClient: {
-      on: (event: string, handler: (...args: unknown[]) => void) => void
-      off?: (event: string, handler: (...args: unknown[]) => void) => void
-      approve: (opts: Record<string, unknown>) => Promise<unknown>
-      session: { getAll: () => Array<{ topic: string; namespaces: Record<string, unknown> }> }
-    },
-    resolve: (value: { publicKey: string }) => void,
-    reject: (reason: unknown) => void,
-    getSettled: () => boolean,
-    setSettled: () => void,
-    startTime: number,
-  ) {
-    const proposalHandler = async (proposal: unknown) => {
-      if (getSettled() || cancelled) return
-
-      try {
-        const prop = proposal as {
-          id: number
-          params: { requiredNamespaces: Record<string, unknown>; relays: Array<{ protocol: string }> }
-        }
-        const { id, params } = prop
-        const { requiredNamespaces, relays } = params
-
-        const namespaces: Record<string, Record<string, unknown>> = {}
-        for (const [key, ns] of Object.entries(requiredNamespaces || {})) {
-          const nsObj = ns as { chains?: string[]; methods?: string[]; events?: string[] }
-          namespaces[key] = {
-            ...nsObj,
-          }
-        }
-
-        await signClient.approve({
-          id,
-          relayProtocol: relays?.[0]?.protocol ?? "irn",
-          namespaces,
-        })
-
-        const sessions = signClient.session.getAll()
-        const sessionsList = sessions as Array<{
-          topic: string
-          namespaces: Record<string, { accounts: string[] }>
-        }>
-        const session = sessionsList.length > 0 ? sessionsList[sessionsList.length - 1] : null
-
-        if (!session) {
-          setSettled()
-          reject(createInternalError("walletconnect", "Session not found after approval", "No active session"))
-          return
-        }
-
-        sessionTopic = session.topic
-
-        const ns = session.namespaces?.stellar
-        if (ns?.accounts?.length > 0) {
-          const account = ns.accounts[0]
-          const pubKey = account.split(":")[2]
-          if (pubKey && isValidStellarPublicKey(pubKey)) {
-            connectedPublicKey = pubKey
-            connectedNetwork = networkFromChainId(account.split(":")[1])
-            setSettled()
-            const relay = getRelayMonitor()
-            relay.recordOutcome(true, performance.now() - startTime)
-            wcSignClient = signClient
-            getWC2SessionStore().saveSession({
-              pairingTopic: session.topic,
-              publicKey: pubKey,
-              network: connectedNetwork,
-              createdAt: Date.now(),
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-            })
-            resolve({ publicKey: pubKey })
-            return
-          }
-        }
-
-        setSettled()
-        reject(
-          createInternalError("walletconnect", "Could not extract public key from session", "No stellar account in namespace"),
-        )
-      } catch (err: unknown) {
-        if (!getSettled()) {
-          setSettled()
-          reject(
-            createInternalError("walletconnect", "Session proposal handling failed", String(err)),
-          )
-        }
-      }
-    }
-
-    signClient.on("session_proposal", proposalHandler)
-
-    const deleteHandler = () => {
-      connectedPublicKey = null
-      sessionTopic = null
-      wcSignClient = null
-      getWC2SessionStore().clear()
-    }
-    signClient.on("session_delete", deleteHandler)
-
-    return () => {
-      try { signClient.off?.("session_proposal", proposalHandler) } catch (e) { console.warn("[wc] Failed to remove session_proposal handler:", e) }
-      try { signClient.off?.("session_delete", deleteHandler) } catch (e) { console.warn("[wc] Failed to remove session_delete handler:", e) }
-    }
+    description: "Connect with Lobstr, xBull, and 200+ mobile Stellar wallets",
+    icon: "/icons/walletconnect.svg",
+    isAvailable: () => typeof window !== "undefined",
   }
 
   return {
     meta,
+    getPairingUri: () => _pairingUri,
+    getPairingState: () => _pairingState,
+    getPairingError: () => _pairingError,
 
-    async connect(): Promise<{ publicKey: string }> {
-      if (_activeConnection) {
-        _activeConnection.cancel()
-        _activeConnection = null
-      }
-
+    async connect(options?: ConnectOptions) {
       const relay = getRelayMonitor()
-      if (_onRelayStatusChange) _onRelayStatusChange(relay.status)
-
-      const startTime = performance.now()
-      const signClient = await getOrInitSignClient()
-
-      let settled = false
-      let cancelled = false
-      const getSettled = () => settled
-      const cleanupRef: { fn: () => void } = { fn: () => {} }
-      const setSettled = () => {
-        if (settled) return
-        settled = true
-        cleanupRef.fn()
+      if (relay.isDownForConnect) {
+        const err = new Error("WalletConnect relay is temporarily unavailable. Please try another wallet.")
+        ;(err as any).code = "relay_down"
+        throw err
       }
 
-      return new Promise<{ publicKey: string }>((resolve, reject) => {
-        const controller: WcConnectionController = {
-          settle: () => setSettled(),
-          reject: (r: unknown) => { if (!settled) { setSettled(); reject(r) } },
-          cancel: () => {
-            cancelled = true
-            if (!settled) {
-              setSettled()
-              reject(createInternalError("walletconnect", "Connection cancelled by user"))
-            }
-          },
-        }
-        _activeConnection = controller
+      try {
+        _pairingState = "pairing"
+        _pairingError = null
 
-        cleanupRef.fn = createSessionHandler(
-          signClient as {
-            on: (event: string, handler: (...args: unknown[]) => void) => void
-            off?: (event: string, handler: (...args: unknown[]) => void) => void
-            approve: (opts: Record<string, unknown>) => Promise<unknown>
-            session: { getAll: () => Array<{ topic: string; namespaces: Record<string, unknown> }> }
-          },
-          resolve,
-          reject,
-          getSettled,
-          setSettled,
-          startTime,
-        )
-
-        const initConnect = async () => {
-          try {
-            const result = await Promise.race([
-              (signClient as { connect: (opts: Record<string, unknown>) => Promise<{ uri?: string }> }).connect({
-                requiredNamespaces: {
-                  stellar: {
-                    methods: ["stellar_signAndSubmitXDR", "stellar_signXDR"],
-                    chains: ["stellar:testnet", "stellar:pubnet"],
-                    events: [],
-                  },
-                },
-              }),
-              new Promise<never>((_, reject) =>
-                setTimeout(() => reject(createTimeoutError("walletconnect", CONNECT_INIT_TIMEOUT)), CONNECT_INIT_TIMEOUT)
-              ),
-            ])
-
-            if (cancelled) return
-
-            const { uri } = result as { uri?: string }
-
-            if (!uri) {
-              if (!getSettled()) {
-                setSettled()
-                relay.recordOutcome(false, performance.now() - startTime)
-                reject(createInternalError("walletconnect", "No pairing URI returned from WalletConnect"))
-              }
-              return
-            }
-
-            relay.recordOutcome(true, performance.now() - startTime)
-
-            if (cancelled) return
-
-            if (_onPairingUri) {
-              _onPairingUri(uri)
-            }
-          } catch (err) {
-            if (!getSettled() && !cancelled) {
-              setSettled()
-              relay.recordOutcome(false, performance.now() - startTime)
-              reject(err)
+        const client = await getOrInitSignClient()
+        
+        const sessions = client.session.getAll()
+        if (sessions.length > 0) {
+          const active = sessions[sessions.length - 1]
+          const accounts = active.namespaces?.stellar?.accounts || []
+          if (accounts.length > 0) {
+            const [, network, address] = accounts[0].split(":")
+            if (address && validateStellarAddress(address)) {
+              currentPublicKey = address
+              currentSession = active
+              _pairingState = "approved"
+              relay.recordOutcome("connect", true)
+              return { publicKey: address, network: network === "stellar:testnet" ? "testnet" : "public" }
             }
           }
         }
 
-        initConnect()
+        const { uri, approval } = await client.connect({
+          requiredNamespaces: {
+            stellar: {
+              methods: ["stellar_signTransaction", "stellar_signMessage"],
+              chains: [options?.network === "public" ? "stellar:public" : "stellar:testnet"],
+              events: ["session_event", "session_delete"],
+            },
+          },
+        })
 
-        setTimeout(() => {
-          if (!getSettled() && !cancelled) {
-            setSettled()
-            relay.recordOutcome(false, performance.now() - startTime)
-            reject(createTimeoutError("walletconnect", CONNECT_TIMEOUT))
-          }
-        }, CONNECT_TIMEOUT)
-      })
+        if (uri) {
+          _pairingUri = uri
+          options?.onUri?.(uri)
+        }
+
+        const session = await approval()
+        _pairingUri = null
+        _pairingState = "approved"
+
+        const accounts = session.namespaces?.stellar?.accounts || []
+        if (accounts.length === 0) {
+          throw new Error("No Stellar accounts found in WalletConnect session")
+        }
+
+        const [, network, address] = accounts[0].split(":")
+        if (!address || !validateStellarAddress(address)) {
+          throw new Error("Invalid Stellar address returned from WalletConnect session")
+        }
+
+        currentPublicKey = address
+        currentSession = session
+
+        const store = getWC2SessionStore()
+        store.saveSession(session)
+        relay.recordOutcome("connect", true)
+
+        return {
+          publicKey: address,
+          network: network === "stellar:testnet" ? "testnet" : "public",
+        }
+      } catch (err: any) {
+        _pairingUri = null
+        _pairingState = "rejected"
+        _pairingError = err?.message || "Connection failed"
+        relay.recordOutcome("connect", false)
+        throw { code: "user_rejected", message: err?.message || "Connection rejected", adapter: "walletconnect" }
+      }
     },
 
-    async disconnect(): Promise<void> {
-      const sc = wcSignClient as { disconnect?: (opts: { topic: string }) => Promise<void> } | null
-      if (sc?.disconnect && sessionTopic) {
-        try {
-          await sc.disconnect({ topic: sessionTopic })
-        } catch (e) {
-          console.warn("[wc] Best-effort disconnect failed:", e)
+    async disconnect() {
+      try {
+        if (currentSession) {
+          const client = await getOrInitSignClient()
+          await client.disconnect({
+            topic: currentSession.topic,
+            reason: { code: 6000, message: "User disconnected" },
+          })
         }
+      } catch (e) {
+        console.warn("[walletconnect] Disconnect cleanup warning:", e)
       }
+      currentPublicKey = null
+      currentSession = null
       resetWcState()
     },
 
-    async isConnected(): Promise<boolean> {
-      return connectedPublicKey !== null && sessionTopic !== null
+    async isConnected() {
+      if (!currentPublicKey || !currentSession) return false
+      try {
+        const client = await getOrInitSignClient()
+        const sessions = client.session.getAll()
+        const found = sessions.some((s: any) => s.topic === currentSession.topic)
+        return found
+      } catch {
+        return false
+      }
     },
 
-    async getPublicKey(): Promise<string> {
-      if (!connectedPublicKey) {
-        throw createNotConnectedError("walletconnect")
+    async signTransaction(xdr: string) {
+      if (!currentPublicKey || !currentSession) {
+        throw { code: "not_connected", message: "Not connected to WalletConnect", adapter: "walletconnect" }
       }
-      return connectedPublicKey
-    },
-
-    async signMessage(message: string): Promise<{ signature: string; publicKey: string }> {
-      if (!connectedPublicKey) {
-        throw createNotConnectedError("walletconnect")
-      }
-      if (!sessionTopic || !wcSignClient) {
-        throw createNotConnectedError("walletconnect")
-      }
-
       const relay = getRelayMonitor()
       if (relay.isDownForSign) {
-        throw createRelayDownError("walletconnect")
+        throw { code: "relay_down", message: "Relay is down for signing", adapter: "walletconnect" }
       }
 
-      const { xdr } = await createAuthXDR(message)
-      const result = await this.signTransaction(xdr, { network: connectedNetwork })
-
-      return { signature: result.signedXdr, publicKey: connectedPublicKey }
+      try {
+        const client = await getOrInitSignClient()
+        const chainId = currentSession.namespaces?.stellar?.chains?.[0] || "stellar:testnet"
+        
+        const result = await client.request({
+          chainId,
+          request: {
+            method: "stellar_signTransaction",
+            params: { xdr, accountId: currentPublicKey },
+          },
+        })
+        relay.recordOutcome("sign", true)
+        return (result as any)?.signedXdr || (result as string)
+      } catch (err: any) {
+        relay.recordOutcome("sign", false)
+        throw { code: "user_rejected", message: err?.message || "Signing rejected", adapter: "walletconnect" }
+      }
     },
 
-    async signTransaction(xdr: string, opts?: SignOptions): Promise<{ signedXdr: string }> {
-      if (!connectedPublicKey) {
-        throw createNotConnectedError("walletconnect")
+    async signMessage(message: string) {
+      if (!currentPublicKey || !currentSession) {
+        throw { code: "not_connected", message: "Not connected to WalletConnect", adapter: "walletconnect" }
       }
-      if (!sessionTopic || !wcSignClient) {
-        throw createNotConnectedError("walletconnect")
+      try {
+        const client = await getOrInitSignClient()
+        const chainId = currentSession.namespaces?.stellar?.chains?.[0] || "stellar:testnet"
+        
+        const result = await client.request({
+          chainId,
+          request: {
+            method: "stellar_signMessage",
+            params: { message, accountId: currentPublicKey },
+          },
+        })
+        return (result as any)?.signedMessage || (result as string)
+      } catch (err: any) {
+        throw { code: "user_rejected", message: err?.message || "Message signing rejected", adapter: "walletconnect" }
       }
-
-      if (!isXDRValid(xdr)) {
-        throw createInternalError("walletconnect", "Invalid XDR format", "XDR must be a base64 string")
-      }
-
-      const relay = getRelayMonitor()
-      if (relay.isDownForSign) {
-        throw createRelayDownError("walletconnect")
-      }
-
-      if (opts?.network && opts.network !== connectedNetwork) {
-        throw createNetworkMismatchError("walletconnect", opts.network, connectedNetwork)
-      }
-
-      const result = await sendSignRequest("stellar_signXDR", { xdr })
-
-      const signedXdr = result?.signedXdr as string | undefined
-      if (!signedXdr) {
-        throw createInternalError("walletconnect", "Wallet returned empty response", "No signedXdr in response")
-      }
-
-      if (!isXDRValid(signedXdr)) {
-        throw createInternalError("walletconnect", "Wallet returned invalid signed XDR", "signedXdr failed format validation")
-      }
-
-      if (signedXdr === xdr) {
-        throw createInternalError("walletconnect", "Wallet returned unsigned XDR", "signedXdr matches original xdr")
-      }
-
-      return { signedXdr }
     },
 
-    async getNetwork(): Promise<NetworkType> {
-      return connectedNetwork
+    async getPublicKey() {
+      if (!currentPublicKey) {
+        throw { code: "not_installed", message: "WalletConnect not connected", adapter: "walletconnect" }
+      }
+      return currentPublicKey
+    },
+
+    async getNetwork() {
+      if (!currentSession) return "testnet"
+      const chainId = currentSession.namespaces?.stellar?.chains?.[0] || ""
+      return chainId.includes("public") ? "public" : "testnet"
     },
   }
-}
-
-async function createAuthXDR(message: string): Promise<{ xdr: string; hash: string }> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(`moistello-auth:${message}`)
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
-
-  const xdr = btoa(`MOISTELLO_AUTH:${hash}:${Date.now()}`)
-  return { xdr, hash }
-}
-
-export function cleanupWcOverlays(): void {
-  if (typeof document === "undefined") return
-
-  document.querySelectorAll(
-    'wcm-modal, ' +
-    '[data-walletconnect-modal], ' +
-    '[data-wcm-modal], ' +
-    'iframe[src*="walletconnect"], ' +
-    'iframe[src*="wc.dialog"], ' +
-    'iframe[src*="reown"], ' +
-    '.walletconnect-modal__base, ' +
-    '.walletconnect-qrcode__backdrop, ' +
-    '[class*="wcm-backdrop"], ' +
-    '[class*="walletconnect-modal"]'
-  ).forEach((el) => {
-    try { el.remove() } catch (e) { console.warn("[wc] Failed to remove overlay element:", e) }
-  })
-
-  const bodyEl = document.body
-  if (bodyEl.style.overflow === "hidden") {
-    bodyEl.style.overflow = ""
-  }
-  if (bodyEl.style.position === "fixed" && bodyEl.hasAttribute("data-scroll-top")) {
-    const savedTop = bodyEl.getAttribute("data-scroll-top")
-    bodyEl.style.position = ""
-    bodyEl.style.top = ""
-    bodyEl.style.width = ""
-    if (savedTop) window.scrollTo(0, parseInt(savedTop, 10))
-    bodyEl.removeAttribute("data-scroll-top")
-  }
-}
-
-export function resetWcState(): void {
-  if (_activeConnection) {
-    _activeConnection.cancel()
-    _activeConnection = null
-  }
-  connectedPublicKey = null
-  connectedNetwork = "testnet"
-  sessionTopic = null
-  wcSignClient = null
-  getRelayMonitor().reset()
-  cleanupWcOverlays()
-  getWC2SessionStore().clear()
-}
-
-export async function clearWcIndexedDB(): Promise<void> {
-  if (typeof indexedDB === "undefined") return
-  try {
-    const dbs = await indexedDB.databases()
-    for (const db of dbs) {
-      if (db.name?.startsWith("wc@2:")) {
-        try { indexedDB.deleteDatabase(db.name) } catch (e) { console.warn("[wc] Failed to delete IndexedDB:", e) }
-      }
-    }
-  } catch {
-    // indexedDB.databases() not available in older browsers —
-    // delete the known WalletConnect databases by name
-    const knownNames = ["wc@2:client:0.3", "wc@2:core:0.3"]
-    for (const name of knownNames) {
-      try { indexedDB.deleteDatabase(name) } catch (e) { console.warn("[wc] Failed to delete known IndexedDB:", e) }
-    }
-  }
-}
-
-export async function disconnectWc(): Promise<void> {
-  const sc = wcSignClient as { disconnect?: (opts: { topic: string }) => Promise<void> } | null
-  if (sc?.disconnect && sessionTopic) {
-    try {
-      await sc.disconnect({ topic: sessionTopic })
-    } catch (e) {
-      console.warn("[wc] Best-effort disconnect failed (session may be expired):", e)
-    }
-  }
-  resetWcState()
 }
