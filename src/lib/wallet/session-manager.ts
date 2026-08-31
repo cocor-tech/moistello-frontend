@@ -1,10 +1,3 @@
-import type { WalletAdapter, WalletSession, EncryptedSessionStore, WalletId } from "./types"
-import { computeHmacSha256Sync } from "./hmac"
-import { SESSION_TTL_MS } from "./session-lifecycle"
-
-const STORAGE_KEY = "moistello_wallet_sessions"
-const SESSION_TTL = SESSION_TTL_MS
-const CHANNEL_NAME = "moistello-wallet"
 import type {
   WalletAdapter,
   WalletSession,
@@ -16,9 +9,10 @@ import {
   encryptToStorage,
   decryptFromStorage,
 } from "@/lib/security/encryption";
+import { SESSION_TTL_MS } from "./session-lifecycle";
 
 const STORAGE_KEY = "moistello_wallet_sessions";
-const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL = SESSION_TTL_MS ?? 7 * 24 * 60 * 60 * 1000;
 const CHANNEL_NAME = "moistello-wallet";
 
 export class WalletSessionManager {

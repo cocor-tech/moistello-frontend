@@ -219,6 +219,25 @@ export async function verifyPasskeyRevocation(): Promise<void> {
   }
 }
 
+const fallbackStorage: Storage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  clear: () => {},
+  length: 0,
+  key: () => null,
+};
+
+function getLocalStorage(): Storage {
+  if (typeof window !== "undefined" && window.localStorage) {
+    return window.localStorage;
+  }
+  if (typeof localStorage !== "undefined") {
+    return localStorage;
+  }
+  return fallbackStorage;
+}
+
 export const useAuthFlowStore = create<AuthFlowStore>()(
   persist(
     devtools(
@@ -432,7 +451,11 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
             // Bail if a concurrent abort was triggered while we awaited the nonce.
             if (abortController.signal.aborted) return;
 
-            const nonce = nonceResponse.data.nonce.nonce;
+            const rawNonce = (nonceResponse as any)?.data?.nonce?.nonce ?? (nonceResponse as any)?.data?.nonce ?? (nonceResponse as any)?.nonce;
+            if (!rawNonce || typeof rawNonce !== "string") {
+              throw new Error("Invalid nonce received from server");
+            }
+            const nonce = rawNonce;
 
             const signingState = get();
             if (
@@ -525,14 +548,15 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
 
             if (abortController.signal.aborted) return;
 
-            const d = authResponse.data;
+            const d = (authResponse as any)?.data ?? authResponse;
             const currentPasskeyVersion = get().passkeyVersion;
+            const expectedVersion = d?.expectedPasskeyVersion ?? (authResponse as any)?.expectedPasskeyVersion;
             if (
-              d.expectedPasskeyVersion !== undefined &&
-              d.expectedPasskeyVersion > currentPasskeyVersion
+              expectedVersion !== undefined &&
+              expectedVersion > currentPasskeyVersion
             ) {
               set({
-                passkeyVersion: d.expectedPasskeyVersion,
+                passkeyVersion: expectedVersion,
                 passkeyRevoked: true,
               });
               const msg =
@@ -817,7 +841,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
     {
       name: "moistello-auth-flow",
       version: 3,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => getLocalStorage()),
       partialize: (state) => ({
         step: state.step,
         // auth field removed: nonce/signature now rely only on HttpOnly cookies

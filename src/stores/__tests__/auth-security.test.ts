@@ -8,11 +8,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useAuthFlowStore } from "../auth-flow-store";
 import { useAuthStore } from "../auth-store";
+import { _setHmacKeyForTest } from "@/lib/wallet/hmac";
 
 describe("Auth Security - Token Storage", () => {
   beforeEach(() => {
     // Clear all stores and localStorage
     localStorage.clear();
+    _setHmacKeyForTest("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
     useAuthFlowStore.getState().reset();
     useAuthStore.getState().logout();
   });
@@ -95,7 +97,7 @@ describe("Auth Security - Token Storage", () => {
       expect(tokenKeys).toHaveLength(0);
     });
 
-    it("should clear legacy token storage on init", () => {
+    it("should clear legacy token storage on init", async () => {
       // Simulate legacy tokens in storage
       localStorage.setItem("moistello_token", "legacy-token");
       localStorage.setItem("moistello_refresh", "legacy-refresh");
@@ -103,7 +105,7 @@ describe("Auth Security - Token Storage", () => {
 
       // Re-import to trigger cleanup
       vi.resetModules();
-      import("../auth-store");
+      await import("../auth-store");
 
       // Legacy keys should be removed
       expect(localStorage.getItem("moistello_token")).toBeNull();
