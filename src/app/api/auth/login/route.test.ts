@@ -122,3 +122,45 @@ describe("POST /api/auth/login", () => {
     expect(setCookie).toContain("moistello_session")
   })
 })
+
+// ── Production guard (runtime blockInProduction defence-in-depth) ──────────
+// The primary exclusion is the webpack NormalModuleReplacementPlugin in
+// next.config.mjs. These tests verify the secondary runtime guard so that
+// the route still 404s if the build-time replacement is ever misconfigured.
+
+describe("POST /api/auth/login — production guard", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  it("returns 404 in production", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    // Fresh spies — module-level spies may have been restored by prior tests
+    vi.spyOn(fs, "existsSync").mockReturnValue(true)
+    vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify(users600k) as never)
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {})
+    const res = await POST(makeRequest({ username: "alice", password: "correct-horse" }))
+    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(body).toEqual({ error: "Not found" })
+  })
+
+  it("does not write any files in production", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    vi.spyOn(fs, "existsSync").mockReturnValue(true)
+    vi.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify(users600k) as never)
+    const writeSpy = vi.spyOn(fs, "writeFileSync").mockImplementation(() => {})
+    await POST(makeRequest({ username: "alice", password: "correct-horse" }))
+    expect(writeSpy).not.toHaveBeenCalled()
+  })
+
+  it("does not read users.json in production", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    vi.spyOn(fs, "existsSync").mockReturnValue(true)
+    const readSpy = vi.spyOn(fs, "readFileSync").mockReturnValue("[]" as never)
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {})
+    await POST(makeRequest({ username: "alice", password: "correct-horse" }))
+    expect(readSpy).not.toHaveBeenCalled()
+  })
+})
