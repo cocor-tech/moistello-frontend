@@ -1,21 +1,13 @@
 import { defineConfig } from "vitest/config"
 import { fileURLToPath } from "url"
-import { createRequire } from "module"
 import path from "path"
+import react from "@vitejs/plugin-react"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const require = createRequire(import.meta.url)
-
-// Load the react plugin via require to avoid the rolldown onLog issue
-// that occurs when the plugin is imported as an ES module during config bundling.
-// The plugin itself is CJS-compatible and works fine via require().
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const react = require("@vitejs/plugin-react")
-const reactPlugin = typeof react.default === "function" ? react.default : react
 
 export default defineConfig({
-  plugins: [reactPlugin()],
+  plugins: [react()],
   test: {
     globals: true,
     environment: "jsdom",

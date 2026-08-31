@@ -22,8 +22,51 @@ function apiHostname() {
 // policy is deliberately minimal — no scripts, no frames, no subresources.
 const apiCsp = API_CSP
 
+import { createRequire } from "module"
+import { fileURLToPath } from "url"
+import path from "path"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const require = createRequire(import.meta.url)
+const webpack = require("webpack")
+
+/**
+ * The three flat-file dev-auth routes are replaced with a 404 stub at
+ * build time when NODE_ENV === "production". This ensures they are physically
+ * absent from the production bundle — the runtime blockInProduction() check
+ * alone is insufficient because the route module (and its `fs` imports) would
+ * still be compiled into the bundle. Using NormalModuleReplacementPlugin
+ * swaps the entire module before compilation, so no flat-file code, no `fs`
+ * writes, and no credential-related logic ever ships to prod.
+ *
+ * The stub (src/lib/security/dev-route-stub.ts) exports a minimal 404
+ * handler that is Next.js App Router-compatible and has zero node:fs imports.
+ */
+const DEV_ONLY_ROUTES = [
+  /src[/\\]app[/\\]api[/\\]auth[/\\]login[/\\]route\.[jt]s$/,
+  /src[/\\]app[/\\]api[/\\]auth[/\\]setup[/\\]route\.[jt]s$/,
+  /src[/\\]app[/\\]api[/\\]upload[/\\]route\.[jt]s$/,
+]
+
+const stubPath = path.resolve(__dirname, "src/lib/security/dev-route-stub.ts")
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack(config, { isServer }) {
+    // Only exclude on the server-side build (route handlers are server-only).
+    // The client build never imports these files, but we guard isServer to be
+    // explicit and avoid any accidental tree-shaking edge cases.
+    if (isServer && process.env.NODE_ENV === "production") {
+      DEV_ONLY_ROUTES.forEach((pattern) => {
+        config.plugins.push(
+          new webpack.NormalModuleReplacementPlugin(pattern, stubPath)
+        )
+      })
+    }
+    return config
+  },
+
   images: {
     // Restrict to the specific hosts this application actually serves images
     // from. The wildcard "**" that was here before is an SSRF vector — any

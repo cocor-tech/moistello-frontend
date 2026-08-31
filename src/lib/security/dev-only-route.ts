@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server"
 
 /**
- * Guard for route handlers that are local-development scaffolding.
+ * Defense-in-depth guard for dev-only route handlers.
  *
- * The file-backed auth handlers under /api/auth read and write
- * content/users.json and content/sessions.json directly. There is no
- * database behind them, no locking around the read-modify-write cycles, and
- * no rate limiting in front of them — concurrent requests silently clobber
- * each other and credential stuffing is unbounded. They are useful for
- * running the app locally and must never answer a request in a deployed
- * environment.
+ * ### Primary exclusion (build-time)
+ * The webpack `NormalModuleReplacementPlugin` configured in `next.config.mjs`
+ * replaces the three flat-file dev routes (login, setup, upload) with
+ * `src/lib/security/dev-route-stub.ts` **before compilation** when
+ * `NODE_ENV === "production"`. This means the route module — including all
+ * `fs` imports, PBKDF2 logic, and flat-file writes — never enters the
+ * production bundle at all.
+ *
+ * ### Secondary guard (runtime fallback)
+ * This function is the second line of defence. It is called at the top of
+ * each dev route handler so that even if the build-time replacement is
+ * somehow bypassed (e.g., a future misconfiguration), no flat-file operation
+ * can ever execute in production.
  *
  * Returns a 404 response when running in production, or null when the caller
  * should proceed. 404 rather than 403 so the route's existence is not
