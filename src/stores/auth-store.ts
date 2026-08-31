@@ -90,8 +90,6 @@ async function clearSession(): Promise<void> {
 
 function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
-  // If the HMAC key is not loaded yet we cannot verify the payload. Return
-  // null (defer) instead of treating it as tampered and wiping the cache.
   if (!isHmacKeyReady()) return null;
   try {
     const raw = localStorage.getItem(USER_DATA_KEY);
@@ -99,6 +97,43 @@ function getStoredUser(): User | null {
 
     const store: UserStoreWithHmac = JSON.parse(raw);
     if (!store.hmac || !store.user) return null;
+
+    const expectedHMAC = computeHmacSha256Sync(JSON.stringify(store.user));
+    if (store.hmac !== expectedHMAC) {
+      console.warn("[auth] HMAC mismatch — user data may be tampered");
+      localStorage.removeItem(USER_DATA_KEY);
+      return null;
+    }
+
+    return store.user;
+  } catch {
+    return null;
+  }
+}
+
+async function getStoredUserAsync(): Promise<User | null> {
+  if (typeof window === "undefined") return null;
+  if (!isHmacKeyReady()) return null;
+  try {
+    const raw = localStorage.getItem(USER_DATA_KEY);
+    if (!raw) return null;
+
+    const passphrase = getUserEncryptionPassphrase();
+    let store: UserStoreWithHmac | null = await decryptFromStorage<UserStoreWithHmac>(
+      USER_DATA_KEY,
+      passphrase,
+    );
+
+    if (!store) {
+      try {
+        store = JSON.parse(raw);
+      } catch {
+        localStorage.removeItem(USER_DATA_KEY);
+        return null;
+      }
+    }
+
+    if (!store || !store.hmac || !store.user) return null;
 
     const expectedHMAC = computeHmacSha256Sync(JSON.stringify(store.user));
     if (store.hmac !== expectedHMAC) {
@@ -278,12 +313,13 @@ const baseStore = (
 
     const exp = extractTokenExpiry(token);
     if (exp && Date.now() < exp) {
+      const storedUser = await getStoredUserAsync();
       set({
         isLoading: false,
         isAuthenticated: true,
         token,
         tokenExpiresAt: exp,
-        user: getStoredUser(),
+        user: storedUser ?? getStoredUser(),
       });
       return;
     }
