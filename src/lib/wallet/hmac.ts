@@ -40,6 +40,7 @@ function saveKeyToStorage(hex: string) {
 
 export function _setHmacKeyForTest(hex: string): void {
   inMemoryKey = hexToBytes(hex);
+  saveKeyToStorage(hex);
 }
 
 export function clearHmacKeyCache(): void {
@@ -77,7 +78,8 @@ function getCachedKey(): Uint8Array | null {
 async function fetchKeyFromServer(): Promise<Uint8Array> {
   if (typeof window === "undefined")
     throw new Error("Cannot fetch HMAC key server-side");
-  const res = await fetch("/api/wallet/hmac/key");
+  const origin = window.location?.origin && window.location.origin !== "null" ? window.location.origin : "http://localhost:3000";
+  const res = await fetch(`${origin}/api/wallet/hmac/key`);
   if (!res.ok) throw new Error(`Failed to get HMAC key: ${res.status}`);
   const body = (await res.json()) as { keyHex: string };
   const bytes = hexToBytes(body.keyHex);

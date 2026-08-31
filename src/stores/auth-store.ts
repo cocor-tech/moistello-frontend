@@ -36,6 +36,13 @@ interface UserStoreWithHmac {
   hmac: string;
 }
 
+function getOrigin(): string {
+  if (typeof window !== "undefined" && window.location?.origin && window.location.origin !== "null") {
+    return window.location.origin;
+  }
+  return "http://localhost:3000";
+}
+
 /** POST the token pair to the server so it can write the HttpOnly cookies. */
 async function persistSession(
   token: string,
@@ -43,7 +50,7 @@ async function persistSession(
 ): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    await fetch("/api/auth/session", {
+    await fetch(`${getOrigin()}/api/auth/session`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, refreshToken }),
@@ -64,7 +71,7 @@ async function persistSession(
 async function rehydrateAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
   try {
-    const response = await fetch("/api/auth/session");
+    const response = await fetch(`${getOrigin()}/api/auth/session`);
     if (!response.ok) return null;
 
     const data = await response.json();
@@ -82,7 +89,7 @@ async function rehydrateAccessToken(): Promise<string | null> {
 async function clearSession(): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    await fetch("/api/auth/session", { method: "DELETE" });
+    await fetch(`${getOrigin()}/api/auth/session`, { method: "DELETE" });
   } catch (e) {
     console.warn("[auth] Failed to clear session cookie:", e);
   }
@@ -117,20 +124,24 @@ async function setStoredUser(user: User): Promise<void> {
   if (typeof window === "undefined") return;
   // Defer the write until the HMAC key is ready — persisting with an empty
   // key would silently break tamper detection on the first write.
-  withHmacKey(async () => {
-    try {
-      const hmac = computeHmacSha256Sync(JSON.stringify(user));
-      const store: UserStoreWithHmac = { user, hmac };
+  await new Promise<void>((resolve) => {
+    withHmacKey(async () => {
+      try {
+        const hmac = computeHmacSha256Sync(JSON.stringify(user));
+        const store: UserStoreWithHmac = { user, hmac };
 
-      // Encrypt user profile with device-specific passphrase
-      const passphrase = getUserEncryptionPassphrase();
-      await encryptToStorage(USER_DATA_KEY, store, passphrase).catch(() => {
-        // Fallback to unencrypted if encryption fails
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(store));
-      });
-    } catch (e) {
-      console.warn("[auth] Failed to persist user data:", e);
-    }
+        // Encrypt user profile with device-specific passphrase
+        const passphrase = getUserEncryptionPassphrase();
+        await encryptToStorage(USER_DATA_KEY, store, passphrase).catch(() => {
+          // Fallback to unencrypted if encryption fails
+          localStorage.setItem(USER_DATA_KEY, JSON.stringify(store));
+        });
+      } catch (e) {
+        console.warn("[auth] Failed to persist user data:", e);
+      } finally {
+        resolve();
+      }
+    });
   });
 }
 
@@ -298,7 +309,7 @@ const baseStore = (
       const currentToken = getAccessToken() ?? token;
       const updatedExp = extractTokenExpiry(currentToken);
 
-      setStoredUser(data.user);
+      await setStoredUser(data.user);
 
       set({
         isAuthenticated: true,
@@ -316,7 +327,7 @@ const baseStore = (
   setTokens: async (accessToken: string, refreshToken: string, user?: User) => {
     setAccessToken(accessToken);
     const exp = extractTokenExpiry(accessToken);
-    if (user) setStoredUser(user);
+    if (user) await setStoredUser(user);
 
     set({
       token: accessToken,

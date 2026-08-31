@@ -31,6 +31,8 @@ const CAPTCHA_HOSTS = ["https://*.hcaptcha.com", "https://challenges.cloudflare.
 
 const ANALYTICS_HOSTS = ["https://mc.yandex.ru", "https://mc.yandex.com"]
 
+const IPFS_HOSTS = ["https://cloudflare-ipfs.com", "https://ipfs.io"]
+
 /**
  * Reduce a configured URL to a bare origin so it can be used as a CSP source.
  * Unset or malformed values contribute nothing rather than widening the policy.
@@ -92,7 +94,7 @@ export function buildCsp(nonce: string, isDev = process.env.NODE_ENV !== "produc
     // React writes component styles as style attributes, and next/font emits
     // an inline <style> block; neither can carry a nonce.
     ["style-src", ["'self'", "'unsafe-inline'"]],
-    ["img-src", ["'self'", "data:", "blob:", "https:"]],
+    ["img-src", ["'self'", "data:", "blob:", ...configuredOrigins(), ...ANALYTICS_HOSTS, ...IPFS_HOSTS]],
     ["font-src", ["'self'", "data:"]],
     ["connect-src", connectSrc],
     ["frame-src", ["'self'", ...CAPTCHA_HOSTS, ...ANALYTICS_HOSTS, "https://verify.walletconnect.com", "https://verify.walletconnect.org"]],

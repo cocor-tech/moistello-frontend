@@ -27,10 +27,15 @@
  * destructive to unrelated sessions.
  */
 
-import { WalletAdapter, WalletAdapterMeta, ConnectOptions } from "../types"
+import { WalletAdapter, WalletMeta, NetworkType } from "../types"
 import { getRelayMonitor } from "../wc2-relay"
 import { getWC2SessionStore } from "../wc2-session-store"
 import { validateStellarAddress } from "@/lib/stellar/validate-address"
+
+export interface ConnectOptions {
+  network?: NetworkType
+  onUri?: (uri: string) => void
+}
 
 // ---------------------------------------------------------------------------
 // Module-level singletons (intentional — one client, one WebSocket)
@@ -144,6 +149,11 @@ export function abortConnect(): void {
  */
 export function resetWcState(): void {
   abortConnect()
+}
+
+export async function disconnectWc(): Promise<void> {
+  const adapter = createWalletConnectAdapter()
+  await adapter.disconnect()
 }
 
 /**
@@ -384,8 +394,8 @@ export function createWalletConnectAdapter(): WalletAdapter & {
     async signTransaction(xdr: string) {
       if (!currentPublicKey || !currentSession) {
         throw {
-          code: "not_connected",
-          message: "Not connected to WalletConnect",
+          code: "not_installed",
+          message: "WalletConnect not connected",
           adapter: "walletconnect",
         }
       }
@@ -463,11 +473,11 @@ export function createWalletConnectAdapter(): WalletAdapter & {
       return currentPublicKey
     },
 
-    async getNetwork() {
+    async getNetwork(): Promise<NetworkType> {
       if (!currentSession) return "testnet"
       const chainId =
         currentSession.namespaces?.stellar?.chains?.[0] || ""
-      return chainId.includes("public") ? "public" : "testnet"
+      return (chainId.includes("public") || chainId.includes("mainnet") ? "mainnet" : "testnet") as NetworkType
     },
   }
 }

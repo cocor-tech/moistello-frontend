@@ -57,6 +57,12 @@ describe("buildCsp", () => {
 
     const frame = directive(prod, "frame-src") ?? ""
     expect(frame).toContain("https://challenges.cloudflare.com")
+
+    const img = directive(prod, "img-src") ?? ""
+    expect(img).toContain("https://mc.yandex.ru")
+    expect(img).toContain("https://cloudflare-ipfs.com")
+    expect(img).toContain("https://ipfs.io")
+    expect(img.split(" ")).not.toContain("https:")
   })
 
   it("upgrades insecure requests in production only", () => {
