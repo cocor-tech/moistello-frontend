@@ -270,7 +270,7 @@ function WalletTransferContent() {
         </div>
       )}
     </div>
-  }
+  )
 }
 
 export default function WalletTransferPage() {
