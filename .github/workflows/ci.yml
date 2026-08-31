@@ -35,6 +35,22 @@ jobs:
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run test -- --run
+      # ── Coverage gate ──────────────────────────────────────────────────────
+      # Runs vitest with the v8 coverage provider and enforces the thresholds
+      # configured in vitest.config.ts (lines/functions/statements ≥ 70%,
+      # branches ≥ 65%) for all files in src/**  except:
+      #   src/app/**        — Next.js page/layout files (covered by Playwright)
+      #   src/components/** — presentational components (covered by e2e + component tests)
+      #   src/providers/**  — React context wrappers (integration-tested)
+      #   src/lib/locale/** — translation data, not business logic
+      #   src/lib/motion/** — animation variant constants only
+      # The thresholds gate critical paths: auth, wallet, crypto, verification.
+      - name: Coverage (vitest --coverage)
+        run: npx vitest run --coverage
+        # perFile: false means a single aggregate check rather than per-file,
+        # keeping the gate stable as new files are added incrementally.
+        env:
+          CI: true
 
   build:
     name: Production Build
