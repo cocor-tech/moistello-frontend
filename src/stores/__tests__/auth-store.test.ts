@@ -14,6 +14,7 @@ vi.mock("@/lib/wallet/registry", () => ({
 }))
 
 import { useAuthStore } from "@/stores/auth-store"
+import { decryptFromStorage } from "@/lib/security/encryption"
 import {
   clearAccessToken,
   getAccessToken,
@@ -21,6 +22,8 @@ import {
 } from "@/lib/auth/token-store"
 
 const USER_DATA_KEY = "moistello_user"
+const getPassphrase = () =>
+  `moistello-user-v1:${window.navigator.userAgent}-${window.screen.width}x${window.screen.height}`
 const LEGACY_KEYS = [
   "moistello_token",
   "moistello_refresh",
@@ -63,9 +66,12 @@ function resetState() {
   mockPost.mockReset()
 }
 
+import { _setHmacKeyForTest } from "@/lib/wallet/hmac"
+
 describe("useAuthStore", () => {
   beforeEach(() => {
     resetState()
+    _setHmacKeyForTest("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff")
     vi.stubGlobal("fetch", vi.fn())
   })
 
@@ -102,8 +108,11 @@ describe("useAuthStore", () => {
 
     it("persists the user profile with an HMAC signature", async () => {
       await useAuthStore.getState().setTokens(makeToken(), "refresh-123", user)
+      await new Promise((r) => setTimeout(r, 50))
 
-      const stored = JSON.parse(localStorage.getItem(USER_DATA_KEY) ?? "null")
+      const stored =
+        (await decryptFromStorage<{ user: User; hmac: string }>(USER_DATA_KEY, getPassphrase())) ??
+        JSON.parse(localStorage.getItem(USER_DATA_KEY) ?? "null")
       expect(stored.user).toEqual(user)
       expect(typeof stored.hmac).toBe("string")
     })
@@ -171,7 +180,11 @@ describe("useAuthStore", () => {
       expect(state.isAuthenticated).toBe(true)
       expect(state.user).toEqual(user)
       // The refreshed profile is persisted with its HMAC signature.
-      expect(JSON.parse(localStorage.getItem(USER_DATA_KEY) ?? "null").user).toEqual(user)
+      await new Promise((r) => setTimeout(r, 50))
+      const stored =
+        (await decryptFromStorage<{ user: User; hmac: string }>(USER_DATA_KEY, getPassphrase())) ??
+        JSON.parse(localStorage.getItem(USER_DATA_KEY) ?? "null")
+      expect(stored.user).toEqual(user)
     })
 
     it("logs the user out when the token refresh fails", async () => {
