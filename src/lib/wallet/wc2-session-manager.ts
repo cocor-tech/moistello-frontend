@@ -4,6 +4,7 @@ import { getWC2SessionStore } from "./wc2-session-store"
 import { getSignClientClass } from "./wc2-sign-client"
 import { WC2_QR_EXPIRATION_MS } from "@/lib/constants"
 import { computeSessionExpiry } from "./session-lifecycle"
+import { validateStellarAddress } from "@/lib/stellar/validate-address"
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ""
 const RELAY_URL = "wss://relay.walletconnect.com"
@@ -63,7 +64,7 @@ class WCSessionOrchestrator {
   }
 
   private isValidStellarPublicKey(key: string): boolean {
-    return /^G[A-Z0-9]{55}$/.test(key)
+    return validateStellarAddress(key)
   }
 
   private chainIdForNetwork(network: NetworkType): string {
