@@ -64,7 +64,7 @@ class WCSessionOrchestrator {
   }
 
   private isValidStellarPublicKey(key: string): boolean {
-    return /^G[A-Z0-9]{55}$/.test(key)
+    return validateStellarAddress(key)
   }
 
   private chainIdForNetwork(network: NetworkType): string {
@@ -318,10 +318,6 @@ const prop = proposal as {
     this.cleanupCallbacks = []
     this.signClient = null
     getWC2SessionStore().clear()
-  }
-
-  private isValidStellarPublicKey(key: string): boolean {
-    return validateStellarAddress(key)
   }
 }
 
