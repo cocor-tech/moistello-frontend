@@ -35,7 +35,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { LiveIndicator } from "@/components/shared/live-indicator";
 import { Button, ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatRelativeTimeLocalized } from "@/lib/formatters";
+import { formatRelativeTime } from "@/lib/formatters";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { useTranslate } from "@/lib/locale/context";
 import { cn } from "@/lib/cn";
@@ -116,6 +116,11 @@ function NotificationItem({
   const grad = gradientMap[notification.type] ?? gradientMap.system;
   const icol = iconColorMap[notification.type] ?? iconColorMap.system;
   const isUnread = !notification.isRead;
+  const selectLabel = t("notifications.selectNotification");
+  const deselectLabel = t("notifications.deselectNotification");
+  const selectionLabel = (selected ? deselectLabel : selectLabel).includes("{title}")
+    ? (selected ? deselectLabel : selectLabel).replace("{title}", notification.title)
+    : `${selected ? "Deselect notification" : "Select notification"}: ${notification.title}`;
 
   return (
     <motion.div
@@ -130,11 +135,7 @@ function NotificationItem({
         type="button"
         role="checkbox"
         aria-checked={selected}
-        aria-label={
-          selected
-            ? `${t("notifications.deselectNotification").replace("{title}", notification.title)}`
-            : `${t("notifications.selectNotification").replace("{title}", notification.title)}`
-        }
+        aria-label={selectionLabel}
         onClick={(e) => {
           e.stopPropagation();
           onToggleSelect(notification.id);
@@ -193,7 +194,7 @@ function NotificationItem({
           )}
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-[11px] text-muted-foreground/60 font-mono">
-              {formatRelativeTimeLocalized(
+              {formatRelativeTime(
                 notification.sentAt ?? notification.createdAt,
                 dateFnsLocale,
               )}
@@ -223,7 +224,7 @@ export default function NotificationsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
-    let res = filterNotifications(notifications, typeFilter);
+    let res = filterNotifications(notifications, "all", typeFilter);
     if (activeTab === "unread") {
       res = res.filter((n) => !n.isRead);
     }

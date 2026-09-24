@@ -6,17 +6,12 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios"
 import { API_BASE_URL } from "./constants"
+import { getCsrfToken } from "./auth/csrf"
 import {
   clearAccessToken,
   getAccessToken,
   setAccessToken,
 } from "./auth/token-store"
-
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return ""
-  const meta = document.querySelector('meta[name="csrf-token"]')
-  return meta?.getAttribute("content") || ""
-}
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

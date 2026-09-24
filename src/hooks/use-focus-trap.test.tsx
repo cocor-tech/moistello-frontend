@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useFocusTrap } from "./use-focus-trap";
@@ -24,6 +24,28 @@ function FocusTrapHarness({ onClose = vi.fn() }: { onClose?: () => void }) {
         </div>
       )}
       <button>Behind overlay</button>
+    </>
+  );
+}
+
+function DelayedFocusTrapHarness() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen, () => setIsOpen(false));
+
+  const open = () => {
+    setIsOpen(true);
+    setTimeout(() => setIsReady(true), 10);
+  };
+
+  return (
+    <>
+      <button onClick={open}>Open delayed menu</button>
+      {isOpen && isReady && (
+        <div ref={trapRef} role="dialog" tabIndex={-1}>
+          <button>Delayed first item</button>
+        </div>
+      )}
     </>
   );
 }
@@ -65,5 +87,13 @@ describe("useFocusTrap", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it("focuses a dialog that mounts after the trap is opened", async () => {
+    const user = userEvent.setup();
+    render(<DelayedFocusTrapHarness />);
+
+    await user.click(screen.getByRole("button", { name: "Open delayed menu" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Delayed first item" })));
   });
 });

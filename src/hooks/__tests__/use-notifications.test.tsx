@@ -108,6 +108,22 @@ describe("useUnreadCount", () => {
 
     expect(result.current).toBe(0);
   });
+
+  it("deduplicates requests when multiple badges mount", async () => {
+    mockedGet.mockResolvedValue({
+      data: { notifications: [makeNotification({ isRead: false })] },
+    } as never);
+
+    const { QueryWrapper } = createQueryWrapper();
+    const { result } = renderHook(
+      () => ({ header: useUnreadCount(), sidebar: useUnreadCount() }),
+      { wrapper: QueryWrapper },
+    );
+
+    await waitFor(() => expect(result.current.header).toBe(1));
+    expect(result.current.sidebar).toBe(1);
+    expect(mockedGet).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("useMarkAsReadMutation", () => {

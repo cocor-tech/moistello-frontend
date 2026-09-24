@@ -80,7 +80,7 @@ export function Dropdown({
     if (!menuRef.current) return [];
     return Array.from(
       menuRef.current.querySelectorAll<HTMLElement>(
-        '[role="menuitem"]:not([disabled])',
+        '[role="menuitem"]:not([disabled]), [role="menuitemradio"]:not([disabled]), [role="menuitemcheckbox"]:not([disabled])',
       ),
     );
   }, []);

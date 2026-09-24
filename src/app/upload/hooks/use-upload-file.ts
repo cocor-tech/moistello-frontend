@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useRef, useState, type ChangeEvent } from "react"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 import { logger } from "@/lib/logger"
 import {
   getUploadPath,
@@ -12,12 +13,6 @@ import {
 interface UploadResponse {
   slug?: string
   error?: string
-}
-
-function getCsrfHeaders(): Record<string, string> {
-  if (typeof document === "undefined") return {}
-  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
-  return token ? { "X-CSRF-Token": token } : {}
 }
 
 export function useUploadFile() {

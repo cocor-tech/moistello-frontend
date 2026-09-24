@@ -50,6 +50,36 @@ describe("NotificationsArchivePage", () => {
     expect(screen.getByText("Archived Payout")).toBeDefined();
   });
 
+  it("describes and preserves selection as page-scoped", () => {
+    const notifications = Array.from({ length: 21 }, (_, index) =>
+      makeNotification({ id: `n${index + 1}`, title: `Archived ${index + 1}` }),
+    );
+    mockUseNotifications.mockReturnValue({
+      archivedNotifications: notifications,
+      isLoading: false,
+      unarchiveNotification: vi.fn(),
+      bulkUnarchive: vi.fn(),
+    });
+
+    render(<NotificationsArchivePage />);
+    const selectAll = screen.getByRole("checkbox", {
+      name: "Select archived notifications on this page",
+    });
+    fireEvent.click(selectAll);
+    expect(selectAll).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next archived notifications page" }));
+    expect(
+      screen.getByRole("checkbox", { name: "Select archived notifications on this page" }),
+    ).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select archived notifications on this page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous archived notifications page" }));
+    expect(
+      screen.getByRole("checkbox", { name: "Deselect archived notifications on this page" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
   it(
     "supports bulk selection and unarchiving",
     () => {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+  flushLogs,
   getBufferedLogCount,
   getConfiguredLogLevel,
   logger,
@@ -71,5 +72,43 @@ describe("structured logger", () => {
     expect(parseLogEvents({ level: "info", message: "valid", context: { token: "secret" } })).toEqual([
       expect.objectContaining({ level: "info", message: "valid", context: { token: "[redacted]" } }),
     ])
+  })
+
+  it("serializes bigint context values without throwing", () => {
+    expect(sanitizeLogContext({ requestId: 42n })).toEqual({ requestId: "42" })
+  })
+
+  it("keeps distinct context values in separate aggregated events", () => {
+    setLogLevel("info")
+    logger.info("cache lookup", { key: "first" })
+    logger.info("cache lookup", { key: "second" })
+    expect(getBufferedLogCount()).toBe(2)
+  })
+
+  it("aggregates equivalent context regardless of key order", () => {
+    setLogLevel("info")
+    logger.info("ordered event", { first: 1, second: 2 })
+    logger.info("ordered event", { second: 2, first: 1 })
+    expect(getBufferedLogCount()).toBe(1)
+  })
+
+  it("caps oversized redacted context values", () => {
+    expect(sanitizeLogContext({ first: "x".repeat(2_000), second: "y".repeat(2_000) })).toEqual({
+      truncated: "[context too large]",
+    })
+  })
+
+  it("requeues a batch when the browser transport rejects it", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("offline"))
+    vi.stubGlobal("fetch", fetchMock)
+    setLogLevel("info")
+    logger.warn("offline operation")
+    flushLogs()
+
+    await vi.waitFor(() => expect(getBufferedLogCount()).toBe(1))
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/logs",
+      expect.objectContaining({ method: "POST" }),
+    )
   })
 })

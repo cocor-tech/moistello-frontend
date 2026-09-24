@@ -29,8 +29,7 @@ export default function UploadPage() {
   }
 
   const handleLogout = async () => {
-    await auth.logout()
-    upload.resetUpload()
+    if (await auth.logout()) upload.resetUpload()
   }
 
   return (

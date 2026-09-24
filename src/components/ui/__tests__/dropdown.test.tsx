@@ -66,6 +66,21 @@ describe("Dropdown component", () => {
     expect(document.activeElement).toBe(item2);
   });
 
+  it("navigates radio menu items", async () => {
+    render(
+      <Dropdown trigger={<span>Sort circles</span>}>
+        <DropdownItem role="menuitemradio" aria-checked="true">Newest</DropdownItem>
+        <DropdownItem role="menuitemradio" aria-checked="false">Oldest</DropdownItem>
+      </Dropdown>
+    )
+
+    const trigger = screen.getByRole("button", { name: "Sort circles" })
+    fireEvent.click(trigger)
+    const oldest = await screen.findByRole("menuitemradio", { name: "Oldest" })
+    fireEvent.keyDown(trigger, { key: "ArrowDown" })
+    expect(document.activeElement).toBe(oldest)
+  })
+
   it("closes dropdown and restores focus to trigger on Escape key", async () => {
     render(
       <Dropdown trigger={<span>Open Menu</span>}>

@@ -1,130 +1,268 @@
-import { logger } from "@/lib/logger"
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/logger";
 import { get, patch, post } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 import type { Notification } from "@/types";
 
-export function useUnreadCount(): number {
-  return useNotifications().unreadCount;
+const NOTIFICATIONS_STALE_TIME = 30_000;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function extractNotifications(payload: unknown): Notification[] {
+  if (Array.isArray(payload)) return payload as Notification[];
+
+  const root = isRecord(payload) ? payload : undefined;
+  const data = root?.data ?? payload;
+  if (Array.isArray(data)) return data as Notification[];
+
+  if (isRecord(data) && Array.isArray(data.notifications)) {
+    return data.notifications as Notification[];
+  }
+
+  if (isRecord(root) && Array.isArray(root.notifications)) {
+    return root.notifications as Notification[];
+  }
+
+  return [];
+}
+
+function computeUnreadCount(notifications: Notification[]): number {
+  return notifications.filter((notification) => !notification.isRead).length;
+}
+
+async function fetchNotifications(): Promise<Notification[]> {
+  const response = await get<unknown>("/notifications");
+  return extractNotifications(response);
+}
+
+async function fetchArchivedNotifications(): Promise<Notification[]> {
+  const response = await get<unknown>("/notifications/archive?limit=100");
+  return extractNotifications(response);
+}
+
+function isUnauthorizedError(error: unknown): boolean {
+  return (
+    isRecord(error) &&
+    isRecord(error.response) &&
+    error.response.status === 401
+  );
+}
+
+function signalAuthRequired(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("auth:required"));
+  }
+}
+
+function logMutationError(message: string, error: unknown): void {
+  logger.warn(message, { error });
+}
+
+/** Shared active-notification query used by the page, badges, and mutations. */
+export function useNotificationsQuery() {
+  return useQuery({
+    queryKey: queryKeys.notifications.all,
+    queryFn: fetchNotifications,
+    staleTime: NOTIFICATIONS_STALE_TIME,
+  });
+}
+
+export function useArchivedNotificationsQuery() {
+  return useQuery({
+    queryKey: queryKeys.notifications.archive,
+    queryFn: fetchArchivedNotifications,
+    staleTime: NOTIFICATIONS_STALE_TIME,
+  });
+}
+
+export function useUnreadCount(): number {
+  const { data } = useNotificationsQuery();
+  return data ? computeUnreadCount(data) : 0;
+}
+
+export function useMarkAsReadMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => patch(`/notifications/${id}/read`),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: true });
+      const previous = queryClient.getQueryData<Notification[]>(queryKeys.notifications.all);
+      queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) =>
+        old.map((notification) =>
+          notification.id === id ? { ...notification, isRead: true } : notification,
+        ),
+      );
+      return { previous };
+    },
+    onError: (error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+      }
+      if (isUnauthorizedError(error)) signalAuthRequired();
+      logMutationError("[notifications] Failed to mark notification as read", error);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
+    },
+  });
+}
+
+export function useMarkAllAsReadMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => patch("/notifications/read-all"),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: true });
+      const previous = queryClient.getQueryData<Notification[]>(queryKeys.notifications.all);
+      queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) =>
+        old.map((notification) => ({ ...notification, isRead: true })),
+      );
+      return { previous };
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.notifications.all, context.previous);
+      }
+      if (isUnauthorizedError(error)) signalAuthRequired();
+      logMutationError("[notifications] Failed to mark all notifications as read", error);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
+    },
+  });
+}
+
+/**
+ * Composite compatibility hook for the notification pages.
+ *
+ * The active query is deliberately shared with useUnreadCount through the
+ * same query key. This prevents the header, sidebar, and mobile navigation
+ * from each starting a separate full notification request.
+ */
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [archivedNotifications, setArchivedNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const activeQuery = useNotificationsQuery();
+  const archivedQuery = useArchivedNotificationsQuery();
+  const markAsReadMutation = useMarkAsReadMutation();
+  const markAllAsReadMutation = useMarkAllAsReadMutation();
 
   const fetchNotifications = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [res, archiveRes] = await Promise.allSettled([
-        get("/notifications?limit=100"),
-        get("/notifications/archive?limit=100"),
+    await Promise.all([activeQuery.refetch(), archivedQuery.refetch()]);
+  }, [activeQuery, archivedQuery]);
+
+  const markAsRead = useCallback(
+    (id: string) => markAsReadMutation.mutate(id),
+    [markAsReadMutation],
+  );
+  const markAllAsRead = useCallback(
+    () => markAllAsReadMutation.mutate(),
+    [markAllAsReadMutation],
+  );
+
+  const archiveNotification = useCallback(
+    async (id: string) => {
+      const target = activeQuery.data?.find((notification) => notification.id === id);
+      if (target) {
+        queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) =>
+          old.filter((notification) => notification.id !== id),
+        );
+        queryClient.setQueryData<Notification[]>(queryKeys.notifications.archive, (old = []) => [
+          { ...target, isArchived: true },
+          ...old,
+        ]);
+      }
+      try {
+        await post(`/notifications/${id}/archive`, {});
+      } catch (error) {
+        logMutationError("[notifications] Failed to archive notification", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
+      }
+    },
+    [activeQuery.data, queryClient],
+  );
+
+  const unarchiveNotification = useCallback(
+    async (id: string) => {
+      const target = archivedQuery.data?.find((notification) => notification.id === id);
+      if (target) {
+        queryClient.setQueryData<Notification[]>(queryKeys.notifications.archive, (old = []) =>
+          old.filter((notification) => notification.id !== id),
+        );
+        queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) => [
+          { ...target, isArchived: false },
+          ...old,
+        ]);
+      }
+      try {
+        await post(`/notifications/${id}/unarchive`, {});
+      } catch (error) {
+        logMutationError("[notifications] Failed to unarchive notification", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
+      }
+    },
+    [archivedQuery.data, queryClient],
+  );
+
+  const bulkArchive = useCallback(
+    async (ids: string[]) => {
+      const targets = activeQuery.data?.filter((notification) => ids.includes(notification.id)) ?? [];
+      queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) =>
+        old.filter((notification) => !ids.includes(notification.id)),
+      );
+      queryClient.setQueryData<Notification[]>(queryKeys.notifications.archive, (old = []) => [
+        ...targets.map((notification) => ({ ...notification, isArchived: true })),
+        ...old,
       ]);
-
-      if (res.status === "fulfilled") {
-        const d = (res.value as Record<string, unknown>)?.data as Record<string, unknown> ?? res.value;
-        const items = ((d?.notifications ?? d) as Notification[]) || [];
-        setNotifications(items);
-        setUnreadCount(items.filter((n) => !n.isRead).length);
+      try {
+        await post("/notifications/bulk-archive", { ids });
+      } catch (error) {
+        logMutationError("[notifications] Failed to bulk archive notifications", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
       }
+    },
+    [activeQuery.data, queryClient],
+  );
 
-      if (archiveRes.status === "fulfilled") {
-        const ad = (archiveRes.value as Record<string, unknown>)?.data as Record<string, unknown> ?? archiveRes.value;
-        const archiveItems = ((ad?.notifications ?? ad) as Notification[]) || [];
-        setArchivedNotifications(archiveItems);
+  const bulkUnarchive = useCallback(
+    async (ids: string[]) => {
+      const targets = archivedQuery.data?.filter((notification) => ids.includes(notification.id)) ?? [];
+      queryClient.setQueryData<Notification[]>(queryKeys.notifications.archive, (old = []) =>
+        old.filter((notification) => !ids.includes(notification.id)),
+      );
+      queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) => [
+        ...targets.map((notification) => ({ ...notification, isArchived: false })),
+        ...old,
+      ]);
+      try {
+        await post("/notifications/bulk-unarchive", { ids });
+      } catch (error) {
+        logMutationError("[notifications] Failed to bulk unarchive notifications", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
       }
-    } catch (e) {
-      logger.warn("[notifications] Failed to fetch:", e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-
-  const markAsRead = async (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-    try {
-      await patch(`/notifications/${id}/read`, {});
-    } catch (e) {
-      logger.warn("[notifications] markAsRead failed:", e);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadCount(0);
-    try {
-      await patch("/notifications/read-all", {});
-    } catch (e) {
-      logger.warn("[notifications] markAllAsRead failed:", e);
-    }
-  };
-
-  const archiveNotification = async (id: string) => {
-    const target = notifications.find((n) => n.id === id);
-    if (target) {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-      setArchivedNotifications((prev) => [{ ...target, isArchived: true }, ...prev]);
-    }
-    try {
-      await post(`/notifications/${id}/archive`, {});
-    } catch (e) {
-      logger.warn("[notifications] archive failed:", e);
-    }
-  };
-
-  const unarchiveNotification = async (id: string) => {
-    const target = archivedNotifications.find((n) => n.id === id);
-    if (target) {
-      setArchivedNotifications((prev) => prev.filter((n) => n.id !== id));
-      setNotifications((prev) => [{ ...target, isArchived: false }, ...prev]);
-    }
-    try {
-      await post(`/notifications/${id}/unarchive`, {});
-    } catch (e) {
-      logger.warn("[notifications] unarchive failed:", e);
-    }
-  };
-
-  const bulkArchive = async (ids: string[]) => {
-    const targets = notifications.filter((n) => ids.includes(n.id));
-    setNotifications((prev) => prev.filter((n) => !ids.includes(n.id)));
-    setArchivedNotifications((prev) => [
-      ...targets.map((n) => ({ ...n, isArchived: true })),
-      ...prev,
-    ]);
-    try {
-      await post("/notifications/bulk-archive", { ids });
-    } catch (e) {
-      logger.warn("[notifications] bulk archive failed:", e);
-    }
-  };
-
-  const bulkUnarchive = async (ids: string[]) => {
-    const targets = archivedNotifications.filter((n) => ids.includes(n.id));
-    setArchivedNotifications((prev) => prev.filter((n) => !ids.includes(n.id)));
-    setNotifications((prev) => [
-      ...targets.map((n) => ({ ...n, isArchived: false })),
-      ...prev,
-    ]);
-    try {
-      await post("/notifications/bulk-unarchive", { ids });
-    } catch (e) {
-      logger.warn("[notifications] bulk unarchive failed:", e);
-    }
-  };
+    },
+    [archivedQuery.data, queryClient],
+  );
 
   return {
-    notifications,
-    archivedNotifications,
-    unreadCount,
-    isLoading,
+    notifications: activeQuery.data ?? [],
+    archivedNotifications: archivedQuery.data ?? [],
+    unreadCount: activeQuery.data ? computeUnreadCount(activeQuery.data) : 0,
+    isLoading: activeQuery.isLoading || archivedQuery.isLoading,
     markAsRead,
     markAllAsRead,
     archiveNotification,

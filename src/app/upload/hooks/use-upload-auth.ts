@@ -1,17 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 import { logger } from "@/lib/logger"
 
 interface AuthPayload {
   authenticated?: boolean
   error?: string
-}
-
-function getCsrfHeaders(): Record<string, string> {
-  if (typeof document === "undefined") return {}
-  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
-  return token ? { "X-CSRF-Token": token } : {}
 }
 
 export function useUploadAuth() {
@@ -70,13 +65,18 @@ export function useUploadAuth() {
     }
   }, [password, username])
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (): Promise<boolean> => {
     try {
-      await fetch("/api/auth/logout", { method: "POST", headers: getCsrfHeaders() })
+      const response = await fetch("/api/auth/logout", { method: "POST", headers: getCsrfHeaders() })
+      if (!response.ok) {
+        logger.warn("Upload logout request was rejected", { status: response.status })
+        return false
+      }
+      setAuthenticated(false)
+      return true
     } catch (error: unknown) {
       logger.warn("Upload logout request failed", { error })
-    } finally {
-      setAuthenticated(false)
+      return false
     }
   }, [])
 

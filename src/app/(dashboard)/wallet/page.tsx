@@ -43,7 +43,8 @@ export default function WalletPage() {
   const [copied, setCopied] = useState(false)
   const [wallet, setWallet] = useState<{ publicKey: string } | null>(null)
   const addToast = useUIStore((s) => s.addToast)
-  const receiveDialogRef = useFocusTrap<HTMLDivElement>(showReceive, () => setShowReceive(false))
+  const isReceiveDialogOpen = showReceive && wallet !== null
+  const receiveDialogRef = useFocusTrap<HTMLDivElement>(isReceiveDialogOpen, () => setShowReceive(false))
 
   useEffect(() => {
     async function load() {
@@ -116,7 +117,7 @@ export default function WalletPage() {
       <PageHeader title="Wallet" description="Manage your Stellar wallet." />
 
       {/* Receive modal */}
-      {showReceive && wallet && (
+      {isReceiveDialogOpen && wallet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <button
             type="button"
@@ -138,7 +139,7 @@ export default function WalletPage() {
               <button type="button" aria-label="Close receive wallet dialog" onClick={() => setShowReceive(false)} className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/10 text-muted-foreground hover:text-foreground text-sm">✕</button>
             </div>
             <div className="inline-flex items-center justify-center w-40 h-40 bg-white rounded-xl mx-auto">
-              <QrCode className="h-16 w-16 text-black/80" />
+              <QrCode aria-hidden="true" className="h-16 w-16 text-black/80" />
             </div>
             <div className="bg-white/5 rounded-xl px-4 py-3">
               <code className="text-sm font-mono text-foreground break-all">{wallet.publicKey}</code>

@@ -26,12 +26,17 @@ const DEFAULT_BROWSER_ENDPOINT = "/api/logs"
 const FLUSH_INTERVAL_MS = 5_000
 const MAX_QUEUE_SIZE = 100
 const MAX_BATCH_SIZE = 25
+const MAX_BATCH_BYTES = 60 * 1024
+const MAX_CONTEXT_BYTES = 2_048
+const MAX_REDACTED_STRING_LENGTH = 2_000
 const MAX_CONTEXT_DEPTH = 4
 const REDACTED = "[redacted]"
 
 let configuredLevel: LogLevel | null = null
 let browserQueue: LogEvent[] = []
 let flushTimer: ReturnType<typeof setTimeout> | null = null
+let flushInFlight = false
+let flushGeneration = 0
 let unloadListenersAttached = false
 
 function isLogLevel(value: unknown): value is LogLevel {
@@ -80,6 +85,7 @@ function redactString(value: string): string {
     .replace(/\b\d{6}\b/g, "[otp]")
     .replace(/Bearer\s+[^\s,;]+/gi, "Bearer [redacted]")
     .replace(/[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[jwt]")
+    .slice(0, MAX_REDACTED_STRING_LENGTH)
 }
 
 const SENSITIVE_KEY = /password|passcode|token|secret|authorization|cookie|private|credential|mnemonic|seed|otp|verification.?code|challenge|nonce|signature|xdr|session|user|wallet|address|email|file(name)?/i
@@ -87,6 +93,9 @@ const SENSITIVE_KEY = /password|passcode|token|secret|authorization|cookie|priva
 function redactValue(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {
   if (depth > MAX_CONTEXT_DEPTH) return "[truncated]"
   if (typeof value === "string") return redactString(value)
+  if (typeof value === "bigint") return value.toString()
+  if (typeof value === "function") return "[function]"
+  if (typeof value === "symbol") return "[symbol]"
   if (value === null || typeof value !== "object") return value
   if (value instanceof Error) {
     return {
@@ -109,14 +118,53 @@ function redactValue(value: unknown, depth = 0, seen = new WeakSet<object>()): u
   return result
 }
 
+function safeStringify(value: unknown): string | undefined {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return undefined
+  }
+}
+
+function stableStringify(value: unknown): string | undefined {
+  try {
+    const seen = new WeakSet<object>()
+    const normalize = (item: unknown): unknown => {
+      if (Array.isArray(item)) return item.map(normalize)
+      if (item === null || typeof item !== "object") return item
+      if (seen.has(item)) return "[circular]"
+      seen.add(item)
+      const result: Record<string, unknown> = {}
+      for (const key of Object.keys(item).sort()) {
+        result[key] = normalize((item as Record<string, unknown>)[key])
+      }
+      return result
+    }
+    return JSON.stringify(normalize(value))
+  } catch {
+    return undefined
+  }
+}
+
+function cappedContext(context: LogContext): LogContext {
+  const serialized = safeStringify(context)
+  if (!serialized) return { truncated: "[unserializable context]" }
+  if (new TextEncoder().encode(serialized).byteLength <= MAX_CONTEXT_BYTES) return context
+  return { truncated: "[context too large]" }
+}
+
 export function sanitizeLogContext(context?: LogContext): LogContext | undefined {
   if (!context) return undefined
-  return redactValue(context) as LogContext
+  try {
+    return cappedContext(redactValue(context) as LogContext)
+  } catch {
+    return { truncated: "[unserializable context]" }
+  }
 }
 
 function fingerprintFor(level: LogLevel, message: string, context?: LogContext): string {
-  const contextKeys = context ? Object.keys(context).sort().join(",") : ""
-  const source = `${level}|${message}|${contextKeys}`
+  const contextFingerprint = context ? stableStringify(context) || Object.keys(context).sort().join(",") : ""
+  const source = `${level}|${message}|${contextFingerprint}`
   let hash = 2166136261
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index)
@@ -126,7 +174,12 @@ function fingerprintFor(level: LogLevel, message: string, context?: LogContext):
 }
 
 function createEvent(level: LogLevel, message: string, context?: LogContext): LogEvent {
-  const safeMessage = redactString(String(message).slice(0, 2_000))
+  let safeMessage: string
+  try {
+    safeMessage = redactString(String(message).slice(0, 2_000))
+  } catch {
+    safeMessage = "[unserializable message]"
+  }
   const safeContext = sanitizeLogContext(context)
   const timestamp = Date.now()
   return {
@@ -144,7 +197,14 @@ function writeServerEvent(event: LogEvent): void {
   if (typeof process === "undefined") return
   const serializableEvent = { ...event }
   delete serializableEvent.fingerprint
-  const line = `${JSON.stringify(serializableEvent)}\n`
+  const serialized = safeStringify(serializableEvent) || JSON.stringify({
+    level: event.level,
+    message: event.message,
+    timestamp: event.timestamp,
+    occurrences: event.occurrences,
+    context: "[unserializable context]",
+  })
+  const line = `${serialized}\n`
   const stream = event.level === "error" ? process.stderr : process.stdout
   if (typeof stream?.write === "function") stream.write(line)
 }
@@ -158,6 +218,48 @@ function mergeEvent(target: LogEvent, incoming: LogEvent): void {
   target.timestamp = incoming.timestamp
 }
 
+function scheduleFlush(): void {
+  if (flushTimer || flushInFlight || browserQueue.length === 0) return
+  flushTimer = setTimeout(() => {
+    flushTimer = null
+    flushLogs()
+  }, FLUSH_INTERVAL_MS)
+}
+
+function serializedSize(value: unknown): number {
+  const serialized = safeStringify(value)
+  return serialized ? new TextEncoder().encode(serialized).byteLength + 1 : MAX_BATCH_BYTES + 1
+}
+
+function takeBrowserBatch(): LogEvent[] {
+  const batch: LogEvent[] = []
+  let bytes = 2
+
+  while (browserQueue.length > 0 && batch.length < MAX_BATCH_SIZE) {
+    const event = browserQueue[0]
+    let nextEvent = event
+    let eventSize = serializedSize(event)
+    if (eventSize > MAX_BATCH_BYTES && event.context) {
+      const reducedEvent = { ...event, context: { truncated: "[context too large]" } }
+      const reducedSize = serializedSize(reducedEvent)
+      if (reducedSize <= MAX_BATCH_BYTES) {
+        nextEvent = reducedEvent
+        eventSize = reducedSize
+      }
+    }
+    if (eventSize > MAX_BATCH_BYTES) {
+      browserQueue.shift()
+      continue
+    }
+    if (bytes + eventSize > MAX_BATCH_BYTES) break
+    browserQueue.shift()
+    batch.push(nextEvent)
+    bytes += eventSize
+  }
+
+  return batch
+}
+
 function requeue(batch: LogEvent[]): void {
   for (const event of batch) {
     const existing = browserQueue.find((item) => item.fingerprint === event.fingerprint)
@@ -168,27 +270,58 @@ function requeue(batch: LogEvent[]): void {
     }
   }
   browserQueue = browserQueue.slice(-MAX_QUEUE_SIZE)
-  if (browserQueue.length > 0 && !flushTimer) {
-    flushTimer = setTimeout(flushLogs, FLUSH_INTERVAL_MS)
-  }
 }
 
-export function flushLogs(): void {
-  if (typeof window === "undefined" || browserQueue.length === 0) return
+export function flushLogs(useBeacon = false): void {
+  if (typeof window === "undefined" || browserQueue.length === 0 || flushInFlight) return
   if (flushTimer) {
     clearTimeout(flushTimer)
     flushTimer = null
   }
 
-  const batch = browserQueue.splice(0, MAX_BATCH_SIZE)
-  const payload = JSON.stringify(batch)
+  const batch = takeBrowserBatch()
+  if (batch.length === 0) return
+  flushInFlight = true
+  const generation = flushGeneration
+
+  let payload: string
   try {
-    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+    payload = JSON.stringify(batch)
+    if (new TextEncoder().encode(payload).byteLength > MAX_BATCH_BYTES) {
+      requeue(batch)
+      flushInFlight = false
+      scheduleFlush()
+      return
+    }
+  } catch {
+    requeue(batch)
+    flushInFlight = false
+    scheduleFlush()
+    return
+  }
+
+  const isCurrent = () => generation === flushGeneration
+  const requeueIfCurrent = () => {
+    if (isCurrent()) requeue(batch)
+  }
+  const finish = () => {
+    if (!isCurrent()) return
+    flushInFlight = false
+    scheduleFlush()
+  }
+
+  try {
+    // sendBeacon cannot report an HTTP rejection, so reserve it for unload
+    // delivery. Normal timer flushes use fetch and can requeue failed batches.
+    if (useBeacon && typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
       const sent = navigator.sendBeacon(
         getBrowserEndpoint(),
         new Blob([payload], { type: "application/json" }),
       )
-      if (sent) return
+      if (sent) {
+        finish()
+        return
+      }
     }
 
     void fetch(getBrowserEndpoint(), {
@@ -197,10 +330,11 @@ export function flushLogs(): void {
       headers: { "Content-Type": "application/json" },
       keepalive: true,
     }).then((response) => {
-      if (!response.ok) requeue(batch)
-    }).catch(() => requeue(batch))
+      if (!response.ok) requeueIfCurrent()
+    }).catch(() => requeueIfCurrent()).finally(finish)
   } catch {
-    requeue(batch)
+    requeueIfCurrent()
+    finish()
   }
 }
 
@@ -219,7 +353,7 @@ function enqueue(event: LogEvent): void {
     flushLogs()
     return
   }
-  if (!flushTimer) flushTimer = setTimeout(flushLogs, FLUSH_INTERVAL_MS)
+  scheduleFlush()
 }
 
 export function log(level: LogLevel, message: string, context?: LogContext): void {
@@ -254,11 +388,15 @@ export const logger = {
   error: (message: string, ...details: unknown[]) => log("error", message, detailsToContext(details)),
 }
 
+function flushOnUnload(): void {
+  flushLogs(true)
+}
+
 export function attachLogFlushListeners(): void {
   if (typeof window === "undefined" || unloadListenersAttached) return
   unloadListenersAttached = true
-  window.addEventListener("pagehide", flushLogs)
-  window.addEventListener("beforeunload", flushLogs)
+  window.addEventListener("pagehide", flushOnUnload)
+  window.addEventListener("beforeunload", flushOnUnload)
 }
 
 export function getBufferedLogCount(): number {
@@ -268,13 +406,15 @@ export function getBufferedLogCount(): number {
 export function resetLogger(): void {
   browserQueue = []
   configuredLevel = null
+  flushGeneration += 1
+  flushInFlight = false
   if (flushTimer) {
     clearTimeout(flushTimer)
     flushTimer = null
   }
   if (typeof window !== "undefined") {
-    window.removeEventListener("pagehide", flushLogs)
-    window.removeEventListener("beforeunload", flushLogs)
+    window.removeEventListener("pagehide", flushOnUnload)
+    window.removeEventListener("beforeunload", flushOnUnload)
   }
   unloadListenersAttached = false
 }

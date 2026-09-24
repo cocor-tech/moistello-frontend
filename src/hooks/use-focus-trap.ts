@@ -24,14 +24,34 @@ export function useFocusTrap<T extends HTMLElement>(
     triggerRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    const container = containerRef.current;
     const getFocusableElements = () =>
       Array.from(
-        container?.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS) ?? [],
+        containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS) ?? [],
       );
 
-    const focusableElements = getFocusableElements();
-    (focusableElements[0] ?? container)?.focus();
+    const focusFirstElement = () => {
+      const container = containerRef.current;
+      if (!container) return false;
+      const focusableElements = getFocusableElements();
+      (focusableElements[0] ?? container).focus();
+      return true;
+    };
+
+    let observer: MutationObserver | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const focusWhenReady = () => {
+      if (focusFirstElement()) return;
+      const root = document.documentElement
+      if (typeof MutationObserver !== "undefined" && root) {
+        observer = new MutationObserver(() => {
+          if (focusFirstElement()) observer?.disconnect();
+        });
+        observer.observe(root, { childList: true, subtree: true });
+        return;
+      }
+      retryTimer = setTimeout(focusWhenReady, 0);
+    };
+    focusWhenReady();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -45,7 +65,7 @@ export function useFocusTrap<T extends HTMLElement>(
       const elements = getFocusableElements();
       if (elements.length === 0) {
         event.preventDefault();
-        container?.focus();
+        containerRef.current?.focus();
         return;
       }
 
@@ -65,6 +85,8 @@ export function useFocusTrap<T extends HTMLElement>(
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      observer?.disconnect();
+      if (retryTimer) clearTimeout(retryTimer);
       triggerRef.current?.focus();
     };
   }, [isOpen]);

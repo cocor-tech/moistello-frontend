@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useId, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Shield, AlertCircle, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,9 @@ export function SignPrompt({ isOpen, onClose, onSign, onSuccess, title = "Sign T
   const [status, setStatus] = useState<"idle" | "signing" | "success" | "error">("idle")
   const [error, setError] = useState("")
   const dialogRef = useFocusTrap<HTMLDivElement>(isOpen, onClose)
+  const id = useId().replace(/:/g, "")
+  const titleId = `${id}-sign-prompt-title`
+  const descriptionId = `${id}-sign-prompt-description`
   const walletName = detectedWallets.find(w => w.id === activeWallet?.adapter?.meta?.id)?.name || "wallet"
 
   const handleSign = async () => {
@@ -44,8 +47,9 @@ export function SignPrompt({ isOpen, onClose, onSign, onSuccess, title = "Sign T
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="sign-prompt-title"
-            aria-describedby={description ? "sign-prompt-description" : undefined}
+            aria-label={status === "success" ? "Transaction signed" : undefined}
+            aria-labelledby={status === "success" ? undefined : titleId}
+            aria-describedby={status !== "success" && description ? descriptionId : undefined}
             tabIndex={-1}
             initial={{ scale: 0.92, opacity: 0, y: 24 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -56,9 +60,9 @@ export function SignPrompt({ isOpen, onClose, onSign, onSuccess, title = "Sign T
               <motion.div className="py-8" role="status" aria-live="polite"><CheckCircle className="h-12 w-12 text-emerald-400 mx-auto mb-3" aria-hidden="true" /><p className="font-heading text-lg">Signed Successfully</p></motion.div>
             ) : (
               <>
-                <div className="w-14 h-14 rounded-2xl gradient-bg-extended flex items-center justify-center mx-auto mb-4"><Shield className="h-6 w-6 text-white" /></div>
-                <h2 id="sign-prompt-title" className="font-heading text-xl gradient-text mb-1">{title}</h2>
-                {description && <p id="sign-prompt-description" className="text-sm text-muted-foreground mb-1">{description}</p>}
+                <div className="w-14 h-14 rounded-2xl gradient-bg-extended flex items-center justify-center mx-auto mb-4"><Shield aria-hidden="true" className="h-6 w-6 text-white" /></div>
+                <h2 id={titleId} className="font-heading text-xl gradient-text mb-1">{title}</h2>
+                {description && <p id={descriptionId} className="text-sm text-muted-foreground mb-1">{description}</p>}
                 <p className="text-xs text-muted-foreground mb-6">Signing with: <span className="text-foreground font-medium">{walletName}</span></p>
                 {error && <div role="alert" aria-live="assertive" className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-2 text-sm text-red-400 mb-4"><AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />{error}</div>}
                 <div className="flex gap-3">

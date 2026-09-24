@@ -39,13 +39,19 @@ export default function NotificationsArchivePage() {
 
   const allSelected =
     pageItems.length > 0 && pageItems.every((n) => selectedIds.includes(n.id));
+  const someSelected = pageItems.some((n) => selectedIds.includes(n.id));
+  const pageSelectionState: boolean | "mixed" = allSelected
+    ? true
+    : someSelected
+      ? "mixed"
+      : false;
 
   const handleToggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(pageItems.map((n) => n.id));
-    }
+    const pageIds = new Set(pageItems.map((n) => n.id));
+    setSelectedIds((previous) => {
+      if (allSelected) return previous.filter((id) => !pageIds.has(id));
+      return Array.from(new Set([...previous, ...pageIds]));
+    });
   };
 
   const handleToggleSelect = (id: string) => {
@@ -111,8 +117,8 @@ export default function NotificationsArchivePage() {
             <button
               type="button"
               role="checkbox"
-              aria-checked={allSelected}
-              aria-label={allSelected ? "Deselect all archived notifications" : "Select all archived notifications"}
+              aria-checked={pageSelectionState}
+              aria-label={allSelected ? "Deselect archived notifications on this page" : "Select archived notifications on this page"}
               onClick={handleToggleSelectAll}
               className="shrink-0 rounded text-muted-foreground hover:text-foreground"
             >
@@ -123,7 +129,7 @@ export default function NotificationsArchivePage() {
               )}
             </button>
             <span className="text-xs font-medium text-muted-foreground">
-              Select All
+              Select all on this page
             </span>
           </div>
 

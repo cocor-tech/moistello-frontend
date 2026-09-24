@@ -45,4 +45,39 @@ describe("POST /api/logs", () => {
     expect((await POST(request("not-json"))).status).toBe(400)
     expect((await POST(request([], { "content-length": "70000" }))).status).toBe(413)
   })
+
+  it("enforces the body limit while streaming when content-length is absent", async () => {
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(65_537))
+        controller.close()
+      },
+    })
+    const streamedRequest = new NextRequest("http://localhost/api/logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-forwarded-for": "198.51.100.10" },
+      body: stream,
+      duplex: "half",
+    } as RequestInit)
+
+    const response = await POST(streamedRequest)
+    expect(response.status).toBe(413)
+  })
+
+  it("rejects invalid content-length values", async () => {
+    const response = await POST(request([], { "content-length": "1.5" }))
+    expect(response.status).toBe(400)
+  })
+
+  it("rate limits a client and returns a retry hint", async () => {
+    const headers = { "x-forwarded-for": "198.51.100.11" }
+    for (let index = 0; index < 60; index += 1) {
+      const response = await POST(request([{ level: "info", message: `event-${index}` }], headers))
+      expect(response.status).toBe(202)
+    }
+
+    const response = await POST(request([{ level: "info", message: "limited" }], headers))
+    expect(response.status).toBe(429)
+    expect(response.headers.get("Retry-After")).toBe("60")
+  })
 })
