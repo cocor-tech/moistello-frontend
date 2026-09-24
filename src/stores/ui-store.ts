@@ -6,7 +6,8 @@ import { persist } from "zustand/middleware";
 type Theme = "light" | "dark" | "system";
 type Density = "comfortable" | "compact";
 type FontSize = "small" | "medium" | "large";
-type ToastType = "success" | "error" | "warning" | "info";
+
+export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface Toast {
   id: string;
@@ -41,6 +42,14 @@ interface UIActions {
  * results), so every id gets a strictly increasing sequence suffix.
  */
 let toastIdCounter = 0;
+
+/*
+ * Hard cap on how many toasts can be stacked at once. Combined with the
+ * column-reverse layout in ToastProvider this keeps the viewport corner from
+ * ever overflowing: when the limit is hit the oldest toast is evicted so the
+ * stack always fits on screen.
+ */
+const MAX_TOASTS = 5;
 
 /*
  * Pending auto-dismiss timers keyed by toast id. Tracking them lets a manual
@@ -83,7 +92,23 @@ export const useUIStore = create<UIStore>()(
       addToast: (toast: Omit<Toast, "id">) => {
         const id = `toast-${Date.now()}-${++toastIdCounter}`;
         const newToast: Toast = { ...toast, id };
-        set((state) => ({ toasts: [...state.toasts, newToast] }));
+        set((state) => {
+          // Evict the oldest toast(s) once the stack would exceed the cap, so
+          // overlapping toasts can never overflow the corner of the viewport.
+          const overflow = state.toasts.length + 1 - MAX_TOASTS;
+          if (overflow > 0) {
+            for (const evicted of state.toasts.slice(0, overflow)) {
+              const timer = toastDismissTimers.get(evicted.id);
+              if (timer) {
+                clearTimeout(timer);
+                toastDismissTimers.delete(evicted.id);
+              }
+            }
+          }
+          const toasts =
+            overflow > 0 ? state.toasts.slice(overflow) : state.toasts;
+          return { toasts: [...toasts, newToast] };
+        });
 
         const duration = toast.duration ?? 5000;
         const timer = setTimeout(() => {
