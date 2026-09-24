@@ -1,9 +1,11 @@
 "use client"
 
-import { logger } from "@/lib/logger"
 import { useMemo, useState } from "react"
+import { logger } from "@/lib/logger"
 import Link from "next/link"
+import { useForm } from "react-hook-form"
 import { escapeRegExp } from "@/lib/docs/search-utils"
+import { searchSchema, zodResolver, type SearchInput } from "@/lib/validation"
 
 interface SearchResult {
   title: string
@@ -18,17 +20,27 @@ type SearchState =
   | { status: "done"; results: SearchResult[]; query: string }
 
 export function SearchForm() {
-  const [searchQuery, setSearchQuery] = useState("")
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<SearchInput>({
+    resolver: zodResolver(searchSchema),
+    mode: "onTouched",
+    defaultValues: { query: "" },
+  })
   const [state, setState] = useState<SearchState>({ status: "idle" })
 
+  const searchQuery = watch("query", "")
   const terms = useMemo(
     () => searchQuery.trim().split(/\s+/).filter(Boolean),
     [searchQuery]
   )
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const q = searchQuery.trim()
+  const handleSearch = async ({ query }: SearchInput) => {
+    const q = query.trim()
     if (!q) {
       setState({ status: "idle" })
       return
@@ -47,23 +59,34 @@ export function SearchForm() {
     }
   }
 
+  const clearResults = () => {
+    setValue("query", "")
+    setState({ status: "idle" })
+  }
+
   return (
     <div className="relative max-w-lg mx-auto">
-      <form onSubmit={handleSearch}>
+      <form onSubmit={handleSubmit(handleSearch)} noValidate>
         <div className="relative">
           <SearchIcon />
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value)
-              if (!e.target.value) setState({ status: "idle" })
-            }}
             placeholder="Search docs, FAQ, how-to guides..."
             aria-label="Search the documentation"
+            aria-invalid={errors.query ? true : undefined}
+            {...register("query", {
+              onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                if (!event.target.value) setState({ status: "idle" })
+              },
+            })}
             className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 focus:border-aurora-violet/40 text-base transition-all"
           />
         </div>
+        {errors.query && (
+          <p role="alert" className="mt-2 text-xs text-red-400">
+            {errors.query.message}
+          </p>
+        )}
         {state.status !== "idle" && (
           <span
             className="sr-only"
@@ -97,10 +120,19 @@ export function SearchForm() {
       {state.status === "done" && (
         <div className="mt-4 max-w-lg mx-auto text-left">
           {state.results.length === 0 ? (
-            <p className="text-sm text-muted-foreground bg-white/5 rounded-xl px-4 py-3">
-              No results found for “{state.query}”. Try a different term or
-              submit a ticket.
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground bg-white/5 rounded-xl px-4 py-3">
+                No results found for “{state.query}”. Try a different term or
+                submit a ticket.
+              </p>
+              <button
+                type="button"
+                onClick={clearResults}
+                className="text-xs text-aurora-violet hover:underline shrink-0"
+              >
+                Clear
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
               <p className="text-2xs uppercase tracking-wider text-muted-foreground/70">

@@ -1,16 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { ticketSchema, zodResolver, type TicketInput } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
 import { getCsrfHeaders } from "@/lib/auth/csrf"
-
-interface FormData {
-  name: string
-  subject: string
-  category: string
-  message: string
-  priority: string
-}
 
 const categories = [
   "Account & Wallet",
@@ -24,35 +18,24 @@ const categories = [
   "Other",
 ]
 
+type FormState = "idle" | "submitting" | "success" | "error"
+
 export function TicketForm() {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    subject: "",
-    category: "",
-    message: "",
-    priority: "medium",
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TicketInput>({
+    resolver: zodResolver(ticketSchema),
+    mode: "onTouched",
+    defaultValues: { name: "", subject: "", category: "", message: "", priority: "medium" },
   })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
+  const [formState, setFormState] = useState<FormState>("idle")
   const [formError, setFormError] = useState<string | null>(null)
   const [showSubmitForm, setShowSubmitForm] = useState(false)
 
-  const validateForm = () => {
-    const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = "Name is required"
-    if (!formData.subject.trim()) errors.subject = "Subject is required"
-    if (!formData.category) errors.category = "Select a category"
-    if (!formData.message.trim()) errors.message = "Describe your issue"
-    else if (formData.message.trim().length < 20)
-      errors.message = "Please provide more detail (at least 20 characters)"
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }
-
-  const handleSubmitTicket = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-
+  const handleSubmitTicket = async (values: TicketInput) => {
     setFormState("submitting")
     setFormError(null)
 
@@ -60,18 +43,23 @@ export function TicketForm() {
       const res = await fetch("/api/support/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(values),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || "Failed to submit ticket")
       }
       setFormState("success")
-      setFormData({ name: "", subject: "", category: "", message: "", priority: "medium" })
+      reset({ name: "", subject: "", category: "", message: "", priority: "medium" })
     } catch (err) {
       setFormState("error")
       setFormError(err instanceof Error ? err.message : "Something went wrong")
     }
+  }
+
+  const closeSuccess = () => {
+    setFormState("idle")
+    setShowSubmitForm(false)
   }
 
   if (formState === "success") {
@@ -91,13 +79,19 @@ export function TicketForm() {
           variant="ghost"
           size="sm"
           className="text-aurora-cyan hover:text-aurora-cyan"
-          onClick={() => { setFormState("idle"); setShowSubmitForm(false) }}
+          onClick={closeSuccess}
         >
           Close
         </Button>
       </div>
     )
   }
+
+  const inputClass = (hasError: boolean) =>
+    `w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${hasError ? "border-red-400/50" : "border-white/10"}`
+
+  const errorText = (message?: string) =>
+    message ? <p className="mt-1 text-xs text-red-400" role="alert">{message}</p> : null
 
   return (
     <div className="space-y-4">
@@ -113,44 +107,52 @@ export function TicketForm() {
           Open Ticket Form
         </Button>
       ) : (
-        <form onSubmit={handleSubmitTicket} className="space-y-3">
-          <input
-            aria-label="Your name"
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Name"
-            className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.name ? "border-red-400/50" : "border-white/10"}`}
-          />
-          <input
-            aria-label="Ticket subject"
-            type="text"
-            value={formData.subject}
-            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-            placeholder="Subject"
-            className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.subject ? "border-red-400/50" : "border-white/10"}`}
-          />
-          <select
-            aria-label="Ticket category"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full h-11 rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-foreground focus:outline-none"
-          >
-            <option value="">Category</option>
-            {categories.map((c) => (
-              <option key={c} value={c} className="bg-card">{c}</option>
-            ))}
-          </select>
-          <textarea
-            aria-label="Describe your issue"
-            rows={4}
-            value={formData.message}
-            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-            placeholder="Describe your issue..."
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-y min-h-[80px]"
-          />
+        <form onSubmit={handleSubmit(handleSubmitTicket)} className="space-y-3" noValidate>
+          <div>
+            <input
+              type="text"
+              placeholder="Name"
+              aria-label="Name"
+              {...register("name")}
+              className={inputClass(Boolean(errors.name))}
+            />
+            {errorText(errors.name?.message)}
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder="Subject"
+              aria-label="Subject"
+              {...register("subject")}
+              className={inputClass(Boolean(errors.subject))}
+            />
+            {errorText(errors.subject?.message)}
+          </div>
+          <div>
+            <select
+              aria-label="Category"
+              {...register("category")}
+              className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground focus:outline-none ${errors.category ? "border-red-400/50" : "border-white/10"}`}
+            >
+              <option value="">Category</option>
+              {categories.map((c) => (
+                <option key={c} value={c} className="bg-card">{c}</option>
+              ))}
+            </select>
+            {errorText(errors.category?.message)}
+          </div>
+          <div>
+            <textarea
+              rows={4}
+              placeholder="Describe your issue..."
+              aria-label="Message"
+              {...register("message")}
+              className={`w-full rounded-xl bg-white/5 border px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-y min-h-[80px] ${errors.message ? "border-red-400/50" : "border-white/10"}`}
+            />
+            {errorText(errors.message?.message)}
+          </div>
           {formState === "error" && formError && (
-            <div role="alert" className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2">{formError}</div>
+            <div className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2" role="alert">{formError}</div>
           )}
           <div className="flex gap-2">
             <Button

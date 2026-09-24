@@ -10,7 +10,12 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test:storybook": "test-storybook",
+    "test:visual": "playwright test -c playwright.storybook.config.ts",
+    "test:visual:update": "playwright test -c playwright.storybook.config.ts --update-snapshots"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
@@ -41,6 +46,7 @@
     "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.88.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "swagger-ui-react": "^5.32.6",
@@ -55,6 +61,11 @@
     "@playwright/test": "^1.60.0",
     "@simplewebauthn/browser": "^13.1.0",
     "@simplewebauthn/server": "^13.1.0",
+    "@storybook/addon-a11y": "^8.6.18",
+    "@storybook/addon-essentials": "^8.6.18",
+    "@storybook/addon-interactions": "^8.6.18",
+    "@storybook/nextjs": "^8.6.18",
+    "@storybook/test-runner": "^0.20.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -70,8 +81,12 @@
     "postcss": "^8",
     "rolldown": "^1.2.6",
     "source-map-explorer": "^2.5.2",
+    "storybook": "^8.6.18",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",
     "vitest": "^4.1.6"
+  },
+  "overrides": {
+    "webpack": "5.101.2"
   }
 }
