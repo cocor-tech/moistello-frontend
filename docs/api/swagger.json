@@ -1,0 +1,268 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Moistello API",
+    "description": "Next.js API routes for the Moistello frontend application.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/api", "description": "Local / deployed app" }
+  ],
+  "tags": [
+    { "name": "auth", "description": "Authentication and session management" },
+    { "name": "wallet", "description": "Stellar wallet utilities" }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Log in with username and password",
+        "description": "Development-only endpoint that authenticates against the local `content/users.json` file. Blocked in production. On success sets an `HttpOnly` session cookie and a CSRF token cookie.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" },
+              "example": { "username": "alice", "password": "s3cr3t" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Sets `moistello_session` (HttpOnly) and `moistello_csrf` cookies.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": {
+            "description": "Blocked in production",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/session": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "Rehydrate session on page load",
+        "description": "Returns the access token stored in the `HttpOnly` cookie so a freshly loaded tab can place it back in memory for `Authorization` headers. Returns 401 if the cookie is absent or the token has expired.",
+        "responses": {
+          "200": {
+            "description": "Authenticated — access token returned",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionGetResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated or token expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "authenticated": { "type": "boolean", "example": false }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["auth"],
+        "summary": "Store a freshly issued token pair",
+        "description": "Accepts an access token (and optionally a refresh token) obtained from the backend API and writes them into `HttpOnly` cookies. Also rotates the CSRF token cookie.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SessionPostRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens stored",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SessionPostResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      },
+      "delete": {
+        "tags": ["auth"],
+        "summary": "Log out — clear session cookies",
+        "description": "Expires the access token, refresh token, and CSRF token cookies. Also clears any legacy cookie names left by older builds.",
+        "responses": {
+          "200": {
+            "description": "Logged out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/balance": {
+      "get": {
+        "tags": ["wallet"],
+        "summary": "Get Stellar wallet balance",
+        "description": "Queries Stellar Horizon for the XLM and USDC balances of a Stellar public key. Results are cached server-side for 30 seconds. Unfunded accounts return `{ xlm: '0', usdc: '0' }` rather than a 404.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Stellar public key (G…)",
+            "schema": { "type": "string" },
+            "example": "GAHJJJKMOKYE4RVPZEWZTKH5FVI4PA3VL7GK2LFNUBSGBV3CCWFCNJJJ"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balance fetched (or zero for unfunded accounts)",
+            "headers": {
+              "X-Cache": {
+                "description": "`HIT` when served from the 30-second server cache, `MISS` otherwise.",
+                "schema": { "type": "string", "enum": ["HIT", "MISS"] }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WalletBalance" },
+                "example": { "xlm": "9.9995600", "usdc": "100.0000000" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string" },
+          "password": { "type": "string", "format": "password" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "username": { "type": "string" },
+              "role": { "type": "string" }
+            }
+          }
+        }
+      },
+      "SessionGetResponse": {
+        "type": "object",
+        "properties": {
+          "authenticated": { "type": "boolean", "example": true },
+          "token": { "type": "string", "description": "JWT access token" },
+          "expiresAt": {
+            "type": "integer",
+            "description": "Unix timestamp (ms) when the token expires, or null",
+            "nullable": true
+          }
+        }
+      },
+      "SessionPostRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": { "type": "string", "description": "JWT access token" },
+          "refreshToken": {
+            "type": "string",
+            "description": "Optional refresh token — stored HttpOnly and never sent to page script"
+          }
+        }
+      },
+      "SessionPostResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "expiresAt": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Unix timestamp (ms) of the access token expiry"
+          }
+        }
+      },
+      "WalletBalance": {
+        "type": "object",
+        "properties": {
+          "xlm": { "type": "string", "description": "XLM balance as a decimal string", "example": "9.9995600" },
+          "usdc": { "type": "string", "description": "USDC balance as a decimal string", "example": "100.0000000" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request — missing or invalid parameters",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required or credentials invalid",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}
