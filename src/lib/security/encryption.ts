@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 /**
  * AES-GCM encryption utilities for localStorage protection.
  *
@@ -146,7 +147,7 @@ export async function encryptToStorage<T>(
     const payload = await encrypt(plaintext, passphrase);
     localStorage.setItem(key, JSON.stringify(payload));
   } catch (e) {
-    console.warn(`[encryption] Failed to encrypt and store ${key}:`, e);
+    logger.warn(`[encryption] Failed to encrypt and store ${key}:`, e);
     throw e;
   }
 }
@@ -171,7 +172,7 @@ export async function decryptFromStorage<T>(
     const plaintext = await decrypt(payload, passphrase);
     return JSON.parse(plaintext) as T;
   } catch (e) {
-    console.warn(`[encryption] Failed to decrypt ${key}:`, e);
+    logger.warn(`[encryption] Failed to decrypt ${key}:`, e);
     localStorage.removeItem(key);
     return null;
   }

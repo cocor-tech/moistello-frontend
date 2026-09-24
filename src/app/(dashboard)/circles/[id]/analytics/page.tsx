@@ -2,12 +2,11 @@
 
 import React, { useMemo } from "react"
 import { useParams } from "next/navigation"
-import Link from "next/link"
 import { ArrowLeft, TrendingUp, DollarSign, Users, Clock, Activity, Zap, Inbox } from "lucide-react"
 import { useCircle, useCircleMembers, useCircleRounds } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatCurrency } from "@/lib/formatters"
@@ -88,7 +87,7 @@ export default function AnalyticsPage() {
         title="Analytics"
         description={`Performance metrics for ${circle.name}`}
         breadcrumbs={[{ label: "Circles", href: "/circles" }, { label: circle.name, href: `/circles/${circleId}` }, { label: "Analytics" }]}
-        action={<Link href={`/circles/${circleId}`}><Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</Button></Link>}
+        action={<ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</ButtonLink>}
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

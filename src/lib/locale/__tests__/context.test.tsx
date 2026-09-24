@@ -14,6 +14,7 @@ vi.mock("@/stores/auth-store", () => ({
 }))
 
 import { LocaleProvider, useTranslate } from "@/lib/locale/context"
+import { logger } from "@/lib/logger"
 
 function Consumer() {
   const { t, locale, fallbackLocale } = useTranslate()
@@ -51,7 +52,7 @@ describe("LocaleProvider fetch failure handling", () => {
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
-    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {})
   })
 
   afterEach(() => {

@@ -33,16 +33,15 @@ export function CreateStepPayout({ formData, setFormData }: CreateStepPayoutProp
       </h3>
 
       <div>
-        <label className="mb-2 block font-heading text-sm text-muted-foreground">
+        <p id="payout-type-label" className="mb-2 block font-heading text-sm text-muted-foreground">
           Payout Type
-        </label>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        </p>
+        <div role="group" aria-labelledby="payout-type-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {PAYOUT_TYPES.map((pt) => (
             <button
               key={pt.value}
               type="button"
-              
-              
+              aria-pressed={formData.payoutType === pt.value}
               onClick={() => setFormData((prev) => ({ ...prev, payoutType: pt.value }))}
               className={cn(
                 "glass rounded-xl p-4 text-left transition-all duration-300",

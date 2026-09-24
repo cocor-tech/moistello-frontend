@@ -2,12 +2,14 @@ const CACHE_VERSION = 'v1'
 const STATIC_CACHE = `static-${CACHE_VERSION}`
 const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`
 const API_CACHE = `api-${CACHE_VERSION}`
-const API_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
-
 // Set self.__DEBUG = true in development to see SW logs.
 const DEBUG = false
-function swLog(...args: unknown[]) {
-  if (DEBUG) console.log('[SW]', ...args)
+function swLog(message: string, ...context: unknown[]) {
+  if (DEBUG) {
+    self.dispatchEvent(new CustomEvent('moistello:sw-log', {
+      detail: { level: 'debug', message, context },
+    }))
+  }
 }
 
 // Static assets to cache on install

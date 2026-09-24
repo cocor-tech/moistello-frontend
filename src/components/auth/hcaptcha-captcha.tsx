@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from "react"
 import { cn } from "@/lib/cn"
 import { Loader2, Check, X, ShieldAlert } from "lucide-react"
@@ -101,7 +102,7 @@ export const HCaptchaCaptcha = forwardRef<HCaptchaCaptchaHandle, HCaptchaCaptcha
           if (!mounted || !window.hcaptcha || !invisibleContainerRef.current) return
 
           if (widgetIdRef.current) {
-            try { window.hcaptcha.remove(widgetIdRef.current) } catch (e) { console.warn("[hcaptcha] Failed to remove widget:", e) }
+            try { window.hcaptcha.remove(widgetIdRef.current) } catch (e) { logger.warn("[hcaptcha] Failed to remove widget:", e) }
             widgetIdRef.current = null
           }
 
@@ -150,7 +151,7 @@ export const HCaptchaCaptcha = forwardRef<HCaptchaCaptchaHandle, HCaptchaCaptcha
           try {
             window.hcaptcha.remove(widgetIdRef.current)
           } catch (e) {
-            console.warn("[hcaptcha] Cleanup failed:", e)
+            logger.warn("[hcaptcha] Cleanup failed:", e)
           }
           widgetIdRef.current = null
         }
@@ -174,7 +175,7 @@ export const HCaptchaCaptcha = forwardRef<HCaptchaCaptchaHandle, HCaptchaCaptcha
         try {
           window.hcaptcha.remove(widgetIdRef.current)
         } catch (e) {
-          console.warn("[hcaptcha] Failed to remove widget on retry:", e)
+          logger.warn("[hcaptcha] Failed to remove widget on retry:", e)
         }
         widgetIdRef.current = null
       }

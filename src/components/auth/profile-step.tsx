@@ -107,6 +107,9 @@ export function ProfileStep({
           <button
             type="button"
             onClick={() => !isSubmitting && setOpen(!open)}
+            aria-expanded={open}
+            aria-controls="profile-language-options"
+            aria-label={t("auth.profile.selectLanguage")}
             disabled={isSubmitting}
             className="w-full flex items-center justify-between bg-white/10 hover:bg-white/[0.14] border border-white/25 text-sm text-foreground py-3 px-4 rounded-xl focus:outline-none focus:border-white/40 transition-all"
           >
@@ -119,11 +122,13 @@ export function ProfileStep({
           </button>
 
           {open && (
-            <div className="absolute z-50 top-full mt-1.5 left-0 right-0 max-h-48 overflow-y-auto rounded-xl border border-white/20 bg-[rgb(var(--background))]">
+            <div id="profile-language-options" role="listbox" aria-label={t("auth.profile.selectLanguage")} className="absolute z-50 top-full mt-1.5 left-0 right-0 max-h-48 overflow-y-auto rounded-xl border border-white/20 bg-[rgb(var(--background))]">
               {LANGUAGES.map((code) => (
                 <button
                   key={code}
                   type="button"
+                  role="option"
+                  aria-selected={code === language}
                   onClick={() => { onUpdateLanguage(code); setLocale(code); setOpen(false) }}
                   className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-white/10 ${
                     code === language ? "text-foreground font-medium" : "text-muted-foreground"

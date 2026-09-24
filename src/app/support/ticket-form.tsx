@@ -114,6 +114,7 @@ export function TicketForm() {
       ) : (
         <form onSubmit={handleSubmitTicket} className="space-y-3">
           <input
+            aria-label="Your name"
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -121,6 +122,7 @@ export function TicketForm() {
             className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.name ? "border-red-400/50" : "border-white/10"}`}
           />
           <input
+            aria-label="Ticket subject"
             type="text"
             value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
@@ -128,6 +130,7 @@ export function TicketForm() {
             className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.subject ? "border-red-400/50" : "border-white/10"}`}
           />
           <select
+            aria-label="Ticket category"
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             className="w-full h-11 rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-foreground focus:outline-none"
@@ -138,6 +141,7 @@ export function TicketForm() {
             ))}
           </select>
           <textarea
+            aria-label="Describe your issue"
             rows={4}
             value={formData.message}
             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -145,7 +149,7 @@ export function TicketForm() {
             className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-y min-h-[80px]"
           />
           {formState === "error" && formError && (
-            <div className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2">{formError}</div>
+            <div role="alert" className="text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2">{formError}</div>
           )}
           <div className="flex gap-2">
             <Button

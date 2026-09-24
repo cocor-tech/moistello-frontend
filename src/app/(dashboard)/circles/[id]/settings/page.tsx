@@ -1,8 +1,8 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
@@ -20,7 +20,7 @@ import { useCircle } from "@/hooks/use-circles"
 import { useAuth } from "@/hooks/use-auth"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -75,7 +75,7 @@ export default function CircleSettingsPage() {
         description: "Circle details were updated successfully.",
       })
     } catch (e) {
-      console.error("[circle-settings] Failed to save circle settings:", e)
+      logger.error("[circle-settings] Failed to save circle settings:", e)
       addToast({
         type: "error",
         title: "Save failed",
@@ -112,7 +112,7 @@ export default function CircleSettingsPage() {
         throw new Error("Invite code was not returned by the API.")
       }
     } catch (e) {
-      console.error("[circle-settings] Failed to generate invite:", e)
+      logger.error("[circle-settings] Failed to generate invite:", e)
       const message = e instanceof Error ? e.message : "Could not generate invite code."
       setInviteError(message)
       addToast({
@@ -136,7 +136,7 @@ export default function CircleSettingsPage() {
       })
       router.push("/circles")
     } catch (e) {
-      console.error("[circle-settings] Failed to delete circle:", e)
+      logger.error("[circle-settings] Failed to delete circle:", e)
       addToast({
         type: "error",
         title: "Delete failed",
@@ -192,11 +192,9 @@ export default function CircleSettingsPage() {
             { label: "Settings" },
           ]}
           action={
-            <Link href={`/circles/${circleId}`}>
-              <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+            <ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
                 Back to Circle
-              </Button>
-            </Link>
+              </ButtonLink>
           }
         />
         <div className="glass-flagship rounded-2xl flex flex-col items-center justify-center py-20 holo-border"
@@ -208,9 +206,7 @@ export default function CircleSettingsPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Only the circle organizer can access settings.
           </p>
-          <Link href={`/circles/${circleId}`} className="mt-6">
-            <Button variant="primary">Back to Circle</Button>
-          </Link>
+          <ButtonLink href={`/circles/${circleId}`} className="mt-6"  variant="primary">Back to Circle</ButtonLink>
         </div>
       </div>
     )
@@ -227,11 +223,9 @@ export default function CircleSettingsPage() {
           { label: "Settings" },
         ]}
         action={
-          <Link href={`/circles/${circleId}`}>
-            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+          <ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
               Back to Circle
-            </Button>
-          </Link>
+            </ButtonLink>
         }
       />
 
@@ -281,11 +275,11 @@ export default function CircleSettingsPage() {
 
           {generatedCode && (
             <div className="glass-whisper rounded-xl p-4 space-y-3">
-              <label className="text-2xs tracking-wider uppercase text-muted-foreground font-heading">
+              <label htmlFor="generated-invite-code" className="text-2xs tracking-wider uppercase text-muted-foreground font-heading">
                 Invite Code
               </label>
               <div className="flex items-center gap-2">
-                <Input value={generatedCode} readOnly leftIcon={<Link2 className="h-4 w-4" />} />
+                <Input id="generated-invite-code" aria-label="Generated invite code" value={generatedCode} readOnly leftIcon={<Link2 className="h-4 w-4" />} />
                 <CopyButton text={generatedCode} />
               </div>
             </div>
@@ -368,11 +362,12 @@ export default function CircleSettingsPage() {
           </p>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            <p className="block text-xs font-medium text-muted-foreground mb-1.5">
               Type the circle name to confirm deletion
-            </label>
+            </p>
             <div className="flex gap-2">
               <Input
+                label="Circle name confirmation"
                 placeholder={circle?.name ?? "Circle name"}
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { forwardRef } from "react";
+import Link, { type LinkProps } from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -27,6 +28,65 @@ const sizeClasses = {
   xl: "h-14 px-10 text-lg gap-3",
 } as const;
 
+type ButtonVariant = keyof typeof variantClasses;
+type ButtonSize = keyof typeof sizeClasses;
+
+export function buttonStyles({
+  variant = "primary",
+  size = "md",
+  className,
+  isLoading = false,
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+  isLoading?: boolean;
+}): string {
+  return cn(
+    "inline-flex items-center justify-center rounded-xl font-body font-medium transition-all duration-300",
+    "hover:scale-[1.02] active:scale-[0.97]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "disabled:pointer-events-none disabled:opacity-40 disabled:hover:scale-100",
+    "w-full md:w-auto",
+    variant === "primary" && "font-heading",
+    variant === "premium" && "rounded-xl",
+    variant === "ghost" && "hover:glass-whisper hover:text-foreground dark:hover:text-ink-900",
+    variant === "outline" && "hover:holo-border",
+    variant === "secondary" && "hover:glass-strong",
+    variantClasses[variant],
+    sizeClasses[size],
+    isLoading && "animate-shimmer",
+    className,
+  )
+}
+
+export interface ButtonLinkProps extends LinkProps {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
+}
+
+export function ButtonLink({
+  variant = "primary",
+  size = "md",
+  leftIcon,
+  rightIcon,
+  className,
+  children,
+  ...props
+}: ButtonLinkProps) {
+  return (
+    <Link {...props} className={buttonStyles({ variant, size, className })}>
+      {leftIcon && <span aria-hidden="true">{leftIcon}</span>}
+      {children}
+      {rightIcon && <span aria-hidden="true">{rightIcon}</span>}
+    </Link>
+  )
+}
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variantClasses;
@@ -45,6 +105,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       leftIcon,
       rightIcon,
+      type = "button",
       className,
       children,
       ...props
@@ -56,23 +117,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={isDisabled}
-        className={cn(
-          "inline-flex items-center justify-center rounded-xl font-body font-medium transition-all duration-300",
-          "hover:scale-[1.02] active:scale-[0.97]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          "disabled:pointer-events-none disabled:opacity-40 disabled:hover:scale-100",
-          "w-full md:w-auto",
-          variant === "primary" && "font-heading",
-          variant === "premium" && "rounded-2xl",
-          variant === "ghost" && "hover:glass-whisper hover:text-foreground dark:hover:text-ink-900",
-          variant === "outline" && "hover:holo-border",
-          variant === "secondary" && "hover:glass-strong",
-          variantClasses[variant],
-          sizeClasses[size],
-          isLoading && "animate-shimmer",
-          className,
-        )}
+        aria-busy={isLoading || undefined}
+        className={buttonStyles({ variant, size, className, isLoading })}
         {...props}
       >
         {isLoading && (

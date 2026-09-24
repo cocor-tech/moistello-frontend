@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger"
 import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 import { post } from "@/lib/api-client";
@@ -212,7 +213,7 @@ export async function verifyPasskeyRevocation(): Promise<void> {
       });
     }
   } catch (e) {
-    console.warn(
+    logger.warn(
       "[auth-flow] Passkey status check failed (server unreachable):",
       e,
     );
@@ -231,7 +232,7 @@ export const useAuthFlowStore = create<AuthFlowStore>()(
               try {
                 getWalletRegistry().getAdapter("passkey")?.reset?.();
               } catch (e) {
-                console.warn("[auth-flow] Failed to reset passkey adapter:", e);
+                logger.warn("[auth-flow] Failed to reset passkey adapter:", e);
               }
             });
           }

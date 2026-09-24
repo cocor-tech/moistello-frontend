@@ -33,4 +33,21 @@ test.describe('WCAG 2.2 AA Automated Accessibility Audit', () => {
       .analyze()
     expect(accessibilityScanResults.violations).toEqual([])
   })
+
+  test('developers page satisfies axe rules', async ({ page }) => {
+    await page.goto('/developers')
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze()
+    expect(accessibilityScanResults.violations).toEqual([])
+  })
+
+  test('upload login satisfies axe rules', async ({ page }) => {
+    await page.goto('/upload')
+    await expect(page.getByRole('heading', { name: 'Admin Login' })).toBeVisible()
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze()
+    expect(accessibilityScanResults.violations).toEqual([])
+  })
 })

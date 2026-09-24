@@ -16,13 +16,14 @@ import {
   Vote,
 } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useGovernanceProposal, useVoteOnProposal } from "@/hooks/use-governance"
 import { useUIStore } from "@/stores/ui-store"
 
 export default function ProposalDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const addToast = useUIStore((state) => state.addToast)
 
   const [voteChoice, setVoteChoice] = useState<boolean | "abstain" | null>(null)
   const [voteReason, setVoteReason] = useState("")
@@ -84,9 +85,7 @@ export default function ProposalDetailPage() {
         <AlertCircle className="h-10 w-10 text-red-400 mx-auto" />
         <h3 className="text-lg font-bold text-foreground">Proposal Not Found</h3>
         <p className="text-xs text-muted-foreground">The proposal #{id} could not be retrieved.</p>
-        <Link href="/governance">
-          <Button variant="outline" size="sm">Back to Governance</Button>
-        </Link>
+        <ButtonLink href="/governance" variant="outline" size="sm">Back to Governance</ButtonLink>
       </div>
     )
   }
@@ -280,10 +279,12 @@ export default function ProposalDetailPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <label htmlFor="vote-reason" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Reason / Comment (Optional)
             </label>
             <textarea
+              id="vote-reason"
+              aria-label="Reason or comment for your vote"
               value={voteReason}
               onChange={(e) => setVoteReason(e.target.value)}
               placeholder="Provide context for your vote..."

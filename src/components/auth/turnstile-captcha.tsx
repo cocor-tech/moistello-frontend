@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { cn } from "@/lib/cn"
 import { Loader2, Check, X } from "lucide-react"
@@ -82,7 +83,7 @@ export function TurnstileCaptcha({ onVerify, onError, className }: TurnstileCapt
         if (cancelled || !window.turnstile || !containerRef.current) return
 
         if (widgetIdRef.current) {
-          try { window.turnstile.remove(widgetIdRef.current) } catch (e) { console.warn("[turnstile] Failed to remove widget:", e) }
+          try { window.turnstile.remove(widgetIdRef.current) } catch (e) { logger.warn("[turnstile] Failed to remove widget:", e) }
           widgetIdRef.current = null
         }
 
@@ -123,7 +124,7 @@ export function TurnstileCaptcha({ onVerify, onError, className }: TurnstileCapt
     return () => {
       cancelled = true
       if (widgetIdRef.current && window.turnstile) {
-        try { window.turnstile.remove(widgetIdRef.current) } catch (e) { console.warn("[turnstile] Cleanup failed:", e) }
+        try { window.turnstile.remove(widgetIdRef.current) } catch (e) { logger.warn("[turnstile] Cleanup failed:", e) }
         widgetIdRef.current = null
       }
     }
@@ -131,7 +132,7 @@ export function TurnstileCaptcha({ onVerify, onError, className }: TurnstileCapt
 
   const handleRetry = useCallback(() => {
     if (widgetIdRef.current && window.turnstile) {
-      try { window.turnstile.remove(widgetIdRef.current) } catch (e) { console.warn("[turnstile] Failed to remove widget on retry:", e) }
+      try { window.turnstile.remove(widgetIdRef.current) } catch (e) { logger.warn("[turnstile] Failed to remove widget on retry:", e) }
       widgetIdRef.current = null
     }
     setState("loading")

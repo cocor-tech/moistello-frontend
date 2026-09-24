@@ -7,7 +7,7 @@ import {
   ArrowDownCircle, Loader2, AlertCircle,
   ExternalLink, Banknote, QrCode, Clock,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { post, get } from "@/lib/api-client"
 import { useUIStore } from "@/stores/ui-store"
 import { copyToClipboard } from "@/lib/clipboard"
@@ -167,7 +167,7 @@ export default function DepositPage() {
       <LiveRegion message={statusMessage} />
       {/* ── Back + Title ── */}
       <div className="flex items-center gap-3">
-        <Link href="/wallet" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/wallet" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to wallet">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -221,6 +221,7 @@ export default function DepositPage() {
               <div className="flex items-center justify-center gap-2">
                 <span className="text-3xl font-bold font-heading text-foreground">₦</span>
                 <input
+                  aria-label="Deposit amount in Nigerian naira"
                   type="number"
                   inputMode="decimal"
                   value={amountNgn}
@@ -243,6 +244,8 @@ export default function DepositPage() {
             {[5000, 10000, 25000, 50000, 100000].map((v) => (
               <button
                 key={v}
+                type="button"
+                aria-pressed={parseFloat(amountNgn) === v}
                 onClick={() => setAmountNgn(String(v))}
                 className={cn(
                   "px-4 py-2 rounded-full text-xs font-medium border transition-all",
@@ -257,8 +260,8 @@ export default function DepositPage() {
           </div>
 
           {errMsg && (
-            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <div role="alert" className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {errMsg}
             </div>
           )}
@@ -313,6 +316,8 @@ export default function DepositPage() {
                   </p>
                 </div>
                 <button
+                  type="button"
+                  aria-label={`Copy ${row.label.toLowerCase()}`}
                   onClick={() => copyField(row.value, row.key)}
                   className="shrink-0 h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -343,8 +348,8 @@ export default function DepositPage() {
           </div>
 
           {errMsg && (
-            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <div role="alert" className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {errMsg}
             </div>
           )}
@@ -353,7 +358,7 @@ export default function DepositPage() {
             <Button variant="primary" size="lg" className="w-full" onClick={handleConfirmPayin} isLoading={loading}>
               I&apos;ve Made the Transfer
             </Button>
-            <button onClick={() => setStep("amount")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <button type="button" onClick={() => setStep("amount")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
               Change amount
             </button>
           </div>
@@ -424,7 +429,7 @@ export default function DepositPage() {
             </div>
           </div>
 
-          <button onClick={() => setStep("amount")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <button type="button" onClick={() => setStep("amount")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
             Start a new deposit
           </button>
         </div>
@@ -463,14 +468,10 @@ export default function DepositPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/wallet" className="flex-1">
-              <Button variant="primary" size="lg" className="w-full">Back to Wallet</Button>
-            </Link>
-            <Link href="/wallet/transactions" className="flex-1">
-              <Button variant="outline" size="lg" className="w-full" leftIcon={<ExternalLink className="h-4 w-4" />}>
-                View History
-              </Button>
-            </Link>
+            <ButtonLink href="/wallet" variant="primary" size="lg" className="flex-1 w-full">Back to Wallet</ButtonLink>
+            <ButtonLink href="/wallet/transactions" variant="outline" size="lg" className="flex-1 w-full" leftIcon={<ExternalLink className="h-4 w-4" />}>
+              View History
+            </ButtonLink>
           </div>
         </div>
       )}

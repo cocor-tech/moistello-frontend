@@ -20,6 +20,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTranslate } from "@/lib/locale/context";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -35,6 +36,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
+  const mobileMenuRef = useFocusTrap<HTMLDivElement>(menuOpen, closeMenu);
 
   // Authenticated users see public pages inside the dashboard layout
   if (isAuthenticated) {
@@ -50,6 +52,12 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[rgb(var(--background))]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-2 focus:text-foreground"
+      >
+        Skip to main content
+      </a>
       {/* ════════════════ FLOATING HEADER ════════════════ */}
       <header
         className="fixed top-0 left-0 right-0 z-50 px-3 pt-3"
@@ -71,7 +79,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           </Link>
 
           {/* Center: Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1" aria-label="Primary navigation">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -86,6 +94,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
           {/* Right: Theme Toggle + Hamburger */}
           <div className="flex items-center gap-1.5">
             <button
+              type="button"
               onClick={toggleTheme}
               className={cn(
                 "inline-flex h-9 w-9 items-center justify-center rounded-full shrink-0",
@@ -103,6 +112,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             </button>
 
             <button
+              type="button"
               onClick={toggleMenu}
               className={cn(
                 "inline-flex h-9 w-9 items-center justify-center rounded-xl shrink-0 md:hidden",
@@ -110,6 +120,8 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 "hover:text-foreground hover:glass-whisper",
               )}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-public-navigation"
             >
               {menuOpen ? (
                 <X className="h-5 w-5" />
@@ -132,8 +144,15 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               transition={{ duration: 0.3 }}
               className="fixed inset-0 z-50 bg-black/50 backdrop-blur-lg"
               onClick={closeMenu}
+              aria-hidden="true"
             />
             <motion.div
+              id="mobile-public-navigation"
+              ref={mobileMenuRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile navigation"
+              tabIndex={-1}
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -154,6 +173,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     Moistello
                   </span>
                   <button
+                    type="button"
                     onClick={closeMenu}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:glass-whisper transition-all duration-300"
                     aria-label="Close menu"
@@ -161,7 +181,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto" aria-label="Mobile navigation">
                   <p className="px-3 pt-2 pb-2 font-heading text-[10px] tracking-[0.25em] uppercase text-muted-foreground/60">
                     Navigate
                   </p>
@@ -201,6 +221,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 </nav>
                 <div className="shrink-0 border-t border-white/[0.06] px-4 py-4">
                   <button
+                    type="button"
                     onClick={toggleTheme}
                     className={cn(
                       "flex items-center gap-3 w-full rounded-xl px-4 py-2.5",
@@ -235,13 +256,13 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       </AnimatePresence>
 
       {/* ════════════════ PAGE CONTENT ════════════════ */}
-      <div className="pt-20">{children}</div>
+      <div id="main-content" tabIndex={-1} className="pt-20">{children}</div>
 
       {/* ════════════════ FOOTER ════════════════ */}
       <footer className="glass mt-20 py-8 border-t border-border">
         <div className="container-premium flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-muted-foreground">
           <span>&copy; {new Date().getFullYear()} Moistello</span>
-          <nav className="flex flex-wrap justify-center gap-6">
+          <nav className="flex flex-wrap justify-center gap-6" aria-label="Footer navigation">
             <Link href="/about" className="hover:text-foreground transition-colors">{t("nav.about")}</Link>
             <Link href="/how-it-works" className="hover:text-foreground transition-colors">{t("nav.howItWorks")}</Link>
             <Link href="/developers" className="hover:text-foreground transition-colors">{t("nav.developers")}</Link>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/notifications";
 import { createQueryWrapper } from "./test-utils";
 import type { Notification } from "@/types";
+import { logger } from "@/lib/logger";
 
 vi.mock("@/lib/api-client", () => ({ get: vi.fn(), patch: vi.fn() }));
 
@@ -169,7 +170,7 @@ describe("useMarkAsReadMutation", () => {
       },
     } as never);
     mockedPatch.mockRejectedValue(new Error("Unauthorized"));
-    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const loggerWarn = vi.spyOn(logger, "warn").mockImplementation(() => {});
 
     const { QueryWrapper, queryClient } = createQueryWrapper();
     const { result } = renderHook(
@@ -192,7 +193,7 @@ describe("useMarkAsReadMutation", () => {
       const data = queryClient.getQueryData<Notification[]>(["notifications"]);
       expect(data?.find((n) => n.id === "n1")?.isRead).toBe(false);
     });
-    consoleWarn.mockRestore();
+    loggerWarn.mockRestore();
   });
 
   it("dispatches auth:required when the API rejects with 401", async () => {
@@ -202,7 +203,7 @@ describe("useMarkAsReadMutation", () => {
     mockedPatch.mockRejectedValue({ response: { status: 401 } });
     const authRequired = vi.fn();
     window.addEventListener("auth:required", authRequired);
-    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const loggerWarn = vi.spyOn(logger, "warn").mockImplementation(() => {});
 
     const { QueryWrapper, queryClient } = createQueryWrapper();
     const { result } = renderHook(
@@ -223,7 +224,7 @@ describe("useMarkAsReadMutation", () => {
 
     await waitFor(() => expect(authRequired).toHaveBeenCalledTimes(1));
     window.removeEventListener("auth:required", authRequired);
-    consoleWarn.mockRestore();
+    loggerWarn.mockRestore();
   });
 });
 

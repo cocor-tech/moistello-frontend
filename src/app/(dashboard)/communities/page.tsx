@@ -1,12 +1,13 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useCallback, useEffect } from "react"
 import Link from "next/link"
 import { Search, Users, Plus, Sparkles, TrendingUp } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { get } from "@/lib/api-client"
@@ -66,7 +67,7 @@ export default function CommunitiesPage() {
       }
       setHasNext(meta ? Number(meta.page) < Number(meta.totalPages) : false)
     } catch (e) {
-      console.error("[communities] Failed to load communities:", e)
+      logger.error("[communities] Failed to load communities:", e)
       if (pageNum === 1) setCommunities([])
     } finally {
       setLoading(false)
@@ -92,11 +93,9 @@ export default function CommunitiesPage() {
         title={t("comm.title")}
         description="Discover communities and find your people."
         action={
-          <Link href={`${Routes.COMMUNITIES}/create`}>
-            <Button variant="primary" size="md" leftIcon={<Plus className="h-4 w-4" />}>
-              {t("comm.create")}
-            </Button>
-          </Link>
+          <ButtonLink href={`${Routes.COMMUNITIES}/create`} variant="primary" size="md" leftIcon={<Plus className="h-4 w-4" />}>
+            {t("comm.create")}
+          </ButtonLink>
         }
       />
 
@@ -121,6 +120,8 @@ export default function CommunitiesPage() {
         {CATEGORIES.map((cat) => (
           <button
             key={cat.value}
+            type="button"
+            aria-pressed={category === cat.value}
             onClick={() => { setCategory(cat.value); setPage(1) }}
             className={cn(
               "whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-medium transition-all",
@@ -151,11 +152,9 @@ export default function CommunitiesPage() {
             title="No communities found"
             description={search || category ? "Try a different search or filter." : "Be the first to create a community."}
           />
-          <Link href={`${Routes.COMMUNITIES}/create`}>
-            <Button variant="primary" size="md" leftIcon={<Plus className="h-4 w-4" />} className="mt-4">
+          <ButtonLink href={`${Routes.COMMUNITIES}/create`}  variant="primary" size="md" leftIcon={<Plus className="h-4 w-4" />} className="mt-4">
               Create Community
-            </Button>
-          </Link>
+            </ButtonLink>
         </div>
       )}
 

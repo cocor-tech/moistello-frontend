@@ -20,7 +20,7 @@ import { useCircles } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
@@ -135,7 +135,7 @@ function CircleGridCard({ circle }: { circle: Circle }) {
               <span>Round Progress</span>
               <span>{circle.currentRound}/{circle.maxMembers}</span>
             </div>
-            <Progress value={progressPct} size="sm" variant={progressPct >= 80 ? "success" : "primary"} />
+            <Progress aria-label="Circle contribution progress" value={progressPct} size="sm" variant={progressPct >= 80 ? "success" : "primary"} />
           </div>
 
           <div className="pt-2 border-t border-border flex items-center justify-between">
@@ -203,11 +203,9 @@ export default function CirclesBrowsePage() {
         title={t("circles.title")}
         description="Browse and join savings circles on the Stellar network."
         action={
-          <Link href="/circles/create">
-            <Button variant="premium" size="md" leftIcon={<Plus className="h-4 w-4" />}>
-              {t("circles.create")}
-            </Button>
-          </Link>
+          <ButtonLink href="/circles/create" variant="premium" size="md" leftIcon={<Plus className="h-4 w-4" />}>
+            {t("circles.create")}
+          </ButtonLink>
         }
       />
 
@@ -230,6 +228,7 @@ export default function CirclesBrowsePage() {
               <motion.button
                 key={f.value}
                 type="button"
+                aria-pressed={typeFilter === f.value}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => updateTypeFilter(f.value)}
@@ -252,6 +251,7 @@ export default function CirclesBrowsePage() {
                 <motion.button
                   key={c}
                   type="button"
+                  aria-pressed={currencyFilter === c}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setCurrencyFilter((prev) => (prev === c ? null : c))}
@@ -293,6 +293,8 @@ export default function CirclesBrowsePage() {
                   return (
                     <DropdownItem
                       key={option.value}
+                      role="menuitemradio"
+                      aria-checked={isSelected}
                       onClick={() => {
                         setSortValue(option.value)
                         setPage(1)

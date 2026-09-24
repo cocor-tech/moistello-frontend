@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger"
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 import { useState, useEffect } from "react";
@@ -16,7 +17,7 @@ export function SwaggerUIPage() {
           setIsAuthorized(!!parsed?.Authorization);
         }
       } catch (e) {
-        console.warn("[swagger] Failed to read auth state:", e)
+        logger.warn("[swagger] Failed to read auth state:", e)
       }
     };
     checkAuth();

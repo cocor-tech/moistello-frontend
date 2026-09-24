@@ -49,6 +49,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@lhci/cli": "^0.15.1",
     "@noble/ed25519": "^2.1.0",
     "@playwright/test": "^1.60.0",

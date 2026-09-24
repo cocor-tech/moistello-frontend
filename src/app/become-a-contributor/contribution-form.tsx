@@ -171,7 +171,7 @@ export function ContributionForm() {
       </div>
 
       {formState === "error" && formError && (
-        <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 rounded-xl px-4 py-3">
+        <div role="alert" className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 rounded-xl px-4 py-3">
           <AlertCircleIcon />
           <span>{formError}</span>
         </div>

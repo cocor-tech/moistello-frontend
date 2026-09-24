@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import axios, {
   AxiosError,
   AxiosRequestConfig,
@@ -104,7 +105,7 @@ apiClient.interceptors.response.use(
           try {
             await axios.delete("/api/auth/session")
           } catch (e) {
-            console.warn("[api] Failed to clear session on refresh failure:", e)
+            logger.warn("[api] Failed to clear session on refresh failure:", e)
           }
           window.location.href = "/login"
         }
@@ -112,11 +113,8 @@ apiClient.interceptors.response.use(
       }
     }
 
-    if (typeof console !== "undefined") {
-      const message = getErrorMessage(error)
-      if (error.response?.status) {
-        console.error(`[API ${error.response.status}] ${message}`)
-      }
+    if (error.response?.status) {
+      logger.error("API request failed", { status: error.response.status })
     }
 
     return Promise.reject(error)

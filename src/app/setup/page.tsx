@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger"
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -47,7 +48,7 @@ function SetupForm() {
         setError(data.error || "Setup failed");
       }
     } catch (e) {
-      console.error("[setup] Setup failed:", e)
+      logger.error("[setup] Setup failed:", e)
       setStep("form");
       setError("Network error — try again");
     }

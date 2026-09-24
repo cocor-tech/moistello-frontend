@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { escapeRegExp } from "@/lib/docs/search-utils"
@@ -41,14 +42,9 @@ export function SearchForm() {
       const results: SearchResult[] = data.results ?? []
       setState({ status: "done", results, query: q })
     } catch (err) {
-      console.warn("[search] Failed to search docs:", err)
+      logger.warn("[search] Failed to search docs:", err)
       setState({ status: "error" })
     }
-  }
-
-  const clearResults = () => {
-    setSearchQuery("")
-    setState({ status: "idle" })
   }
 
   return (

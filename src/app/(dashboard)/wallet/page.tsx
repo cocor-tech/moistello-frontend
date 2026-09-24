@@ -1,11 +1,12 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowUpRight, ArrowDownRight, ArrowDownLeft, Wallet as WalletIcon, Settings, Clock, ArrowRight, ListOrdered, BookCopy, ExternalLink, QrCode, Copy, Check } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { CopyButton } from "@/components/shared/copy-button"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { WalletSettings } from "@/components/wallet/wallet-settings"
 import { get } from "@/lib/api-client"
 import { useTranslate } from "@/lib/locale/context"
@@ -14,6 +15,7 @@ import { cn } from "@/lib/cn"
 import { useMultiWallet } from "@/hooks/use-multi-wallet"
 import { useUIStore } from "@/stores/ui-store"
 import { copyToClipboard } from "@/lib/clipboard"
+import { useFocusTrap } from "@/hooks/use-focus-trap"
 
 interface BalanceInfo {
   xlm: string
@@ -41,6 +43,7 @@ export default function WalletPage() {
   const [copied, setCopied] = useState(false)
   const [wallet, setWallet] = useState<{ publicKey: string } | null>(null)
   const addToast = useUIStore((s) => s.addToast)
+  const receiveDialogRef = useFocusTrap<HTMLDivElement>(showReceive, () => setShowReceive(false))
 
   useEffect(() => {
     async function load() {
@@ -79,7 +82,7 @@ export default function WalletPage() {
         all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         setTransactions(all.slice(0, 10))
       } catch (e) {
-        console.error("[wallet] Failed to load wallet data:", e)
+        logger.error("[wallet] Failed to load wallet data:", e)
       } finally {
         setLoading(false)
       }
@@ -114,11 +117,25 @@ export default function WalletPage() {
 
       {/* Receive modal */}
       {showReceive && wallet && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowReceive(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-[rgb(var(--background))] border border-white/15 p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <button
+            type="button"
+            aria-label="Close receive wallet dialog"
+            tabIndex={-1}
+            onClick={() => setShowReceive(false)}
+            className="absolute inset-0 cursor-default"
+          />
+          <div
+            ref={receiveDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="receive-wallet-title"
+            tabIndex={-1}
+            className="relative z-10 w-full max-w-sm rounded-2xl bg-[rgb(var(--background))] border border-white/15 p-6 space-y-5"
+          >
             <div className="flex items-center justify-between">
-              <h3 className="font-heading text-base font-semibold text-foreground">Receive</h3>
-              <button onClick={() => setShowReceive(false)} className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/10 text-muted-foreground hover:text-foreground text-sm">✕</button>
+              <h3 id="receive-wallet-title" className="font-heading text-base font-semibold text-foreground">Receive</h3>
+              <button type="button" aria-label="Close receive wallet dialog" onClick={() => setShowReceive(false)} className="h-7 w-7 flex items-center justify-center rounded-lg bg-white/10 text-muted-foreground hover:text-foreground text-sm">✕</button>
             </div>
             <div className="inline-flex items-center justify-center w-40 h-40 bg-white rounded-xl mx-auto">
               <QrCode className="h-16 w-16 text-black/80" />
@@ -191,21 +208,15 @@ export default function WalletPage() {
         <Button variant="primary" size="md" onClick={() => setShowReceive(true)} leftIcon={<ArrowDownRight className="h-4 w-4" />}>
           Receive
         </Button>
-        <Link href="/wallet/deposit">
-          <Button variant="outline" size="md" leftIcon={<ArrowDownLeft className="h-4 w-4" />}>
-            Deposit
-          </Button>
-        </Link>
-        <Link href="/wallet/withdraw">
-          <Button variant="outline" size="md" leftIcon={<ArrowUpRight className="h-4 w-4" />}>
-            Withdraw
-          </Button>
-        </Link>
-        <Link href="/wallet/settings">
-          <Button variant="outline" size="md" leftIcon={<Settings className="h-4 w-4" />}>
-            Settings
-          </Button>
-        </Link>
+        <ButtonLink href="/wallet/deposit" variant="outline" size="md" leftIcon={<ArrowDownLeft className="h-4 w-4" />}>
+          Deposit
+        </ButtonLink>
+        <ButtonLink href="/wallet/withdraw" variant="outline" size="md" leftIcon={<ArrowUpRight className="h-4 w-4" />}>
+          Withdraw
+        </ButtonLink>
+        <ButtonLink href="/wallet/settings" variant="outline" size="md" leftIcon={<Settings className="h-4 w-4" />}>
+          Settings
+        </ButtonLink>
       </div>
 
       {/* Recent Transactions — timeline style */}
@@ -267,6 +278,7 @@ export default function WalletPage() {
                           rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-aurora-cyan transition-colors"
                           title="View on Stellar.Expert"
+                           aria-label="View transaction on Stellar.Expert"
                         >
                           <ExternalLink className="h-3 w-3" />
                         </a>

@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -53,7 +54,7 @@ export default function TransactionDetailPage() {
             }
           }
         } catch (e) {
-          console.warn("[tx-detail] Contribution fetch failed, trying payout:", e)
+          logger.warn("[tx-detail] Contribution fetch failed, trying payout:", e)
         }
 
         try {
@@ -72,12 +73,12 @@ export default function TransactionDetailPage() {
             }
           }
         } catch (e) {
-          console.warn("[tx-detail] Payout not found:", e)
+          logger.warn("[tx-detail] Payout not found:", e)
         }
 
         setTx(found)
       } catch (e) {
-        console.error("[tx-detail] Failed to load transaction:", e)
+        logger.error("[tx-detail] Failed to load transaction:", e)
       }
       setLoading(false)
     }
@@ -120,7 +121,7 @@ export default function TransactionDetailPage() {
   return (
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-3">
-        <Link href="/wallet/transactions" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/wallet/transactions" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to all transactions">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -168,10 +169,10 @@ export default function TransactionDetailPage() {
             <span className="text-sm text-muted-foreground">Transaction Hash</span>
             <div className="flex items-center gap-2">
               <code className="text-xs font-mono text-aurora-cyan">{formatAddress(tx.txnHash)}</code>
-              <button onClick={copyHash} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button type="button" onClick={copyHash} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={copied ? "Transaction hash copied" : "Copy transaction hash"}>
                 {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
-              <a href={`https://stellar.expert/explorer/testnet/tx/${tx.txnHash}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-aurora-cyan transition-colors">
+              <a href={`https://stellar.expert/explorer/testnet/tx/${tx.txnHash}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-aurora-cyan transition-colors" aria-label="Open transaction in Stellar Explorer">
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>

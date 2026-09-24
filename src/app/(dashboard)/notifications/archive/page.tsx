@@ -2,14 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Trash2, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield } from "lucide-react";
+import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatRelativeTime } from "@/lib/formatters";
-import { cn } from "@/lib/cn";
 import { useUIStore } from "@/stores/ui-store";
-import type { Notification } from "@/types";
 
 const iconMap: Record<string, React.ReactNode> = {
   contribution: <ArrowUp className="h-4 w-4" />,
@@ -70,6 +68,7 @@ export default function NotificationsArchivePage() {
           <Link
             href="/notifications"
             className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Back to notifications"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -113,6 +112,7 @@ export default function NotificationsArchivePage() {
               type="button"
               role="checkbox"
               aria-checked={allSelected}
+              aria-label={allSelected ? "Deselect all archived notifications" : "Select all archived notifications"}
               onClick={handleToggleSelectAll}
               className="shrink-0 rounded text-muted-foreground hover:text-foreground"
             >
@@ -140,6 +140,7 @@ export default function NotificationsArchivePage() {
                     type="button"
                     role="checkbox"
                     aria-checked={selected}
+                    aria-label={`${selected ? "Deselect" : "Select"} ${n.title}`}
                     onClick={() => handleToggleSelect(n.id)}
                     className="shrink-0 rounded text-muted-foreground hover:text-foreground"
                   >
@@ -183,6 +184,35 @@ export default function NotificationsArchivePage() {
             );
           })}
         </div>
+      )}
+      {totalPages > 1 && (
+        <nav className="flex items-center justify-between border-t border-white/10 pt-4" aria-label="Archived notification pages">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((page) => Math.max(1, page - 1))}
+            aria-label="Previous archived notifications page"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            Previous
+          </Button>
+          <span className="text-xs text-muted-foreground" aria-live="polite">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((page) => Math.min(totalPages, page + 1))}
+            aria-label="Next archived notifications page"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </nav>
       )}
     </div>
   );

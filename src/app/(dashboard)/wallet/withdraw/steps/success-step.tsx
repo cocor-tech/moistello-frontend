@@ -1,8 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { CheckCircle, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { NIGERIAN_BANKS } from "../banks"
 import type { WithdrawQuote } from "../types"
 
@@ -53,14 +52,10 @@ export function SuccessStep({ quote, amountUsdc, asset, accountNumber, selectedB
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <Link href="/wallet" className="flex-1">
-          <Button variant="primary" size="lg" className="w-full">Back to Wallet</Button>
-        </Link>
-        <Link href="/wallet/transactions" className="flex-1">
-          <Button variant="outline" size="lg" className="w-full" leftIcon={<ExternalLink className="h-4 w-4" />}>
-            View History
-          </Button>
-        </Link>
+        <ButtonLink href="/wallet" variant="primary" size="lg" className="flex-1 w-full">Back to Wallet</ButtonLink>
+        <ButtonLink href="/wallet/transactions" variant="outline" size="lg" className="flex-1 w-full" leftIcon={<ExternalLink className="h-4 w-4" />}>
+          View History
+        </ButtonLink>
       </div>
     </div>
   )

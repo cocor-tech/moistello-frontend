@@ -1,6 +1,11 @@
+import { logger } from "@/lib/logger"
 import { useState, useEffect, useCallback } from "react";
 import { get, patch, post } from "@/lib/api-client";
 import type { Notification } from "@/types";
+
+export function useUnreadCount(): number {
+  return useNotifications().unreadCount;
+}
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -29,7 +34,7 @@ export function useNotifications() {
         setArchivedNotifications(archiveItems);
       }
     } catch (e) {
-      console.warn("[notifications] Failed to fetch:", e);
+      logger.warn("[notifications] Failed to fetch:", e);
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +52,7 @@ export function useNotifications() {
     try {
       await patch(`/notifications/${id}/read`, {});
     } catch (e) {
-      console.warn("[notifications] markAsRead failed:", e);
+      logger.warn("[notifications] markAsRead failed:", e);
     }
   };
 
@@ -57,7 +62,7 @@ export function useNotifications() {
     try {
       await patch("/notifications/read-all", {});
     } catch (e) {
-      console.warn("[notifications] markAllAsRead failed:", e);
+      logger.warn("[notifications] markAllAsRead failed:", e);
     }
   };
 
@@ -70,7 +75,7 @@ export function useNotifications() {
     try {
       await post(`/notifications/${id}/archive`, {});
     } catch (e) {
-      console.warn("[notifications] archive failed:", e);
+      logger.warn("[notifications] archive failed:", e);
     }
   };
 
@@ -83,7 +88,7 @@ export function useNotifications() {
     try {
       await post(`/notifications/${id}/unarchive`, {});
     } catch (e) {
-      console.warn("[notifications] unarchive failed:", e);
+      logger.warn("[notifications] unarchive failed:", e);
     }
   };
 
@@ -97,7 +102,7 @@ export function useNotifications() {
     try {
       await post("/notifications/bulk-archive", { ids });
     } catch (e) {
-      console.warn("[notifications] bulk archive failed:", e);
+      logger.warn("[notifications] bulk archive failed:", e);
     }
   };
 
@@ -111,7 +116,7 @@ export function useNotifications() {
     try {
       await post("/notifications/bulk-unarchive", { ids });
     } catch (e) {
-      console.warn("[notifications] bulk unarchive failed:", e);
+      logger.warn("[notifications] bulk unarchive failed:", e);
     }
   };
 

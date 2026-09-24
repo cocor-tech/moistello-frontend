@@ -14,7 +14,7 @@ import {
   Calendar,
   Globe,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { Avatar } from "@/components/ui/avatar"
 import { CopyButton } from "@/components/shared/copy-button"
 import { MOCK_PEOPLE } from "../page"
@@ -67,6 +67,7 @@ export default function PersonProfilePage() {
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-aurora-cyan transition-colors"
                   title="View on Stellar.Expert"
+                  aria-label="Open wallet address in Stellar.Expert"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
@@ -74,11 +75,9 @@ export default function PersonProfilePage() {
             </div>
           </div>
 
-          <Link href={`/wallet/transfer?recipient=${encodeURIComponent(person.walletAddress)}`}>
-            <Button variant="primary" size="md" leftIcon={<Send className="h-4 w-4" />}>
+          <ButtonLink href={`/wallet/transfer?recipient=${encodeURIComponent(person.walletAddress)}`}  variant="primary" size="md" leftIcon={<Send className="h-4 w-4" />}>
               Send Funds
-            </Button>
-          </Link>
+            </ButtonLink>
         </div>
 
         <p className="text-sm text-muted-foreground max-w-2xl">{person.bio}</p>

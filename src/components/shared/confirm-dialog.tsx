@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger"
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Loader2 } from "lucide-react";
@@ -40,7 +41,7 @@ export function ConfirmDialog({
       await onConfirm();
       onClose();
     } catch (e) {
-      console.error("[confirm-dialog] Action failed:", e)
+      logger.error("[confirm-dialog] Action failed:", e)
     } finally {
       setInternalLoading(false);
     }
@@ -50,8 +51,8 @@ export function ConfirmDialog({
     <Modal
       isOpen={isOpen}
       onClose={loading ? () => {} : onClose}
-      title=""
-      description=""
+      title={title}
+      description={message}
       size="sm"
       className={cn(
         variant === "danger" &&
@@ -63,19 +64,11 @@ export function ConfirmDialog({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* Icon + Title */}
-        <div className="flex items-start gap-3 mb-3">
-          {variant === "danger" ? (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 ring-1 ring-destructive/15">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-            </div>
-          ) : null}
-          <div>
-            <h3 className="font-heading text-lg font-bold text-foreground">
-              {title}
-            </h3>
+        {variant === "danger" && (
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 ring-1 ring-destructive/15">
+            <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
           </div>
-        </div>
+        )}
 
         {/* Warning for danger variant */}
         {variant === "danger" && (
@@ -87,14 +80,10 @@ export function ConfirmDialog({
           </div>
         )}
 
-        {/* Message */}
-        <p className="text-sm text-muted-foreground font-body leading-relaxed">
-          {message}
-        </p>
-
         {/* Actions */}
         <div className="mt-6 flex items-center justify-end gap-3">
           <Button
+            type="button"
             variant="outline"
             size="md"
             onClick={onClose}
@@ -104,6 +93,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <Button
+            type="button"
             variant={variant === "danger" ? "destructive" : "primary"}
             size="md"
             onClick={handleConfirm}

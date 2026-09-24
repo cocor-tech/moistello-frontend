@@ -1,6 +1,6 @@
-"client";
+"use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -24,25 +24,21 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react";
-import Link from "next/link";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useWsState } from "@/hooks/use-ws-state";
 import {
   TYPE_FILTERS,
   filterNotifications,
-  groupNotificationsByType,
 } from "@/lib/notifications";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LiveIndicator } from "@/components/shared/live-indicator";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatRelativeTimeLocalized } from "@/lib/formatters";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { useTranslate } from "@/lib/locale/context";
 import { cn } from "@/lib/cn";
-import { patch } from "@/lib/api-client";
 import { useUIStore } from "@/stores/ui-store";
 import type { Notification } from "@/types";
 
@@ -218,7 +214,7 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslate();
   const addToast = useUIStore((s) => s.addToast);
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, fetchNotifications } = useNotifications();
+  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications();
   const wsState = useWsState();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -312,11 +308,9 @@ export default function NotificationsPage() {
         />
         <div className="flex items-center gap-3">
           <LiveIndicator isLive={wsState.isConnected} label={wsState.status} />
-          <Link href="/notifications/archive">
-            <Button variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
+          <ButtonLink href="/notifications/archive"  variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
               {t("notifications.archive")}
-            </Button>
-          </Link>
+            </ButtonLink>
           <Button
             variant="outline"
             size="sm"
@@ -329,22 +323,39 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">{t("common.all")}</TabsTrigger>
-            <TabsTrigger value="unread">
-              {t("notifications.unread")}
-              {unreadCount > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-aurora-violet text-white rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="bg-card/80 border border-white/10 rounded-xl p-1 flex items-center gap-0 holo-border" role="group" aria-label="Notification status">
+          <button
+            type="button"
+            aria-pressed={activeTab === "all"}
+            onClick={() => setActiveTab("all")}
+            className={cn(
+              "relative inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg px-4 text-sm font-heading font-medium transition-colors",
+              activeTab === "all" ? "gradient-bg text-white" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t("common.all")}
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeTab === "unread"}
+            onClick={() => setActiveTab("unread")}
+            className={cn(
+              "relative inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg px-4 text-sm font-heading font-medium transition-colors",
+              activeTab === "unread" ? "gradient-bg text-white" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t("notifications.unread")}
+            {unreadCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-aurora-violet text-white rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
 
         <div className="flex items-center gap-2">
           <select
+            aria-label="Filter notifications by type"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"
@@ -358,6 +369,7 @@ export default function NotificationsPage() {
           </select>
 
           <select
+            aria-label="Group notifications"
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as "none" | "type" | "day")}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"

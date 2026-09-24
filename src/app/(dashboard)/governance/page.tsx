@@ -16,7 +16,7 @@ import {
   Clock,
   FileText,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useGovernanceProposals } from "@/hooks/use-governance"
@@ -131,11 +131,9 @@ export default function GovernancePage() {
               Propose and vote on parameter changes, treasury disbursements, and community rules.
             </p>
           </div>
-          <Link href="/governance/create">
-            <Button leftIcon={<Plus className="h-4 w-4" />} variant="primary">
+          <ButtonLink href="/governance/create"  leftIcon={<Plus className="h-4 w-4" />} variant="primary">
               Create proposal
-            </Button>
-          </Link>
+            </ButtonLink>
         </div>
       </header>
 
@@ -144,6 +142,8 @@ export default function GovernancePage() {
         {statusTabs.map((tab) => (
           <button
             key={tab.value}
+            type="button"
+            aria-pressed={selectedStatus === tab.value}
             onClick={() => {
               setSelectedStatus(tab.value)
               setCurrentPage(1)
@@ -181,6 +181,7 @@ export default function GovernancePage() {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-aurora-violet" />
             <select
+              aria-label="Proposal category"
               value={categoryFilter}
               onChange={(e) => {
                 setCategoryFilter(e.target.value)
@@ -199,6 +200,7 @@ export default function GovernancePage() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Sort:</span>
             <select
+              aria-label="Sort proposals"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "newest" | "votes" | "oldest")}
               className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-aurora-violet"
@@ -301,11 +303,9 @@ export default function GovernancePage() {
                     Total Votes: <strong className="text-foreground">{totalVotes}</strong>
                   </span>
 
-                  <Link href={`/governance/${proposal.id}`}>
-                    <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
+                  <ButtonLink href={`/governance/${proposal.id}`}  variant="ghost" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
                       View & Vote
-                    </Button>
-                  </Link>
+                    </ButtonLink>
                 </div>
               </div>
             )
@@ -326,8 +326,10 @@ export default function GovernancePage() {
 
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="outline"
               size="sm"
+              aria-label="Previous proposals page"
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
               data-testid="gov-prev-page"
@@ -338,8 +340,10 @@ export default function GovernancePage() {
               Page {currentPage} of {totalPages}
             </span>
             <Button
+              type="button"
               variant="outline"
               size="sm"
+              aria-label="Next proposals page"
               onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
               disabled={currentPage === totalPages}
               data-testid="gov-next-page"

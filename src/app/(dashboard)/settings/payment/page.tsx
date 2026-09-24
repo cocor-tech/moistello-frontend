@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft, CreditCard, Plus, Trash2 } from "lucide-react"
@@ -63,7 +64,7 @@ export default function PaymentSettingsPage() {
       setAccName("")
       setShowForm(false)
     } catch (e) {
-      console.error("[payment] Failed to add bank account:", e)
+      logger.error("[payment] Failed to add bank account:", e)
     } finally {
       setAdding(false)
     }
@@ -74,7 +75,7 @@ export default function PaymentSettingsPage() {
       await del(`/bank-accounts/${id}`)
       setAccounts((prev) => prev.filter((a) => a.id !== id))
     } catch (e) {
-      console.error("[payment] Failed to remove bank account:", e)
+      logger.error("[payment] Failed to remove bank account:", e)
     }
   }, [])
 
@@ -85,7 +86,7 @@ export default function PaymentSettingsPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -155,8 +156,10 @@ export default function PaymentSettingsPage() {
                 </Button>
               )}
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
+                aria-label={`Remove bank account ending in ${acc.accountNumber.slice(-4)}`}
                 onClick={() => handleRemove(acc.id)}
                 className="text-red-400 h-8"
               >

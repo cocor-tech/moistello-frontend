@@ -62,7 +62,7 @@ async function main() {
 
     const gtCode = GT_MAP[code]
     if (!gtCode) {
-      console.log(`[${idx+1}/${codes.length}] ${code}: unsupported, using English`)
+      process.stdout.write(`[${idx+1}/${codes.length}] ${code}: unsupported, using English\n`)
       allData[code] = { ...en }
       continue
     }
@@ -72,7 +72,7 @@ async function main() {
     const translated = bulkTranslate(bulk, gtCode)
 
     if (translated === null) {
-      console.log(`[${idx+1}/${codes.length}] ${code}: failed, using English`)
+      process.stdout.write(`[${idx+1}/${codes.length}] ${code}: failed, using English\n`)
       allData[code] = { ...en }
       await new Promise((r) => setTimeout(r, 1000))
       continue
@@ -83,10 +83,10 @@ async function main() {
       const obj = {}
       enKeys.forEach((key, i) => { obj[key] = lines[i] || enValues[i] })
       allData[code] = obj
-      console.log(`[${idx+1}/${codes.length}] ${code}: ✓ (${lines.length} lines)`)
+      process.stdout.write(`[${idx+1}/${codes.length}] ${code}: ✓ (${lines.length} lines)\n`)
     } else {
       // Try per-key fallback
-      console.log(`[${idx+1}/${codes.length}] ${code}: only ${lines.length}/${enKeys.length} lines, using English`)
+      process.stdout.write(`[${idx+1}/${codes.length}] ${code}: only ${lines.length}/${enKeys.length} lines, using English\n`)
       allData[code] = { ...en }
     }
 
@@ -101,7 +101,10 @@ async function main() {
   }
 
   fs.writeFileSync(path.join(localeDir, "translations.json"), JSON.stringify(allData, null, 2))
-  console.log(`\nDone! ${Object.keys(allData).length} languages in translations.json`)
+  process.stdout.write(`\nDone! ${Object.keys(allData).length} languages in translations.json\n`)
 }
 
-main().catch(console.error)
+main().catch((error) => {
+  process.stderr.write(`${error?.message ?? error}\n`)
+  process.exitCode = 1
+})
