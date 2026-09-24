@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { ApiResponse, User } from "@/types";
 import { post } from "@/lib/api-client";
+import { getCsrfHeaders } from "@/lib/auth/csrf";
 import {
   clearAccessToken,
   getAccessToken,
@@ -41,16 +42,22 @@ interface UserStoreWithHmac {
 async function persistSession(
   token: string,
   refreshToken: string,
-): Promise<void> {
-  if (typeof window === "undefined") return;
+): Promise<boolean> {
+  if (typeof window === "undefined") return false;
   try {
-    await fetch("/api/auth/session", {
+    const response = await fetch("/api/auth/session", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify({ token, refreshToken }),
     });
+    if (!response.ok) {
+      logger.warn("[auth] Session cookie endpoint rejected the token pair", { status: response.status });
+      return false;
+    }
+    return true;
   } catch (e) {
     logger.warn("[auth] Failed to persist session cookie:", e);
+    return false;
   }
 }
 
@@ -83,7 +90,7 @@ async function rehydrateAccessToken(): Promise<string | null> {
 async function clearSession(): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    await fetch("/api/auth/session", { method: "DELETE" });
+    await fetch("/api/auth/session", { method: "DELETE", headers: getCsrfHeaders() });
   } catch (e) {
     logger.warn("[auth] Failed to clear session cookie:", e);
   }
@@ -353,16 +360,19 @@ const baseStore = (
   setTokens: async (accessToken: string, refreshToken: string, user?: User) => {
     setAccessToken(accessToken);
     const exp = extractTokenExpiry(accessToken);
-    if (user) setStoredUser(user);
+    const persisted = await persistSession(accessToken, refreshToken);
+    if (!persisted) {
+      clearAccessToken();
+      throw new Error("Failed to persist session cookies");
+    }
 
+    if (user) setStoredUser(user);
     set({
       token: accessToken,
       tokenExpiresAt: exp ?? Date.now() + 15 * 60 * 1000,
       isAuthenticated: true,
       user: user ?? getStoredUser(),
     });
-
-    await persistSession(accessToken, refreshToken);
   },
 
   updateUser: (user: User) => {

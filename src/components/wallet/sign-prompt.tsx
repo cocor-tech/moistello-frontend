@@ -1,5 +1,5 @@
 "use client"
-import { useId, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Shield, AlertCircle, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,21 +19,49 @@ export function SignPrompt({ isOpen, onClose, onSign, onSuccess, title = "Sign T
   const { activeWallet, detectedWallets } = useMultiWallet()
   const [status, setStatus] = useState<"idle" | "signing" | "success" | "error">("idle")
   const [error, setError] = useState("")
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const operationRef = useRef(0)
+  const isOpenRef = useRef(isOpen)
   const dialogRef = useFocusTrap<HTMLDivElement>(isOpen, onClose)
   const id = useId().replace(/:/g, "")
   const titleId = `${id}-sign-prompt-title`
   const descriptionId = `${id}-sign-prompt-description`
   const walletName = detectedWallets.find(w => w.id === activeWallet?.adapter?.meta?.id)?.name || "wallet"
 
+  useEffect(() => {
+    isOpenRef.current = isOpen
+    operationRef.current += 1
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+    if (isOpen) {
+      setStatus("idle")
+      setError("")
+    }
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = null
+      }
+    }
+  }, [isOpen])
+
   const handleSign = async () => {
+    const operation = ++operationRef.current
     setStatus("signing")
     setError("")
     try {
       await onSign()
+      if (operation !== operationRef.current || !isOpenRef.current) return
       setStatus("success")
       onSuccess?.()
-      setTimeout(() => onClose(), 1000)
+      closeTimerRef.current = setTimeout(() => {
+        closeTimerRef.current = null
+        onClose()
+      }, 1000)
     } catch (err: unknown) {
+      if (operation !== operationRef.current || !isOpenRef.current) return
       setStatus("error")
       setError(err instanceof Error ? err.message : "Signing failed")
     }

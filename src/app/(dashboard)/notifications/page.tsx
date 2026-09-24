@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -215,7 +215,7 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslate();
   const addToast = useUIStore((s) => s.addToast);
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, bulkArchive } = useNotifications();
   const wsState = useWsState();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -233,6 +233,15 @@ export default function NotificationsPage() {
 
   const largeList = filtered.length > STAGGER_CHILDREN_LIMIT;
   const listMotion = useListMotion(largeList);
+  const allSelected = filtered.length > 0 && filtered.every((n) => selectedIds.includes(n.id));
+
+  useEffect(() => {
+    const visibleIds = new Set(filtered.map((notification) => notification.id));
+    setSelectedIds((previous) => {
+      const next = previous.filter((id) => visibleIds.has(id));
+      return next.length === previous.length ? previous : next;
+    });
+  }, [filtered]);
 
   const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) =>
@@ -241,16 +250,19 @@ export default function NotificationsPage() {
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    if (selectedIds.length === filtered.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filtered.map((n) => n.id));
-    }
-  }, [selectedIds.length, filtered]);
+    setSelectedIds((previous) => {
+      if (allSelected) {
+        const filteredIds = new Set(filtered.map((n) => n.id));
+        return previous.filter((id) => !filteredIds.has(id));
+      }
+      return Array.from(new Set([...previous, ...filtered.map((n) => n.id)]));
+    });
+  }, [allSelected, filtered]);
 
   const handleBulkMarkRead = useCallback(async () => {
     try {
-      await Promise.all(selectedIds.map((id) => markAsRead(id)));
+      const results = await Promise.all(selectedIds.map((id) => markAsRead(id)));
+      if (results.some((result) => result === false)) throw new Error("mark failed");
       setSelectedIds([]);
       addToast({ type: "success", title: "Marked selected as read" });
     } catch {
@@ -260,13 +272,14 @@ export default function NotificationsPage() {
 
   const handleBulkArchive = useCallback(async () => {
     try {
-      await Promise.all(selectedIds.map((id) => markAsRead(id)));
+      const result = await bulkArchive(selectedIds);
+      if (result === false) throw new Error("archive failed");
       setSelectedIds([]);
       addToast({ type: "success", title: "Archived selected notifications" });
     } catch {
       addToast({ type: "error", title: "Failed to archive selected" });
     }
-  }, [selectedIds, markAsRead, addToast]);
+  }, [selectedIds, bulkArchive, addToast]);
 
   const grouped = useMemo(() => {
     if (groupBy === "type") {
@@ -297,8 +310,6 @@ export default function NotificationsPage() {
     }
     return [{ key: "all", label: "All", items: filtered }];
   }, [filtered, groupBy]);
-
-  const allSelected = filtered.length > 0 && selectedIds.length === filtered.length;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">

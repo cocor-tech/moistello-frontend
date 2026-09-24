@@ -64,6 +64,20 @@ function langLabel(code: string): string {
   return LANG_NAMES[code] ?? code
 }
 
+const TAB_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",")
+
+function getTabbableElements(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>(TAB_FOCUSABLE_SELECTOR))
+    .filter((element) => element.tabIndex >= 0)
+}
+
 export function ProfileStep({
   displayName,
   language,
@@ -97,6 +111,23 @@ export function ProfileStep({
     window.requestAnimationFrame(() => focusLanguage(value))
   }, [focusLanguage])
 
+  const handleTab = (event: React.KeyboardEvent<HTMLElement>) => {
+    const current = event.currentTarget
+    const candidates = getTabbableElements()
+    const target = event.shiftKey
+      ? [...candidates].reverse().find((element) =>
+          Boolean(current.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_PRECEDING),
+        )
+      : candidates.find((element) =>
+          Boolean(current.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING),
+        )
+    event.preventDefault()
+    setOpen(false)
+    focusOnOpenRef.current = null
+    const fallback = target ?? triggerRef.current
+    fallback?.focus()
+  }
+
   const selectLanguage = (value: string) => {
     onUpdateLanguage(value)
     setLocale(value)
@@ -115,12 +146,12 @@ export function ProfileStep({
   const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Escape" && open) {
       event.preventDefault()
+      event.stopPropagation()
       close()
       return
     }
     if (event.key === "Tab" && open) {
-      setOpen(false)
-      focusOnOpenRef.current = null
+      handleTab(event)
       return
     }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
@@ -142,12 +173,12 @@ export function ProfileStep({
   const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, value: string) => {
     if (event.key === "Escape") {
       event.preventDefault()
+      event.stopPropagation()
       close()
       return
     }
     if (event.key === "Tab") {
-      setOpen(false)
-      focusOnOpenRef.current = null
+      handleTab(event)
       return
     }
     if (event.key === "Enter" || event.key === " " || event.code === "Space") {
@@ -181,12 +212,25 @@ export function ProfileStep({
 
   React.useEffect(() => {
     if (!open) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      close()
+    }
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [open, close])
+
+  React.useEffect(() => {
+    if (!open) return
     const value = focusOnOpenRef.current || language || LANGUAGES[0]
     focusOnOpenRef.current = null
     focusAfterRender(value)
   }, [open, language, focusAfterRender])
 
   const selected = language
+  const selectedLanguageLabel = selected ? langLabel(selected) : t("auth.profile.selectLanguage")
+  const triggerLabel = `${t("auth.profile.selectLanguage")}: ${selectedLanguageLabel}`
 
   return (
     <div className={`flex flex-col items-center min-h-[500px] pt-48 transition-all duration-300 ${open ? "-translate-y-40" : ""}`}>
@@ -216,7 +260,7 @@ export function ProfileStep({
             aria-haspopup="listbox"
             aria-expanded={open}
             aria-controls={open ? listboxId : undefined}
-            aria-label={t("auth.profile.selectLanguage")}
+            aria-label={triggerLabel}
             disabled={isSubmitting}
             className="w-full flex items-center justify-between bg-white/10 hover:bg-white/[0.14] border border-white/25 text-sm text-foreground py-3 px-4 rounded-xl focus:outline-none focus:border-white/40 transition-all"
           >

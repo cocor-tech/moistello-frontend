@@ -29,12 +29,21 @@ export function useFocusTrap<T extends HTMLElement>(
         containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS) ?? [],
       );
 
+    let containerFocused = false;
     const focusFirstElement = () => {
       const container = containerRef.current;
       if (!container) return false;
       const focusableElements = getFocusableElements();
-      (focusableElements[0] ?? container).focus();
-      return true;
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+        containerFocused = false;
+        return true;
+      }
+      if (!containerFocused) {
+        container.focus();
+        containerFocused = true;
+      }
+      return false;
     };
 
     let observer: MutationObserver | null = null;
@@ -62,20 +71,31 @@ export function useFocusTrap<T extends HTMLElement>(
 
       if (event.key !== "Tab") return;
 
+      const container = containerRef.current;
       const elements = getFocusableElements();
+      if (!container) return;
       if (elements.length === 0) {
         event.preventDefault();
-        containerRef.current?.focus();
+        container.focus();
         return;
       }
 
       const firstElement = elements[0];
       const lastElement = elements[elements.length - 1];
+      const activeElement = document.activeElement;
+      const focusIsInside = activeElement instanceof HTMLElement && container.contains(activeElement);
+      const activeIsFocusable = activeElement instanceof HTMLElement && elements.includes(activeElement);
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (!focusIsInside || !activeIsFocusable) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
         event.preventDefault();
         lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
+      } else if (!event.shiftKey && activeElement === lastElement) {
         event.preventDefault();
         firstElement.focus();
       }

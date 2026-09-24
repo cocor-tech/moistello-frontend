@@ -50,6 +50,30 @@ function DelayedFocusTrapHarness() {
   );
 }
 
+function DelayedChildFocusTrapHarness() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [containerReady, setContainerReady] = useState(false);
+  const [childReady, setChildReady] = useState(false);
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen, () => setIsOpen(false));
+
+  const open = () => {
+    setIsOpen(true);
+    setTimeout(() => setContainerReady(true), 5);
+    setTimeout(() => setChildReady(true), 15);
+  };
+
+  return (
+    <>
+      <button onClick={open}>Open delayed child menu</button>
+      {isOpen && containerReady && (
+        <div ref={trapRef} role="dialog" tabIndex={-1}>
+          {childReady && <button>Delayed child item</button>}
+        </div>
+      )}
+    </>
+  );
+}
+
 describe("useFocusTrap", () => {
   it("cycles Tab and Shift+Tab within the open menu", async () => {
     const user = userEvent.setup();
@@ -95,5 +119,26 @@ describe("useFocusTrap", () => {
 
     await user.click(screen.getByRole("button", { name: "Open delayed menu" }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Delayed first item" })));
+  });
+
+  it("keeps observing until asynchronously populated controls arrive", async () => {
+    const user = userEvent.setup();
+    render(<DelayedChildFocusTrapHarness />);
+
+    await user.click(screen.getByRole("button", { name: "Open delayed child menu" }));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Delayed child item" })));
+  });
+
+  it("redirects Tab focus when focus is moved outside the dialog", async () => {
+    const user = userEvent.setup();
+    render(<FocusTrapHarness />);
+
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+    const behindOverlay = screen.getByRole("button", { name: "Behind overlay" });
+    behindOverlay.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "First menu item" }));
   });
 });

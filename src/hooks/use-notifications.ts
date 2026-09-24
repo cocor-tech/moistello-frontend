@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { logger } from "@/lib/logger";
 import { get, patch, post } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
@@ -36,7 +36,7 @@ function computeUnreadCount(notifications: Notification[]): number {
 }
 
 async function fetchNotifications(): Promise<Notification[]> {
-  const response = await get<unknown>("/notifications");
+  const response = await get<unknown>("/notifications?limit=100");
   return extractNotifications(response);
 }
 
@@ -61,6 +61,18 @@ function signalAuthRequired(): void {
 
 function logMutationError(message: string, error: unknown): void {
   logger.warn(message, { error });
+}
+
+function restoreNotificationQuery(
+  queryClient: QueryClient,
+  queryKey: readonly unknown[],
+  data: Notification[] | undefined,
+): void {
+  if (data) {
+    queryClient.setQueryData(queryKey, data);
+  } else {
+    queryClient.removeQueries({ queryKey, exact: true });
+  }
 }
 
 /** Shared active-notification query used by the page, badges, and mutations. */
@@ -153,21 +165,39 @@ export function useNotifications() {
   const markAsReadMutation = useMarkAsReadMutation();
   const markAllAsReadMutation = useMarkAllAsReadMutation();
 
+  const refetchActive = activeQuery.refetch;
+  const refetchArchived = archivedQuery.refetch;
   const fetchNotifications = useCallback(async () => {
-    await Promise.all([activeQuery.refetch(), archivedQuery.refetch()]);
-  }, [activeQuery, archivedQuery]);
+    await Promise.all([refetchActive(), refetchArchived()]);
+  }, [refetchActive, refetchArchived]);
 
   const markAsRead = useCallback(
-    (id: string) => markAsReadMutation.mutate(id),
+    async (id: string): Promise<boolean> => {
+      try {
+        await markAsReadMutation.mutateAsync(id);
+        return true;
+      } catch {
+        return false;
+      }
+    },
     [markAsReadMutation],
   );
   const markAllAsRead = useCallback(
-    () => markAllAsReadMutation.mutate(),
+    async (): Promise<boolean> => {
+      try {
+        await markAllAsReadMutation.mutateAsync();
+        return true;
+      } catch {
+        return false;
+      }
+    },
     [markAllAsReadMutation],
   );
 
   const archiveNotification = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
+      const previousActive = queryClient.getQueryData<Notification[]>(queryKeys.notifications.all);
+      const previousArchived = queryClient.getQueryData<Notification[]>(queryKeys.notifications.archive);
       const target = activeQuery.data?.find((notification) => notification.id === id);
       if (target) {
         queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) =>
@@ -180,8 +210,12 @@ export function useNotifications() {
       }
       try {
         await post(`/notifications/${id}/archive`, {});
+        return true;
       } catch (error) {
+        restoreNotificationQuery(queryClient, queryKeys.notifications.all, previousActive);
+        restoreNotificationQuery(queryClient, queryKeys.notifications.archive, previousArchived);
         logMutationError("[notifications] Failed to archive notification", error);
+        return false;
       } finally {
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
@@ -191,7 +225,9 @@ export function useNotifications() {
   );
 
   const unarchiveNotification = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
+      const previousActive = queryClient.getQueryData<Notification[]>(queryKeys.notifications.all);
+      const previousArchived = queryClient.getQueryData<Notification[]>(queryKeys.notifications.archive);
       const target = archivedQuery.data?.find((notification) => notification.id === id);
       if (target) {
         queryClient.setQueryData<Notification[]>(queryKeys.notifications.archive, (old = []) =>
@@ -204,8 +240,12 @@ export function useNotifications() {
       }
       try {
         await post(`/notifications/${id}/unarchive`, {});
+        return true;
       } catch (error) {
+        restoreNotificationQuery(queryClient, queryKeys.notifications.all, previousActive);
+        restoreNotificationQuery(queryClient, queryKeys.notifications.archive, previousArchived);
         logMutationError("[notifications] Failed to unarchive notification", error);
+        return false;
       } finally {
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
@@ -215,7 +255,9 @@ export function useNotifications() {
   );
 
   const bulkArchive = useCallback(
-    async (ids: string[]) => {
+    async (ids: string[]): Promise<boolean> => {
+      const previousActive = queryClient.getQueryData<Notification[]>(queryKeys.notifications.all);
+      const previousArchived = queryClient.getQueryData<Notification[]>(queryKeys.notifications.archive);
       const targets = activeQuery.data?.filter((notification) => ids.includes(notification.id)) ?? [];
       queryClient.setQueryData<Notification[]>(queryKeys.notifications.all, (old = []) =>
         old.filter((notification) => !ids.includes(notification.id)),
@@ -226,8 +268,12 @@ export function useNotifications() {
       ]);
       try {
         await post("/notifications/bulk-archive", { ids });
+        return true;
       } catch (error) {
+        restoreNotificationQuery(queryClient, queryKeys.notifications.all, previousActive);
+        restoreNotificationQuery(queryClient, queryKeys.notifications.archive, previousArchived);
         logMutationError("[notifications] Failed to bulk archive notifications", error);
+        return false;
       } finally {
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });
@@ -237,7 +283,9 @@ export function useNotifications() {
   );
 
   const bulkUnarchive = useCallback(
-    async (ids: string[]) => {
+    async (ids: string[]): Promise<boolean> => {
+      const previousActive = queryClient.getQueryData<Notification[]>(queryKeys.notifications.all);
+      const previousArchived = queryClient.getQueryData<Notification[]>(queryKeys.notifications.archive);
       const targets = archivedQuery.data?.filter((notification) => ids.includes(notification.id)) ?? [];
       queryClient.setQueryData<Notification[]>(queryKeys.notifications.archive, (old = []) =>
         old.filter((notification) => !ids.includes(notification.id)),
@@ -248,8 +296,12 @@ export function useNotifications() {
       ]);
       try {
         await post("/notifications/bulk-unarchive", { ids });
+        return true;
       } catch (error) {
+        restoreNotificationQuery(queryClient, queryKeys.notifications.all, previousActive);
+        restoreNotificationQuery(queryClient, queryKeys.notifications.archive, previousArchived);
         logMutationError("[notifications] Failed to bulk unarchive notifications", error);
+        return false;
       } finally {
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: true });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.archive });

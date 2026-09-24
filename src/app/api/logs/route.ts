@@ -37,10 +37,18 @@ function isRateLimited(request: NextRequest): boolean {
   pruneRateLimits(now)
 
   // Keep attacker-controlled forwarded addresses from growing the process heap
-  // indefinitely. Expired keys are removed by the periodic prune above; the
-  // oldest live key is evicted when the hard cap is reached.
+  // indefinitely. Expired keys are removed by the periodic prune above; evict
+  // the key whose oldest live request is oldest when the hard cap is reached.
   if (!requestCounts.has(key) && requestCounts.size >= MAX_RATE_LIMIT_KEYS) {
-    const oldestKey = requestCounts.keys().next().value
+    let oldestKey: string | undefined
+    let oldestTimestamp = Number.POSITIVE_INFINITY
+    for (const [candidateKey, timestamps] of requestCounts) {
+      const candidateTimestamp = timestamps[0] ?? Number.POSITIVE_INFINITY
+      if (candidateTimestamp < oldestTimestamp) {
+        oldestKey = candidateKey
+        oldestTimestamp = candidateTimestamp
+      }
+    }
     if (oldestKey) requestCounts.delete(oldestKey)
   }
 
@@ -92,8 +100,12 @@ export async function POST(request: NextRequest) {
 
   const contentLengthHeader = request.headers.get("content-length")
   if (contentLengthHeader) {
-    const contentLength = Number(contentLengthHeader)
-    if (!Number.isFinite(contentLength) || !Number.isInteger(contentLength) || contentLength < 0) {
+    const normalizedContentLength = contentLengthHeader.trim()
+    if (!/^\d+$/.test(normalizedContentLength)) {
+      return NextResponse.json({ error: "Invalid content length" }, { status: 400 })
+    }
+    const contentLength = Number(normalizedContentLength)
+    if (!Number.isSafeInteger(contentLength)) {
       return NextResponse.json({ error: "Invalid content length" }, { status: 400 })
     }
     if (contentLength > MAX_BODY_BYTES) {

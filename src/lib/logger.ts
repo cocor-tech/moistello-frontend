@@ -218,12 +218,12 @@ function mergeEvent(target: LogEvent, incoming: LogEvent): void {
   target.timestamp = incoming.timestamp
 }
 
-function scheduleFlush(): void {
+function scheduleFlush(delayMs = FLUSH_INTERVAL_MS): void {
   if (flushTimer || flushInFlight || browserQueue.length === 0) return
   flushTimer = setTimeout(() => {
     flushTimer = null
     flushLogs()
-  }, FLUSH_INTERVAL_MS)
+  }, Math.max(0, delayMs))
 }
 
 function serializedSize(value: unknown): number {
@@ -272,8 +272,55 @@ function requeue(batch: LogEvent[]): void {
   browserQueue = browserQueue.slice(-MAX_QUEUE_SIZE)
 }
 
+function isPermanentClientError(status: number): boolean {
+  return status >= 400 && status < 500 && status !== 408 && status !== 429
+}
+
+function retryDelayForResponse(response: Response): number {
+  const retryAfter = response.headers.get("Retry-After")?.trim()
+  if (retryAfter) {
+    const seconds = Number(retryAfter)
+    if (Number.isFinite(seconds)) {
+      return Math.min(Math.max(seconds * 1_000, 1_000), 5 * 60 * 1_000)
+    }
+    const dateDelay = Date.parse(retryAfter) - Date.now()
+    if (Number.isFinite(dateDelay)) {
+      return Math.min(Math.max(dateDelay, 1_000), 5 * 60 * 1_000)
+    }
+  }
+  return FLUSH_INTERVAL_MS
+}
+
 export function flushLogs(useBeacon = false): void {
-  if (typeof window === "undefined" || browserQueue.length === 0 || flushInFlight) return
+  if (typeof window === "undefined" || browserQueue.length === 0) return
+
+  // A normal fetch may still be in flight while the page is unloading. Send a
+  // second queued batch through beacon without disturbing that fetch's state.
+  if (useBeacon && flushInFlight) {
+    const queuedBatch = takeBrowserBatch()
+    if (queuedBatch.length === 0) return
+    try {
+      const queuedPayload = JSON.stringify(queuedBatch)
+      if (
+        queuedPayload &&
+        new TextEncoder().encode(queuedPayload).byteLength <= MAX_BATCH_BYTES &&
+        typeof navigator !== "undefined" &&
+        typeof navigator.sendBeacon === "function" &&
+        navigator.sendBeacon(
+          getBrowserEndpoint(),
+          new Blob([queuedPayload], { type: "application/json" }),
+        )
+      ) {
+        return
+      }
+    } catch {
+      // Fall through to requeue below; unload delivery is best effort.
+    }
+    requeue(queuedBatch)
+    return
+  }
+
+  if (flushInFlight) return
   if (flushTimer) {
     clearTimeout(flushTimer)
     flushTimer = null
@@ -304,10 +351,10 @@ export function flushLogs(useBeacon = false): void {
   const requeueIfCurrent = () => {
     if (isCurrent()) requeue(batch)
   }
-  const finish = () => {
+  const finish = (delayMs = FLUSH_INTERVAL_MS) => {
     if (!isCurrent()) return
     flushInFlight = false
-    scheduleFlush()
+    scheduleFlush(delayMs)
   }
 
   try {
@@ -324,14 +371,21 @@ export function flushLogs(useBeacon = false): void {
       }
     }
 
+    let retryDelay = FLUSH_INTERVAL_MS
     void fetch(getBrowserEndpoint(), {
       method: "POST",
       body: payload,
       headers: { "Content-Type": "application/json" },
       keepalive: true,
     }).then((response) => {
-      if (!response.ok) requeueIfCurrent()
-    }).catch(() => requeueIfCurrent()).finally(finish)
+      if (response.ok) return
+      if (isPermanentClientError(response.status)) return
+      retryDelay = retryDelayForResponse(response)
+      requeueIfCurrent()
+    }).catch(() => {
+      retryDelay = FLUSH_INTERVAL_MS
+      requeueIfCurrent()
+    }).finally(() => finish(retryDelay))
   } catch {
     requeueIfCurrent()
     finish()

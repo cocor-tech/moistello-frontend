@@ -1,6 +1,7 @@
 "use client";
 
 import { logger } from "@/lib/logger"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -35,7 +36,7 @@ function SetupForm() {
     try {
       const res = await fetch("/api/auth/setup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ token, username: username.trim(), password }),
       });
       const data = await res.json();

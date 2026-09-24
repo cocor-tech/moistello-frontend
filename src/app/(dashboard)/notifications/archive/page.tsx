@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -29,6 +29,14 @@ export default function NotificationsArchivePage() {
   const { addToast } = useUIStore();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const availableIds = new Set(archivedNotifications.map((notification) => notification.id));
+    setSelectedIds((previous) => {
+      const next = previous.filter((id) => availableIds.has(id));
+      return next.length === previous.length ? previous : next;
+    });
+  }, [archivedNotifications]);
 
   const totalPages = Math.max(1, Math.ceil(archivedNotifications.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -60,11 +68,26 @@ export default function NotificationsArchivePage() {
     );
   };
 
-  const handleBulkUnarchive = () => {
+  const handleBulkUnarchive = async () => {
     if (selectedIds.length === 0) return;
-    bulkUnarchive(selectedIds);
-    addToast({ type: "success", title: "Unarchived selected notifications" });
-    setSelectedIds([]);
+    try {
+      const result = await bulkUnarchive(selectedIds);
+      if (result === false) throw new Error("unarchive failed");
+      addToast({ type: "success", title: "Unarchived selected notifications" });
+      setSelectedIds([]);
+    } catch {
+      addToast({ type: "error", title: "Failed to unarchive selected" });
+    }
+  };
+
+  const handleUnarchive = async (id: string) => {
+    try {
+      const result = await unarchiveNotification(id);
+      if (result === false) throw new Error("unarchive failed");
+      addToast({ type: "success", title: "Notification unarchived" });
+    } catch {
+      addToast({ type: "error", title: "Failed to unarchive notification" });
+    }
   };
 
   return (
@@ -129,7 +152,7 @@ export default function NotificationsArchivePage() {
               )}
             </button>
             <span className="text-xs font-medium text-muted-foreground">
-              Select all on this page
+              {allSelected ? "Deselect all on this page" : "Select all on this page"}
             </span>
           </div>
 
@@ -178,10 +201,7 @@ export default function NotificationsArchivePage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    unarchiveNotification(n.id);
-                    addToast({ type: "success", title: "Notification unarchived" });
-                  }}
+                  onClick={() => void handleUnarchive(n.id)}
                   leftIcon={<ArchiveRestore className="h-4 w-4" />}
                 >
                   Unarchive

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import NotificationsArchivePage from "../archive/page";
 import type { Notification } from "@/types";
@@ -82,7 +82,7 @@ describe("NotificationsArchivePage", () => {
 
   it(
     "supports bulk selection and unarchiving",
-    () => {
+    async () => {
       const mockBulkUnarchive = vi.fn();
       mockUseNotifications.mockReturnValue({
         archivedNotifications: [
@@ -102,7 +102,7 @@ describe("NotificationsArchivePage", () => {
       expect(screen.getByText("Unarchive Selected")).toBeDefined();
       fireEvent.click(screen.getByText("Unarchive Selected"));
 
-      expect(mockBulkUnarchive).toHaveBeenCalledWith(["n1"]);
+      await waitFor(() => expect(mockBulkUnarchive).toHaveBeenCalledWith(["n1"]));
     }
   );
 });

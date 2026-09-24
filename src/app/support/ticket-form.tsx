@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 
 interface FormData {
   name: string
@@ -58,7 +59,7 @@ export function TicketForm() {
     try {
       const res = await fetch("/api/support/tickets", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify(formData),
       })
       if (!res.ok) {

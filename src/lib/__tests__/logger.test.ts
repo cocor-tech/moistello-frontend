@@ -75,7 +75,7 @@ describe("structured logger", () => {
   })
 
   it("serializes bigint context values without throwing", () => {
-    expect(sanitizeLogContext({ requestId: 42n })).toEqual({ requestId: "42" })
+    expect(sanitizeLogContext({ requestId: BigInt(42) })).toEqual({ requestId: "42" })
   })
 
   it("keeps distinct context values in separate aggregated events", () => {
@@ -110,5 +110,16 @@ describe("structured logger", () => {
       "/api/logs",
       expect.objectContaining({ method: "POST" }),
     )
+  })
+
+  it("drops permanent client-error responses instead of retrying forever", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 400 }))
+    vi.stubGlobal("fetch", fetchMock)
+    setLogLevel("info")
+    logger.warn("invalid log")
+    flushLogs()
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    expect(getBufferedLogCount()).toBe(0)
   })
 })

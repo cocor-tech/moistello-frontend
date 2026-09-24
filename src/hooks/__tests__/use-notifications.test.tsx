@@ -57,7 +57,7 @@ describe("useNotificationsQuery", () => {
 
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockedGet).toHaveBeenCalledWith("/notifications");
+    expect(mockedGet).toHaveBeenCalledWith("/notifications?limit=100");
     expect(result.current.data).toEqual(notifications);
   });
 

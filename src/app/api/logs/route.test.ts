@@ -58,15 +58,17 @@ describe("POST /api/logs", () => {
       headers: { "Content-Type": "application/json", "x-forwarded-for": "198.51.100.10" },
       body: stream,
       duplex: "half",
-    } as RequestInit)
+    } as unknown as ConstructorParameters<typeof NextRequest>[1])
 
     const response = await POST(streamedRequest)
     expect(response.status).toBe(413)
   })
 
   it("rejects invalid content-length values", async () => {
-    const response = await POST(request([], { "content-length": "1.5" }))
-    expect(response.status).toBe(400)
+    for (const contentLength of ["1.5", "0x100", "1e3", "+1"]) {
+      const response = await POST(request([], { "content-length": contentLength }))
+      expect(response.status).toBe(400)
+    }
   })
 
   it("rate limits a client and returns a retry hint", async () => {
