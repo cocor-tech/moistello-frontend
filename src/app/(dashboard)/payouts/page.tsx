@@ -5,8 +5,10 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Award, AlertCircle } from "lucide-react";
+import { useTranslate } from "@/lib/locale/context";
 
 export default function PayoutsPage() {
+  const { t } = useTranslate();
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [payouts, setPayouts] = useState<any[]>([]);
@@ -27,10 +29,10 @@ export default function PayoutsPage() {
     return (
       <EmptyState
         icon={<AlertCircle />}
-        title="Failed to load payouts"
-        description="Something went wrong while retrieving your payouts. Please try again."
+        title={t("payouts.errorTitle", "Failed to load payouts")}
+        description={t("payouts.errorDesc", "Something went wrong while retrieving your payouts. Please try again.")}
         action={{
-          label: "Retry",
+          label: t("error.tryAgain", "Retry"),
           onClick: () => setIsError(false),
         }}
         className="border border-red-400/20"
@@ -42,15 +44,15 @@ export default function PayoutsPage() {
     return (
       <div className="space-y-8" data-testid="payouts-page">
         <PageHeader
-          title="Payouts"
-          description="View all circle payouts distributed to your wallet."
+          title={t("payouts.title", "Payouts")}
+          description={t("payouts.desc", "View all circle payouts distributed to your wallet.")}
         />
         <EmptyState
           icon={<Award />}
-          title="No payouts received yet"
-          description="Active round disbursements and completed circle payouts will appear here once distributed."
+          title={t("payouts.emptyTitle", "No payouts received yet")}
+          description={t("payouts.emptyDesc", "Active round disbursements and completed circle payouts will appear here once distributed.")}
           action={{
-            label: "View Circles",
+            label: t("payouts.browseCircles", "View Circles"),
             onClick: () => (window.location.href = "/circles"),
           }}
           className="border border-dashed border-aurora-violet/30"
@@ -62,10 +64,11 @@ export default function PayoutsPage() {
   return (
     <div className="space-y-8" data-testid="payouts-page">
       <PageHeader
-        title="Payouts"
-        description="View all circle payouts distributed to your wallet."
+        title={t("payouts.title", "Payouts")}
+        description={t("payouts.desc", "View all circle payouts distributed to your wallet.")}
       />
-      <div>Payouts list</div>
+      <div>{t("payouts.list", "Payouts list")}</div>
     </div>
   );
 }
+

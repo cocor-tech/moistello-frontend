@@ -95,7 +95,7 @@ export function LocaleSwitcher() {
           aria-label="Select language"
           aria-activedescendant={`locale-option-${locale}`}
           className={cn(
-            "absolute right-0 top-full mt-1.5 z-50",
+            "absolute right-0 rtl:right-auto rtl:left-0 top-full mt-1.5 z-50",
             "w-44 py-1",
             "bg-card border border-border",
             "rounded-xl shadow-lg",
@@ -122,7 +122,7 @@ export function LocaleSwitcher() {
                 <span aria-hidden="true" className="text-base leading-none">
                   {lang.flag}
                 </span>
-                <span className="flex-1 text-left font-body">{lang.label}</span>
+                <span className="flex-1 text-left rtl:text-right font-body">{lang.label}</span>
                 <span className="font-mono text-[10px] uppercase tracking-widest opacity-50">
                   {lang.value}
                 </span>

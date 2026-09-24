@@ -6,8 +6,15 @@ import { useAuthStore } from "@/stores/auth-store"
 
 type TranslationDict = Record<string, string>
 
+export const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"])
+
+export function isRtlLocale(loc: string): boolean {
+  return RTL_LOCALES.has(loc.toLowerCase().split("-")[0])
+}
+
 interface LocaleContextType {
   locale: string
+  isRtl: boolean
   setLocale: (lang: string) => void
   t: (key: string) => string
   /** Locale code that failed to load; English is being served instead. Null when healthy. */
@@ -20,6 +27,7 @@ interface LocaleContextType {
 
 const LocaleContext = createContext<LocaleContextType>({
   locale: "en",
+  isRtl: false,
   setLocale: () => {},
   t: (key: string) => key,
   fallbackLocale: null,
@@ -37,8 +45,12 @@ function delay(ms: number) {
 }
 
 async function fetchLocaleDict(code: string): Promise<TranslationDict> {
-  const res = await fetch(`/locales/${code}.json`)
-  if (!res.ok) throw new Error(`HTTP ${res.status} while fetching /locales/${code}.json`)
+  const res = await fetch(`/locale/${code}.json`)
+  if (!res.ok) {
+    const fallbackRes = await fetch(`/locales/${code}.json`)
+    if (!fallbackRes.ok) throw new Error(`HTTP ${res.status} while fetching /locale/${code}.json`)
+    return (await fallbackRes.json()) as TranslationDict
+  }
   return (await res.json()) as TranslationDict
 }
 
@@ -73,6 +85,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [fallbackLocale, setFallbackLocale] = useState<string | null>(null)
   const requestRef = useRef(0)
 
+  const isRtl = isRtlLocale(locale)
+
   const loadLocale = useCallback(async (code: string) => {
     const requestId = ++requestRef.current
 
@@ -97,7 +111,17 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Load locale data
+  // Sync DOM attributes and cookie whenever locale changes
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const rtl = isRtlLocale(locale)
+      document.documentElement.lang = locale
+      document.documentElement.dir = rtl ? "rtl" : "ltr"
+      document.cookie = `moistello_locale=${encodeURIComponent(locale)};path=/;max-age=31536000;SameSite=Lax`
+    }
+  }, [locale])
+
+  // Load locale data on mount or auth change
   useEffect(() => {
     const code = (() => {
       if (typeof window !== "undefined") {
@@ -115,7 +139,13 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback(
     (lang: string) => {
       setLocaleState(lang)
-      if (typeof window !== "undefined") localStorage.setItem("moistello_locale", lang)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("moistello_locale", lang)
+        const rtl = isRtlLocale(lang)
+        document.documentElement.lang = lang
+        document.documentElement.dir = rtl ? "rtl" : "ltr"
+        document.cookie = `moistello_locale=${encodeURIComponent(lang)};path=/;max-age=31536000;SameSite=Lax`
+      }
       void loadLocale(lang)
       const state = useAuthStore.getState()
       if (state.isAuthenticated && state.user) {
@@ -150,7 +180,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   )
 
   return (
-    <LocaleContext.Provider value={{ locale, setLocale, t, fallbackLocale, retryLocale, dismissFallbackNotice }}>
+    <LocaleContext.Provider value={{ locale, isRtl, setLocale, t, fallbackLocale, retryLocale, dismissFallbackNotice }}>
       {children}
       {fallbackLocale && (
         <div

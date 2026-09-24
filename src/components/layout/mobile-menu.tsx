@@ -26,6 +26,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { useTranslate } from "@/lib/locale/context";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -88,9 +89,9 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
         aria-label={t("nav.navigation")}
         tabIndex={-1}
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-80 max-w-[85vw]",
+          "absolute right-0 rtl:right-auto rtl:left-0 top-0 bottom-0 w-80 max-w-[85vw]",
           "glass-premium backdrop-blur-2xl",
-          "border-l border-white/[0.08] dark:border-white/[0.06]",
+          "border-l rtl:border-l-0 rtl:border-r border-white/[0.08] dark:border-white/[0.06]",
           "flex flex-col",
         )}
         style={{ overscrollBehavior: "contain" }}
@@ -182,6 +183,11 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
         </nav>
 
         <div className="shrink-0 border-t border-white/[0.05] px-4 py-4 space-y-2">
+          <div className="flex items-center justify-between px-3 py-1">
+            <span className="text-xs text-muted-foreground">{t("lang.title")}</span>
+            <LocaleSwitcher />
+          </div>
+
           <button
             onClick={toggleTheme}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:glass-whisper"

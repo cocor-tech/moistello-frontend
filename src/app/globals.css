@@ -109,6 +109,18 @@
   html[data-font-size="small"] { font-size: 14px; }
   html[data-font-size="large"] { font-size: 18px; }
 
+  /* ── RTL Support ── */
+  html[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+  }
+  html[dir="rtl"] body {
+    direction: rtl;
+  }
+  html[dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
+
   /* ── Density spacing variables ── */
   :root {
     --density-container: 2rem;

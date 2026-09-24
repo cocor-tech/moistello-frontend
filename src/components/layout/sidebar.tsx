@@ -27,6 +27,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { useTranslate } from "@/lib/locale/context";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 interface NavItem {
   label: string;
@@ -98,7 +99,7 @@ function SidebarComponent() {
     : "U";
 
   return (
-    <div className="hidden lg:block fixed left-3 top-20 bottom-3 w-64 z-30">
+    <div className="hidden lg:block fixed left-3 rtl:left-auto rtl:right-3 top-20 bottom-3 w-64 z-30">
       <aside
         className={cn(
           "flex flex-col h-full rounded-3xl overflow-hidden",
@@ -112,20 +113,23 @@ function SidebarComponent() {
               Moistello
             </span>
           </Link>
-          <button
-            onClick={toggleTheme}
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-xl",
-              "glass-whisper text-muted-foreground",
-            )}
-            aria-label="Toggle theme"
-          >
-            {isDark ? (
-              <Sun className="h-3.5 w-3.5 text-amber-400" />
-            ) : (
-              <Moon className="h-3.5 w-3.5 text-indigo-400" />
-            )}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <LocaleSwitcher />
+            <button
+              onClick={toggleTheme}
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-xl",
+                "glass-whisper text-muted-foreground",
+              )}
+              aria-label="Toggle theme"
+            >
+              {isDark ? (
+                <Sun className="h-3.5 w-3.5 text-amber-400" />
+              ) : (
+                <Moon className="h-3.5 w-3.5 text-indigo-400" />
+              )}
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-none">
@@ -155,7 +159,7 @@ function SidebarComponent() {
                         )}
                       >
                         {active && (
-                          <span className="absolute left-0 top-1 bottom-1 w-[2px] rounded-full bg-gradient-to-b from-aurora-indigo via-aurora-violet to-aurora-cyan" />
+                          <span className="absolute left-0 rtl:left-auto rtl:right-0 top-1 bottom-1 w-[2px] rounded-full bg-gradient-to-b from-aurora-indigo via-aurora-violet to-aurora-cyan" />
                         )}
                         <span
                           className={cn(

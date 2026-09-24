@@ -46,9 +46,10 @@ describe("i18n lazy loading", () => {
       vi.useFakeTimers()
       const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network error"))
       const promise = loadLocaleWithRetry("xx")
+      const rejection = expect(promise).rejects.toThrow()
       // Advance through the retry delays
       await vi.advanceTimersByTimeAsync(10_000)
-      await expect(promise).rejects.toThrow()
+      await rejection
       expect(fetchSpy.mock.calls.length).toBeGreaterThanOrEqual(1)
       vi.useRealTimers()
     })

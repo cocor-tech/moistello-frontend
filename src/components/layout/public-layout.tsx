@@ -20,6 +20,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTranslate } from "@/lib/locale/context";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -83,8 +84,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             ))}
           </nav>
 
-          {/* Right: Theme Toggle + Hamburger */}
+          {/* Right: Locale Switcher + Theme Toggle + Hamburger */}
           <div className="flex items-center gap-1.5">
+            <LocaleSwitcher />
+
             <button
               onClick={toggleTheme}
               className={cn(
@@ -199,7 +202,11 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     </Link>
                   ))}
                 </nav>
-                <div className="shrink-0 border-t border-white/[0.06] px-4 py-4">
+                <div className="shrink-0 border-t border-white/[0.06] px-4 py-4 space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs text-muted-foreground">{t("lang.title")}</span>
+                    <LocaleSwitcher />
+                  </div>
                   <button
                     onClick={toggleTheme}
                     className={cn(
@@ -218,7 +225,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                         <Moon className="h-4 w-4 text-indigo-400" />
                       )}
                     </span>
-                    <span className="flex-1 text-left text-foreground">
+                    <span className="flex-1 text-left rtl:text-right text-foreground">
                       {isDark ? "Light Mode" : "Dark Mode"}
                     </span>
                   </button>

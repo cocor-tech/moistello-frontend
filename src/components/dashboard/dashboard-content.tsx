@@ -8,9 +8,11 @@ import { SavingsGrowthChart } from '@/components/dashboard/charts/savings-growth
 import { ContributionHistoryChart } from '@/components/dashboard/charts/contribution-history-chart'
 import { PayoutTimelineChart } from '@/components/dashboard/charts/payout-timeline-chart'
 import { UpcomingPayoutsWidget } from '@/components/dashboard/upcoming-payouts-widget'
+import { useTranslate } from '@/lib/locale/context'
 import type { Circle, Contribution, Payout } from '@/types'
 
 export function DashboardContent() {
+  const { t } = useTranslate()
   const [contributionPeriod, setContributionPeriod] = useState<'week' | 'month' | 'all'>('month')
 
   const circlesQuery = useQuery({
@@ -52,9 +54,10 @@ export function DashboardContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
-        description="Overview of your savings circles, contributions, and upcoming payouts"
+        title={t('dash.title', 'Dashboard')}
+        description={t('dash.overview', 'Overview of your savings circles, contributions, and upcoming payouts')}
       />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

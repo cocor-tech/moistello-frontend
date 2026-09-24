@@ -109,7 +109,8 @@ export default function RootLayout({
   
   // #211: Get locale from headers/cookies for lang attribute
   const locale = requestHeaders.get("x-locale") ?? "en"
-  const dir = locale === "ar" || locale === "he" ? "rtl" : "ltr"
+  const isRtl = ["ar", "he", "fa", "ur"].includes(locale.toLowerCase().split("-")[0])
+  const dir = isRtl ? "rtl" : "ltr"
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
@@ -118,7 +119,7 @@ export default function RootLayout({
          <script
             nonce={nonce}
             dangerouslySetInnerHTML={{
-              __html: `(function(){try{var t=localStorage.getItem('moistello_theme');var theme='system';var density='comfortable';var fontSize='medium';if(t){var p=JSON.parse(t);if(p.state){theme=p.state.theme||'system';density=p.state.density||'comfortable';fontSize=p.state.fontSize||'medium'}}if(theme==='light'){document.documentElement.classList.remove('dark')}else if(theme==='dark'){document.documentElement.classList.add('dark')}else{var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;if(prefersDark){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}document.documentElement.setAttribute('data-density',density);document.documentElement.setAttribute('data-font-size',fontSize)}catch(e){console.warn('[layout] Failed to apply theme:',e)}})()`,
+              __html: `(function(){try{var t=localStorage.getItem('moistello_theme');var theme='system';var density='comfortable';var fontSize='medium';if(t){var p=JSON.parse(t);if(p.state){theme=p.state.theme||'system';density=p.state.density||'comfortable';fontSize=p.state.fontSize||'medium'}}if(theme==='light'){document.documentElement.classList.remove('dark')}else if(theme==='dark'){document.documentElement.classList.add('dark')}else{var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;if(prefersDark){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}document.documentElement.setAttribute('data-density',density);document.documentElement.setAttribute('data-font-size',fontSize);var l=localStorage.getItem('moistello_locale');if(l){document.documentElement.lang=l;var rtl=['ar','he','fa','ur'].indexOf(l.split('-')[0])!==-1;document.documentElement.dir=rtl?'rtl':'ltr'}}catch(e){console.warn('[layout] Failed to apply theme/locale:',e)}})()`,
             }}
           />
          <script
