@@ -61,5 +61,6 @@ export const queryKeys = {
   },
   notifications: {
     all: ["notifications"] as const,
+    archive: ["notifications", "archive"] as const,
   },
 } as const

@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react"
 import { EN_SEED } from "./en-seed"
 import { useAuthStore } from "@/stores/auth-store"
@@ -54,7 +55,7 @@ export async function loadLocaleWithRetry(code: string): Promise<TranslationDict
       return await fetchLocaleDict(code)
     } catch (error) {
       lastError = error
-      console.warn(`[locale] Failed to load "${code}" (attempt ${attempt}/${MAX_FETCH_ATTEMPTS})`, error)
+      logger.warn(`[locale] Failed to load "${code}" (attempt ${attempt}/${MAX_FETCH_ATTEMPTS})`, error)
       if (attempt < MAX_FETCH_ATTEMPTS) await delay(RETRY_BASE_DELAY_MS * 2 ** (attempt - 1))
     }
   }
@@ -91,7 +92,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     } catch {
       // Never cache the failure — keep serving English but tell the user about it.
       if (requestId !== requestRef.current) return
-      console.warn(`[locale] Falling back to English; could not load "${code}" after retries`)
+      logger.warn(`[locale] Falling back to English; could not load "${code}" after retries`)
       setDict(EN_SEED)
       setFallbackLocale(code)
     }
@@ -125,7 +126,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
             import("@/stores/auth-store").then(({ useAuthStore: store }) => {
               store.getState().updateUser(updatedUser)
             })
-          }).catch((e) => { console.warn("[locale] Failed to persist language preference:", e) })
+          }).catch((e) => { logger.warn("[locale] Failed to persist language preference:", e) })
         })
       }
     },

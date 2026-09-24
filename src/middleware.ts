@@ -41,6 +41,25 @@ function attachCsrfCookie(response: NextResponse, csrfToken: string) {
   })
 }
 
+function getAllowedOrigins(request: NextRequest): Set<string> {
+  const origins = new Set([request.nextUrl.origin])
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "https://moistello.com" : undefined)
+  if (configuredAppUrl) {
+    try {
+      origins.add(new URL(configuredAppUrl).origin)
+    } catch {
+      origins.add(configuredAppUrl)
+    }
+  }
+  if (process.env.NODE_ENV !== "production") {
+    origins.add("http://localhost:3000")
+    origins.add("http://localhost:1110")
+    origins.add("http://127.0.0.1:3000")
+    origins.add("http://127.0.0.1:1110")
+  }
+  return origins
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -80,18 +99,24 @@ export function middleware(request: NextRequest) {
   const locale = request.cookies.get("moistello_locale")?.value || "en"
   requestHeaders.set("x-locale", locale)
 
-  // #207: CSRF protection for mutating API routes
-  if (isApiRoute && ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)) {
+  // Log ingestion is a same-origin, non-state-changing telemetry endpoint. It
+  // intentionally bypasses the session CSRF handshake because sendBeacon cannot
+  // attach custom headers; the route validates and redacts its payload instead.
+  const isTelemetryRoute = pathname === "/api/logs"
+  if (isTelemetryRoute) {
     const origin = request.headers.get("origin")
-    const allowedOrigins = [
-      process.env.NEXT_PUBLIC_APP_URL || "https://moistello.com",
-      "http://localhost:3000",
-    ]
-    
-    if (!origin || !allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+    if (origin && !getAllowedOrigins(request).has(origin)) {
       return NextResponse.json({ error: "Invalid origin" }, { status: 403 })
     }
-    
+  }
+
+  // #207: CSRF protection for mutating API routes
+  if (isApiRoute && !isTelemetryRoute && ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)) {
+    const origin = request.headers.get("origin")
+    if (!origin || !getAllowedOrigins(request).has(origin)) {
+      return NextResponse.json({ error: "Invalid origin" }, { status: 403 })
+    }
+
     const clientCsrf = request.headers.get("x-csrf-token")
     if (clientCsrf !== csrfToken) {
       return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 })

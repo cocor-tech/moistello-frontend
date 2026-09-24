@@ -1,11 +1,12 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft, Save, Check, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useTranslate } from "@/lib/locale/context"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
@@ -164,7 +165,7 @@ export default function AccountSettingsPage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      console.error("[account] Failed to save account settings:", e)
+      logger.error("[account] Failed to save account settings:", e)
     } finally {
       setSaving(false)
     }
@@ -176,7 +177,7 @@ export default function AccountSettingsPage() {
       await del("/users/me")
       window.location.href = "/login"
     } catch (e) {
-      console.error("[account] Failed to delete account:", e)
+      logger.error("[account] Failed to delete account:", e)
       setDeleting(false)
       setShowDeleteModal(false)
     }
@@ -204,7 +205,7 @@ export default function AccountSettingsPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -275,6 +276,7 @@ export default function AccountSettingsPage() {
           </label>
           <div className="flex gap-2">
             <Input
+              label={t("account.confirmDelete")}
               placeholder={user?.displayName ?? t("account.displayName")}
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
@@ -294,9 +296,7 @@ export default function AccountSettingsPage() {
       </div>
 
       <div className="flex items-center justify-end gap-3">
-        <Link href="/settings">
-          <Button variant="outline" size="md">{t("common.cancel")}</Button>
-        </Link>
+        <ButtonLink href="/settings" variant="outline" size="md">{t("common.cancel")}</ButtonLink>
         {saved && (
           <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
             <Check className="h-4 w-4" /> {t("common.saved")}

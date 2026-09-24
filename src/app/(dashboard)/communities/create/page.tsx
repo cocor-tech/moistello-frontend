@@ -4,7 +4,7 @@ import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Users, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { post } from "@/lib/api-client"
@@ -73,7 +73,7 @@ export default function CreateCommunityPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href={Routes.COMMUNITIES} className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href={Routes.COMMUNITIES} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to communities">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -107,8 +107,9 @@ export default function CreateCommunityPage() {
         />
 
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Description</label>
+          <label htmlFor="community-description" className="block text-xs font-medium text-muted-foreground mb-1.5">Description</label>
           <textarea
+            id="community-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What is this community about?"
@@ -134,9 +135,7 @@ export default function CreateCommunityPage() {
         />
 
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Link href={Routes.COMMUNITIES}>
-            <Button variant="outline" size="md">Cancel</Button>
-          </Link>
+          <ButtonLink href={Routes.COMMUNITIES} variant="outline" size="md">Cancel</ButtonLink>
           <Button
             variant="primary"
             size="md"

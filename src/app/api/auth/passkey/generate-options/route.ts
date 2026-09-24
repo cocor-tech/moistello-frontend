@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { NextRequest, NextResponse } from "next/server"
 import { generateRegistrationOptions, generateAuthenticationOptions } from "@simplewebauthn/server"
 import { setTempChallenge, getCredential, getRpId } from "@/lib/passkey/store"
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_mode" }, { status: 400 })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error("generate-options error:", msg)
+    logger.error("generate-options error:", msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

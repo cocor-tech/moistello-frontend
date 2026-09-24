@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
@@ -99,7 +100,7 @@ export async function ensureHmacKey(): Promise<Uint8Array | null> {
     try {
       return await fetchKeyFromServer();
     } catch (err) {
-      console.warn(
+      logger.warn(
         "[hmac] Failed to load key — HMAC will fail until retry:",
         err,
       );

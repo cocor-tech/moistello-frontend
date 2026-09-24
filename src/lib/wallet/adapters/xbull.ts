@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { WalletAdapter, WalletMeta, SignOptions } from "../types"
 
 
@@ -46,7 +47,7 @@ export function createXBullAdapter(): WalletAdapter {
     async disconnect() {
       const api = getXBullAPI()
       if (api) {
-        try { await api.closeConnections() } catch (e) { console.warn("[xbull] Failed to close connections:", e) }
+        try { await api.closeConnections() } catch (e) { logger.warn("[xbull] Failed to close connections:", e) }
       }
     },
 

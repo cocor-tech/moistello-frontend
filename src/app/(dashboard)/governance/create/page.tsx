@@ -72,10 +72,12 @@ export default function CreateProposalPage() {
         {/* Category & Voting Period */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label htmlFor="proposal-category" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Proposal Category
             </label>
             <select
+              id="proposal-category"
+              aria-label="Proposal category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-aurora-violet"
@@ -88,10 +90,12 @@ export default function CreateProposalPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label htmlFor="voting-period" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Voting Period
             </label>
             <select
+              id="voting-period"
+              aria-label="Voting period"
               value={votingPeriodDays}
               onChange={(e) => setVotingPeriodDays(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-aurora-violet"
@@ -118,10 +122,12 @@ export default function CreateProposalPage() {
 
         {/* Description */}
         <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <label htmlFor="proposal-description" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Description & Rationale
           </label>
           <textarea
+            id="proposal-description"
+            aria-label="Proposal description and rationale"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the motivation, background, parameters, and intended impact of this proposal in detail..."
@@ -133,12 +139,14 @@ export default function CreateProposalPage() {
         {/* Execution Payload */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <label htmlFor="proposal-execution-payload" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Smart Contract Execution Payload (Optional)
             </label>
             <span className="text-xs text-muted-foreground font-mono">JSON / Soroban Call</span>
           </div>
           <textarea
+            id="proposal-execution-payload"
+            aria-label="Smart contract execution payload"
             value={executionPayload}
             onChange={(e) => setExecutionPayload(e.target.value)}
             placeholder={`{\n  "target": "CircleFactory",\n  "action": "setFeeBps",\n  "value": 250\n}`}

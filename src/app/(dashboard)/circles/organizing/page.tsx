@@ -7,7 +7,7 @@ import { useCircles } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/cn"
@@ -33,11 +33,9 @@ export default function OrganizingPage() {
         title="Circles You Organize"
         description="Manage your circles, invite members, and track progress."
         action={
-          <Link href="/circles/create">
-            <Button variant="premium" size="md" leftIcon={<Plus className="h-4 w-4" />}>
+          <ButtonLink href="/circles/create"  variant="premium" size="md" leftIcon={<Plus className="h-4 w-4" />}>
               Create Circle
-            </Button>
-          </Link>
+            </ButtonLink>
         }
       />
 
@@ -87,7 +85,7 @@ export default function OrganizingPage() {
                     <div className="flex items-center justify-between text-2xs text-muted-foreground">
                       <span>Round Progress</span><span>{circle.currentRound}/{circle.maxMembers}</span>
                     </div>
-                    <Progress value={progressPct} size="sm" variant={progressPct >= 80 ? "success" : "primary"} />
+                    <Progress aria-label="Circle contribution progress" value={progressPct} size="sm" variant={progressPct >= 80 ? "success" : "primary"} />
                   </div>
                   <div className="pt-2 border-t border-border flex items-center justify-between">
                     <Link href={`/circles/${circle.id}`} className="text-xs text-muted-foreground hover:text-foreground transition-colors font-body">View Details &rarr;</Link>

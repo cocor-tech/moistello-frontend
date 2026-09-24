@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Trash2, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield } from "lucide-react";
+import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatRelativeTime } from "@/lib/formatters";
-import { cn } from "@/lib/cn";
 import { useUIStore } from "@/stores/ui-store";
-import type { Notification } from "@/types";
 
 const iconMap: Record<string, React.ReactNode> = {
   contribution: <ArrowUp className="h-4 w-4" />,
@@ -32,6 +30,14 @@ export default function NotificationsArchivePage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    const availableIds = new Set(archivedNotifications.map((notification) => notification.id));
+    setSelectedIds((previous) => {
+      const next = previous.filter((id) => availableIds.has(id));
+      return next.length === previous.length ? previous : next;
+    });
+  }, [archivedNotifications]);
+
   const totalPages = Math.max(1, Math.ceil(archivedNotifications.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = archivedNotifications.slice(
@@ -41,13 +47,19 @@ export default function NotificationsArchivePage() {
 
   const allSelected =
     pageItems.length > 0 && pageItems.every((n) => selectedIds.includes(n.id));
+  const someSelected = pageItems.some((n) => selectedIds.includes(n.id));
+  const pageSelectionState: boolean | "mixed" = allSelected
+    ? true
+    : someSelected
+      ? "mixed"
+      : false;
 
   const handleToggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(pageItems.map((n) => n.id));
-    }
+    const pageIds = new Set(pageItems.map((n) => n.id));
+    setSelectedIds((previous) => {
+      if (allSelected) return previous.filter((id) => !pageIds.has(id));
+      return Array.from(new Set([...previous, ...pageIds]));
+    });
   };
 
   const handleToggleSelect = (id: string) => {
@@ -56,11 +68,26 @@ export default function NotificationsArchivePage() {
     );
   };
 
-  const handleBulkUnarchive = () => {
+  const handleBulkUnarchive = async () => {
     if (selectedIds.length === 0) return;
-    bulkUnarchive(selectedIds);
-    addToast({ type: "success", title: "Unarchived selected notifications" });
-    setSelectedIds([]);
+    try {
+      const result = await bulkUnarchive(selectedIds);
+      if (result === false) throw new Error("unarchive failed");
+      addToast({ type: "success", title: "Unarchived selected notifications" });
+      setSelectedIds([]);
+    } catch {
+      addToast({ type: "error", title: "Failed to unarchive selected" });
+    }
+  };
+
+  const handleUnarchive = async (id: string) => {
+    try {
+      const result = await unarchiveNotification(id);
+      if (result === false) throw new Error("unarchive failed");
+      addToast({ type: "success", title: "Notification unarchived" });
+    } catch {
+      addToast({ type: "error", title: "Failed to unarchive notification" });
+    }
   };
 
   return (
@@ -70,6 +97,7 @@ export default function NotificationsArchivePage() {
           <Link
             href="/notifications"
             className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Back to notifications"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -112,7 +140,8 @@ export default function NotificationsArchivePage() {
             <button
               type="button"
               role="checkbox"
-              aria-checked={allSelected}
+              aria-checked={pageSelectionState}
+              aria-label={allSelected ? "Deselect archived notifications on this page" : "Select archived notifications on this page"}
               onClick={handleToggleSelectAll}
               className="shrink-0 rounded text-muted-foreground hover:text-foreground"
             >
@@ -123,7 +152,7 @@ export default function NotificationsArchivePage() {
               )}
             </button>
             <span className="text-xs font-medium text-muted-foreground">
-              Select All
+              {allSelected ? "Deselect all on this page" : "Select all on this page"}
             </span>
           </div>
 
@@ -140,6 +169,7 @@ export default function NotificationsArchivePage() {
                     type="button"
                     role="checkbox"
                     aria-checked={selected}
+                    aria-label={`${selected ? "Deselect" : "Select"} ${n.title}`}
                     onClick={() => handleToggleSelect(n.id)}
                     className="shrink-0 rounded text-muted-foreground hover:text-foreground"
                   >
@@ -171,10 +201,7 @@ export default function NotificationsArchivePage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    unarchiveNotification(n.id);
-                    addToast({ type: "success", title: "Notification unarchived" });
-                  }}
+                  onClick={() => void handleUnarchive(n.id)}
                   leftIcon={<ArchiveRestore className="h-4 w-4" />}
                 >
                   Unarchive
@@ -183,6 +210,35 @@ export default function NotificationsArchivePage() {
             );
           })}
         </div>
+      )}
+      {totalPages > 1 && (
+        <nav className="flex items-center justify-between border-t border-white/10 pt-4" aria-label="Archived notification pages">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((page) => Math.max(1, page - 1))}
+            aria-label="Previous archived notifications page"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            Previous
+          </Button>
+          <span className="text-xs text-muted-foreground" aria-live="polite">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((page) => Math.min(totalPages, page + 1))}
+            aria-label="Next archived notifications page"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </nav>
       )}
     </div>
   );

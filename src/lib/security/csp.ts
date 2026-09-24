@@ -50,6 +50,7 @@ function configuredOrigins(): string[] {
     ...toOrigin(process.env.NEXT_PUBLIC_API_URL),
     ...toOrigin(process.env.NEXT_PUBLIC_WS_URL),
     ...toOrigin(process.env.NEXT_PUBLIC_METRICS_ENDPOINT),
+    ...toOrigin(process.env.NEXT_PUBLIC_LOGS_ENDPOINT),
     ...toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN),
   ]
 }

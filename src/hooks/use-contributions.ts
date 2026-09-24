@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/logger"
+import { useQuery } from "@tanstack/react-query";
 import { useOptimisticMutation, OPTIMISTIC_PENDING_USER_ID } from "./use-optimistic-mutation";
 import { get, post } from "@/lib/api-client";
 import { useUIStore } from "@/stores/ui-store";
@@ -58,7 +59,6 @@ export function useContributions(filters?: ContributionFilters) {
 }
 
 export function useCreateContribution() {
-  const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
 
   return useOptimisticMutation<CreateContributionPayload, Contribution>({
@@ -101,7 +101,7 @@ export function useCreateContribution() {
       });
     },
     onError: (err) => {
-      console.error("[useCreateContribution] Failed:", err);
+      logger.error("[useCreateContribution] Failed:", err);
       addToast({
         type: "error",
         title: "Failed to add contribution",

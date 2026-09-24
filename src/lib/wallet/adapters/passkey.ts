@@ -1,5 +1,6 @@
 import { WalletAdapter, WalletMeta, SignOptions, NetworkType } from "../types"
 import { STELLAR_NETWORK } from "@/lib/constants"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 import {
   publicKeyToStellarAddress,
   hexEncode,
@@ -80,7 +81,7 @@ export function createPasskeyAdapter(): WalletAdapter {
   async function apiPost<T>(url: string, body: unknown): Promise<T> {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
       body: JSON.stringify(body),
     })
     if (!res.ok) {

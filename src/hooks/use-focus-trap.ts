@@ -24,14 +24,43 @@ export function useFocusTrap<T extends HTMLElement>(
     triggerRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    const container = containerRef.current;
     const getFocusableElements = () =>
       Array.from(
-        container?.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS) ?? [],
+        containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS) ?? [],
       );
 
-    const focusableElements = getFocusableElements();
-    (focusableElements[0] ?? container)?.focus();
+    let containerFocused = false;
+    const focusFirstElement = () => {
+      const container = containerRef.current;
+      if (!container) return false;
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+        containerFocused = false;
+        return true;
+      }
+      if (!containerFocused) {
+        container.focus();
+        containerFocused = true;
+      }
+      return false;
+    };
+
+    let observer: MutationObserver | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const focusWhenReady = () => {
+      if (focusFirstElement()) return;
+      const root = document.documentElement
+      if (typeof MutationObserver !== "undefined" && root) {
+        observer = new MutationObserver(() => {
+          if (focusFirstElement()) observer?.disconnect();
+        });
+        observer.observe(root, { childList: true, subtree: true });
+        return;
+      }
+      retryTimer = setTimeout(focusWhenReady, 0);
+    };
+    focusWhenReady();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -42,20 +71,31 @@ export function useFocusTrap<T extends HTMLElement>(
 
       if (event.key !== "Tab") return;
 
+      const container = containerRef.current;
       const elements = getFocusableElements();
+      if (!container) return;
       if (elements.length === 0) {
         event.preventDefault();
-        container?.focus();
+        container.focus();
         return;
       }
 
       const firstElement = elements[0];
       const lastElement = elements[elements.length - 1];
+      const activeElement = document.activeElement;
+      const focusIsInside = activeElement instanceof HTMLElement && container.contains(activeElement);
+      const activeIsFocusable = activeElement instanceof HTMLElement && elements.includes(activeElement);
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (!focusIsInside || !activeIsFocusable) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
         event.preventDefault();
         lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
+      } else if (!event.shiftKey && activeElement === lastElement) {
         event.preventDefault();
         firstElement.focus();
       }
@@ -65,6 +105,8 @@ export function useFocusTrap<T extends HTMLElement>(
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      observer?.disconnect();
+      if (retryTimer) clearTimeout(retryTimer);
       triggerRef.current?.focus();
     };
   }, [isOpen]);

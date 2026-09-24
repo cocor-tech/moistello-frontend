@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 /**
  * WalletConnect v2 adapter for Stellar wallets.
  *
@@ -360,7 +361,7 @@ export function createWalletConnectAdapter(): WalletAdapter & {
           })
         }
       } catch (e) {
-        console.warn("[walletconnect] Disconnect cleanup warning:", e)
+        logger.warn("[walletconnect] Disconnect cleanup warning:", e)
       }
 
       currentPublicKey = null

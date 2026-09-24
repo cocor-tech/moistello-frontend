@@ -15,7 +15,7 @@ import { cn } from "@/lib/cn";
 interface DropdownContextValue {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  triggerRef: React.RefObject<HTMLDivElement | null>;
+  triggerRef: React.RefObject<HTMLElement | null>;
   menuRef: React.RefObject<HTMLDivElement | null>;
   activeIndex: number;
   setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -34,6 +34,12 @@ function useDropdownContext() {
   return context;
 }
 
+interface TriggerElementProps {
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLElement>) => void;
+  [key: string]: unknown;
+}
+
 export interface DropdownProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
@@ -50,7 +56,7 @@ export function Dropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const triggerRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuId = useId();
 
@@ -74,9 +80,17 @@ export function Dropdown({
     if (!menuRef.current) return [];
     return Array.from(
       menuRef.current.querySelectorAll<HTMLElement>(
-        '[role="menuitem"]:not([disabled])',
+        '[role="menuitem"]:not([disabled]), [role="menuitemradio"]:not([disabled]), [role="menuitemcheckbox"]:not([disabled])',
       ),
     );
+  }, []);
+
+  const toggleMenu = useCallback(() => {
+    setIsOpen((open) => {
+      const next = !open;
+      setActiveIndex(next ? 0 : -1);
+      return next;
+    });
   }, []);
 
   const handleKeyDown = useCallback(
@@ -162,6 +176,54 @@ export function Dropdown({
     };
   }, [isOpen, handleClickOutside, getMenuItems]);
 
+  const renderTrigger = () => {
+    if (!React.isValidElement(trigger)) {
+      return (
+        <button
+          ref={(node) => {
+            triggerRef.current = node;
+          }}
+          type="button"
+          onClick={toggleMenu}
+          onKeyDown={handleKeyDown}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? menuId : undefined}
+          className="inline-flex"
+        >
+          {trigger}
+        </button>
+      );
+    }
+
+    const element = trigger as React.ReactElement<TriggerElementProps>;
+    const elementRef = (element as React.ReactElement & { ref?: React.Ref<HTMLElement> }).ref;
+    const setTriggerRef = (node: HTMLElement | null) => {
+      triggerRef.current = node;
+      if (typeof elementRef === "function") elementRef(node);
+      else if (elementRef) {
+        (elementRef as React.MutableRefObject<HTMLElement | null>).current = node;
+      }
+    };
+    const isNativeControl = typeof element.type === "string" && ["button", "a"].includes(element.type);
+
+    return React.cloneElement(element, {
+      ref: setTriggerRef,
+      onClick: (event: React.MouseEvent<HTMLElement>) => {
+        element.props.onClick?.(event);
+        if (!event.defaultPrevented) toggleMenu();
+      },
+      onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
+        element.props.onKeyDown?.(event);
+        handleKeyDown(event);
+      },
+      "aria-haspopup": "menu",
+      "aria-expanded": isOpen,
+      "aria-controls": isOpen ? menuId : undefined,
+      ...(!isNativeControl ? { role: "button", tabIndex: 0 } : {}),
+    });
+  };
+
   return (
     <DropdownContext.Provider
       value={{
@@ -177,32 +239,15 @@ export function Dropdown({
       <div
         ref={containerRef}
         className={cn("relative inline-block", className)}
-        onKeyDown={handleKeyDown}
       >
-        <div
-          ref={triggerRef}
-          onClick={() => {
-            if (isOpen) {
-              closeMenu();
-            } else {
-              setIsOpen(true);
-              setActiveIndex(0);
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-haspopup="menu"
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? menuId : undefined}
-        >
-          {trigger}
-        </div>
+        {renderTrigger()}
         <AnimatePresence>
           {isOpen && (
             <motion.div
               ref={menuRef}
               id={menuId}
               role="menu"
+              onKeyDown={handleKeyDown}
               tabIndex={-1}
               aria-orientation="vertical"
               initial={{ opacity: 0, scale: 0.95, y: -4 }}

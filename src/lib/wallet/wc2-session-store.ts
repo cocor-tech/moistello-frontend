@@ -1,5 +1,5 @@
+import { logger } from "@/lib/logger"
 import type { NetworkType } from "./types"
-import { computeHmacSha256Sync } from "./hmac"
 import { SESSION_TTL_MS } from "./session-lifecycle"
 import { computeHmacSha256Sync, isHmacKeyReady, withHmacKey } from "./hmac"
 
@@ -62,7 +62,7 @@ export class WC2SessionStore {
 
       return payload.data
     } catch (e) {
-      console.warn("[wc-session-store] Failed to read session, clearing:", e)
+      logger.warn("[wc-session-store] Failed to read session, clearing:", e)
       this.clear()
       return null
     }
@@ -87,7 +87,7 @@ export class WC2SessionStore {
         payload.hmac = computeHMAC(payload.data)
         storage.setItem(STORAGE_KEY, JSON.stringify(payload))
       } catch {
-        console.warn("[WC2SessionStore] Failed to save session")
+        logger.warn("[WC2SessionStore] Failed to save session")
       }
     })
   }
@@ -98,7 +98,7 @@ export class WC2SessionStore {
     try {
       storage.removeItem(STORAGE_KEY)
     } catch (e) {
-      console.warn("[wc-session-store] Failed to clear session:", e)
+      logger.warn("[wc-session-store] Failed to clear session:", e)
     }
   }
 }

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { contributorSchema, zodResolver, type ContributorInput } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 
 const contributionAreas = [
   "Frontend Development (TypeScript/Next.js)",
@@ -41,7 +42,7 @@ export function ContributionForm() {
     try {
       const res = await fetch("/api/contributors", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify(values),
       })
       if (!res.ok) {

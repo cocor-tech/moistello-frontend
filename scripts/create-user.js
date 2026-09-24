@@ -30,17 +30,19 @@ fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2));
 const SETUP_URL = `http://localhost:1110/setup?token=${token}`;
 const EXTERNAL_URL = `http://82.24.19.118:1110/setup?token=${token}`;
 
-console.log("\n╔══════════════════════════════════════════════╗");
-console.log("║         Moistello — Create New Admin         ║");
-console.log("╠══════════════════════════════════════════════╣");
-console.log("║                                              ║");
-console.log(`║  Token: ${token.slice(0, 16)}...`);
-console.log("║                                              ║");
-console.log(`║  Setup URL (local):  ${SETUP_URL}`);
-console.log("║                                              ║");
-console.log(`║  Setup URL (external): ${EXTERNAL_URL}`);
-console.log("║                                              ║");
-console.log("║  Expires in 24 hours                         ║");
-console.log("║  Share this link with the user               ║");
-console.log("║  They will set their username & password     ║");
-console.log("╚══════════════════════════════════════════════╝\n");
+process.stdout.write(`
+╔══════════════════════════════════════════════╗
+║         Moistello — Create New Admin         ║
+╠══════════════════════════════════════════════╣
+║                                              ║
+║  Token: ${token.slice(0, 16)}...
+║                                              ║
+║  Setup URL (local):  ${SETUP_URL}
+║                                              ║
+║  Setup URL (external): ${EXTERNAL_URL}
+║                                              ║
+║  Expires in 24 hours                         ║
+║  Share this link with the user               ║
+║  They will set their username & password     ║
+╚══════════════════════════════════════════════╝
+`)

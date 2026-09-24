@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -13,53 +14,13 @@ import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { useCommunity, useCommunityActivity, useCommunityAnnouncements, useCommunityCircles, useCommunityMembers, useCommunityMembership, useCommunityMutation } from "@/hooks/use-community"
 import { useUIStore } from "@/stores/ui-store"
 import { cn } from "@/lib/cn"
 import { formatDate } from "@/lib/formatters"
 import { Routes } from "@/lib/constants"
 import { copyToClipboard } from "@/lib/clipboard"
-
-/* Query data contracts are shared by the community hooks. */
-interface Community {
-  id: string
-  name: string
-  slug: string
-  description: string
-  category: string
-  tags: string[]
-  avatarUrl?: string
-  bannerUrl?: string
-  ownerId: string
-  memberCount: number
-  totalSaved: number
-  isFeatured: boolean
-  createdAt: string
-}
-
-interface Member {
-  userId: string
-  role: string
-  joinedAt: string
-  displayName?: string
-  walletAddress?: string
-  moiScore?: number
-}
-
-interface CommunityCircle {
-  id: string
-  name: string
-  status: string
-  circleType: string
-  contributionAmount: number
-  currency: string
-  frequency: string
-  maxMembers: number
-  currentRound: number
-  memberCount?: number
-  requiresInvite?: boolean
-}
 
 interface Announcement {
   id: string
@@ -109,7 +70,7 @@ export default function CommunityDetailPage() {
   const activityQuery = useCommunityActivity(communityId)
   const circlesQuery = useCommunityCircles(communityId)
   const membershipQuery = useCommunityMembership(communityId, !!user)
-  const { join, togglePin, deleteAnnouncement, removeMember, transferOwnership, createAnnouncement } = useCommunityMutation(communityId)
+  const { join, togglePin, deleteAnnouncement, removeMember, transferOwnership } = useCommunityMutation(communityId)
   const community = communityQuery.data ?? null
   const members = membersQuery.data ?? []
   const announcements = announcementsQuery.data ?? []
@@ -124,7 +85,7 @@ export default function CommunityDetailPage() {
       await join.mutateAsync()
       addToast({ type: "success", title: "Joined!", description: "You are now a member of this community." })
     } catch (e) {
-      console.error("[community] Failed to join:", e)
+      logger.error("[community] Failed to join:", e)
       addToast({ type: "error", title: "Failed to join", description: "Please try again." })
     }
   }
@@ -143,7 +104,7 @@ export default function CommunityDetailPage() {
       await togglePin.mutateAsync({ announcementId: a.id, pinned: !a.isPinned })
       addToast({ type: "success", title: a.isPinned ? "Unpinned" : "Pinned!" })
     } catch (e) {
-      console.error("[community] Failed to toggle pin:", e)
+      logger.error("[community] Failed to toggle pin:", e)
       addToast({ type: "error", title: "Failed" })
     }
   }
@@ -153,7 +114,7 @@ export default function CommunityDetailPage() {
       await deleteAnnouncement.mutateAsync(id)
       addToast({ type: "success", title: "Deleted" })
     } catch (e) {
-      console.error("[community] Failed to delete announcement:", e)
+      logger.error("[community] Failed to delete announcement:", e)
       addToast({ type: "error", title: "Failed to delete" })
     }
   }
@@ -163,7 +124,7 @@ export default function CommunityDetailPage() {
       await removeMember.mutateAsync(targetId)
       addToast({ type: "success", title: `${name} removed` })
     } catch (e) {
-      console.error("[community] Failed to remove member:", e)
+      logger.error("[community] Failed to remove member:", e)
       addToast({ type: "error", title: "Failed to remove member" })
     }
   }
@@ -180,7 +141,7 @@ export default function CommunityDetailPage() {
       setTransferTarget("")
       load()
     } catch (e) {
-      console.error("[community] Failed to transfer ownership:", e)
+      logger.error("[community] Failed to transfer ownership:", e)
       addToast({ type: "error", title: "Failed to transfer ownership" })
     }
   }
@@ -293,6 +254,8 @@ export default function CommunityDetailPage() {
                     </span>
                   )}
                   <button
+                    type="button"
+                    aria-label="Copy community link"
                     onClick={async () => {
                       const ok = await copyToClipboard(window.location.href)
                       if (ok) {
@@ -334,6 +297,8 @@ export default function CommunityDetailPage() {
                     </span>
                     {isOrganizer && m.role !== "admin" && (
                       <button
+                        type="button"
+                        aria-label={`Remove member ${m.displayName ?? m.userId}`}
                         onClick={() => handleRemoveMember(m.userId, m.displayName ?? "Member")}
                         className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -391,9 +356,7 @@ export default function CommunityDetailPage() {
                   <Link href={`/communities/${community.id}/circles`} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                     View all ({communityCircles.length})
                   </Link>
-                  <Link href={`/communities/${community.id}/circles/create`}>
-                    <Button variant="outline" size="sm">Create Circle</Button>
-                  </Link>
+                  <ButtonLink href={`/communities/${community.id}/circles/create`}  variant="outline" size="sm">Create Circle</ButtonLink>
                 </div>
               </div>
               {communityCircles.length === 0 ? (
@@ -447,18 +410,22 @@ export default function CommunityDetailPage() {
                       <p className="text-sm text-foreground">{a.content}</p>
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                         <span>{formatDate(a.createdAt)}</span>
-                        <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+                        <button type="button" aria-label={`Like announcement (${a.likeCount})`} className="flex items-center gap-1 hover:text-foreground transition-colors">
                           <Heart className="h-3 w-3" /> {a.likeCount}
                         </button>
                         {isOrganizer && (
                           <>
                             <button
+                              type="button"
+                              aria-label={a.isPinned ? "Unpin announcement" : "Pin announcement"}
                               onClick={() => handleTogglePin(a)}
                               className="flex items-center gap-1 hover:text-amber-400 transition-colors"
                             >
                               <Pin className={cn("h-3 w-3", a.isPinned && "text-amber-400")} />
                             </button>
                             <button
+                              type="button"
+                              aria-label="Delete announcement"
                               onClick={() => handleDeleteAnnouncement(a.id)}
                               className="flex items-center gap-1 hover:text-red-400 transition-colors"
                             >
@@ -506,6 +473,7 @@ export default function CommunityDetailPage() {
                   ) : (
                     <div className="space-y-2">
                       <select
+                        aria-label="Select new community owner"
                         value={transferTarget}
                         onChange={(e) => setTransferTarget(e.target.value)}
                         className="w-full h-9 rounded-lg bg-white/5 border border-white/10 px-3 text-xs text-foreground"
@@ -548,7 +516,7 @@ function CreateAnnouncementForm({ communityId, onCreated }: { communityId: strin
       addToast({ type: "success", title: "Posted!" })
       onCreated()
     } catch (e) {
-      console.error("[community] Failed to post announcement:", e)
+      logger.error("[community] Failed to post announcement:", e)
       addToast({ type: "error", title: "Failed to post" })
     }
   }
@@ -556,6 +524,7 @@ function CreateAnnouncementForm({ communityId, onCreated }: { communityId: strin
   return (
     <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-2">
       <textarea
+        aria-label="Announcement content"
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Post an announcement..."

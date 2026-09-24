@@ -18,4 +18,4 @@ for (const code of codes) {
   fs.writeFileSync(path.join(dir, "common.json"), JSON.stringify(dictionary, null, 2) + "\n")
 }
 
-console.log(`Done: ${codes.length} locales in public/locales/`)
+process.stdout.write(`Done: ${codes.length} locales in public/locales/\n`)

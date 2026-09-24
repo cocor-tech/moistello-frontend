@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, Copy, Check, Trash2, Edit3, X, CheckCircle, Wallet as WalletIcon, Shield, Clock } from "lucide-react"
@@ -40,7 +41,7 @@ export default function WalletSettingsPage() {
         const stored = localStorage.getItem("wallet_nickname") || ""
         setNickname(stored)
       }
-    }).catch((e) => { console.warn("[wallet-settings] Failed to load wallet:", e) }).finally(() => setLoading(false))
+    }).catch((e) => { logger.warn("[wallet-settings] Failed to load wallet:", e) }).finally(() => setLoading(false))
   }, [])
 
   const copyKey = async () => {
@@ -64,7 +65,7 @@ export default function WalletSettingsPage() {
       setEditingNickname(false)
       addToast({ type: "success", title: "Saved", description: "Wallet nickname updated." })
     } catch (e) {
-      console.error("[wallet-settings] Failed to update nickname:", e)
+      logger.error("[wallet-settings] Failed to update nickname:", e)
       addToast({ type: "error", title: "Failed", description: "Could not update nickname." })
     } finally {
       setSavingNickname(false)
@@ -79,7 +80,7 @@ export default function WalletSettingsPage() {
       addToast({ type: "success", title: "Deleted", description: "Wallet has been deleted." })
       setWallet(null)
     } catch (e) {
-      console.error("[wallet-settings] Failed to delete wallet:", e)
+      logger.error("[wallet-settings] Failed to delete wallet:", e)
       addToast({ type: "error", title: "Failed", description: "Could not delete wallet." })
     } finally {
       setDeleting(false)
@@ -108,22 +109,22 @@ export default function WalletSettingsPage() {
               <div className="flex items-center gap-2">
                 {editingNickname ? (
                   <div className="flex items-center gap-2">
-                    <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Nickname" className="w-40 h-8 text-sm" />
-                    <button onClick={saveNickname} disabled={savingNickname} className="text-emerald-400 hover:text-emerald-300 disabled:opacity-50">
+                    <Input label="Wallet nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Nickname" className="w-40 h-8 text-sm" />
+                    <button type="button" onClick={saveNickname} disabled={savingNickname} className="text-emerald-400 hover:text-emerald-300 disabled:opacity-50" aria-label="Save wallet nickname">
                       {savingNickname ? <Clock className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                     </button>
-                    <button onClick={() => setEditingNickname(false)} disabled={savingNickname} className="text-muted-foreground hover:text-foreground disabled:opacity-50"><X className="h-4 w-4" /></button>
+                    <button type="button" onClick={() => setEditingNickname(false)} disabled={savingNickname} className="text-muted-foreground hover:text-foreground disabled:opacity-50" aria-label="Cancel editing wallet nickname"><X className="h-4 w-4" aria-hidden="true" /></button>
                   </div>
                 ) : (
                   <>
                     <span className="text-sm font-medium text-foreground">{nickname || "My Wallet"}</span>
-                    <button onClick={() => setEditingNickname(true)} className="text-muted-foreground hover:text-foreground"><Edit3 className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => setEditingNickname(true)} className="text-muted-foreground hover:text-foreground" aria-label="Edit wallet nickname"><Edit3 className="h-3.5 w-3.5" aria-hidden="true" /></button>
                   </>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <code className="text-sm font-mono text-foreground bg-white/5 px-2 py-1 rounded">{formatAddress(wallet.publicKey)}</code>
-                <button onClick={copyKey} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={copyKey} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={copied ? "Wallet public key copied" : "Copy wallet public key"}>
                   {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
@@ -159,7 +160,7 @@ export default function WalletSettingsPage() {
         </div>
         <p className="text-xs text-muted-foreground">Permanently delete this wallet. Type your display name to confirm.</p>
         <div className="flex gap-2">
-          <Input placeholder={user?.displayName ?? "Type your name"} value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} className="flex-1" />
+          <Input label="Type your display name to confirm deletion" placeholder={user?.displayName ?? "Type your name"} value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} className="flex-1" />
           <Button variant="destructive" size="md" onClick={handleDelete} isLoading={deleting} disabled={deleteConfirm !== (user?.displayName ?? "")}>
             Delete
           </Button>

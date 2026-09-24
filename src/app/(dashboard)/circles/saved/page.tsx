@@ -5,7 +5,7 @@ import Link from "next/link"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Bookmark, Clock, Users, ExternalLink, Trash2 } from "lucide-react"
 import { useCircle } from "@/hooks/use-circles"
 import { formatCurrency } from "@/lib/formatters"
@@ -49,9 +49,7 @@ function SavedCircleCard({ id, onRemove }: { id: string; onRemove: (id: string) 
         <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{memberCount}/{circle.maxMembers}</span>
       </div>
       <div className="flex items-center gap-2">
-        <Link href={`/circles/${circle.id}`}>
-          <Button variant="outline" size="xs" leftIcon={<ExternalLink className="h-3 w-3" />}>Open</Button>
-        </Link>
+        <ButtonLink href={`/circles/${circle.id}`}  variant="outline" size="xs" leftIcon={<ExternalLink className="h-3 w-3" />}>Open</ButtonLink>
         <Button variant="ghost" size="xs" onClick={() => onRemove(id)} leftIcon={<Trash2 className="h-3 w-3" />} className="text-red-400 hover:text-red-300">Remove</Button>
       </div>
     </div>

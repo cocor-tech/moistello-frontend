@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs"
+import { logger } from "@/lib/logger"
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN
 
@@ -35,5 +36,5 @@ if (dsn) {
     },
   })
 } else {
-  console.warn("[Sentry] NEXT_PUBLIC_SENTRY_DSN not configured. Error monitoring is disabled. Set NEXT_PUBLIC_SENTRY_DSN in your environment to enable Sentry error tracking.")
+  logger.warn("Sentry client monitoring is disabled because NEXT_PUBLIC_SENTRY_DSN is not configured")
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect, useCallback } from "react";
 import { Clock, Users, Link2, AlertCircle, RefreshCw } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
@@ -54,7 +55,7 @@ export function CircleInviteModal({
       );
       setExistingInvites(response.data ?? []);
     } catch (e) {
-      console.error("[circle-invite] Failed to load invites:", e)
+      logger.error("[circle-invite] Failed to load invites:", e)
       setFetchError("Failed to load existing invites. Please try again.");
       setExistingInvites([]);
     } finally {
@@ -88,7 +89,7 @@ export function CircleInviteModal({
         setExistingInvites((prev) => [newInvite, ...prev]);
       }
     } catch (e) {
-      console.error("[circle-invite] Failed to generate invite:", e)
+      logger.error("[circle-invite] Failed to generate invite:", e)
     } finally {
       setIsGenerating(false);
     }
@@ -115,29 +116,33 @@ export function CircleInviteModal({
       <div className="space-y-6">
         {inviteCode && (
           <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <label className="block text-sm font-medium text-gray-900">
+            <label htmlFor="invite-code" className="block text-sm font-medium text-gray-900">
               Invite Code
             </label>
             <div className="flex items-center gap-2">
               <Input
-                value={inviteCode}
+                id="invite-code"
+                aria-label="Invite code"
+                 value={inviteCode}
                 readOnly
                 className="font-mono text-sm"
-                rightIcon={<CopyButton text={inviteCode} />}
+                endAction={<CopyButton text={inviteCode} label="Copy code" />}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-900">
+              <label htmlFor="invite-share-link" className="block text-sm font-medium text-gray-900">
                 Share Link
               </label>
               <div className="flex items-center gap-2">
                 <Input
-                  value={inviteUrl}
+                  id="invite-share-link"
+                  aria-label="Invite share link"
+                   value={inviteUrl}
                   readOnly
                   className="text-sm text-gray-600"
                   leftIcon={<Link2 className="h-4 w-4" />}
-                  rightIcon={<CopyButton text={inviteUrl} label="Copy Link" />}
+                  endAction={<CopyButton text={inviteUrl} label="Copy Link" />}
                 />
               </div>
             </div>

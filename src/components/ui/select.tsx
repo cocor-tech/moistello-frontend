@@ -86,7 +86,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
         selectedIndex >= 0
           ? selectedIndex
           : options.findIndex((o) => !o.disabled);
-      setActiveIndex(startIndex >= 0 ? startIndex : 0);
+      setActiveIndex(startIndex >= 0 ? startIndex : -1);
       setIsOpen(true);
     }, [disabled, options, selectedIndex]);
 
@@ -347,6 +347,12 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
                     aria-disabled={option.disabled || undefined}
                     onMouseEnter={() => !option.disabled && setActiveIndex(index)}
                     onClick={() => selectOption(index)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        selectOption(index);
+                      }
+                    }}
                     className={cn(
                       "flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-body transition-colors duration-150",
                       isActive

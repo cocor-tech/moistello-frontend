@@ -1,7 +1,8 @@
 "use client";
 
+import { logger } from "@/lib/logger"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOptimisticMutation, OPTIMISTIC_PENDING_USER_ID, createTempId } from "./use-optimistic-mutation";
+import { useOptimisticMutation, OPTIMISTIC_PENDING_USER_ID } from "./use-optimistic-mutation";
 import { get, post } from "@/lib/api-client";
 import { useUIStore } from "@/stores/ui-store";
 import { queryKeys } from "@/lib/query-keys";
@@ -132,7 +133,7 @@ export function useStartCircle() {
       queryClient.invalidateQueries({ queryKey: queryKeys.circles.all });
     },
     onError: (err) => {
-      console.error("[useStartCircle] Failed to start circle:", err);
+      logger.error("[useStartCircle] Failed to start circle:", err);
       addToast({
         type: "error",
         title: "Failed to start circle",
@@ -153,7 +154,7 @@ export function useCreateCircle() {
       queryClient.invalidateQueries({ queryKey: queryKeys.circles.all });
     },
     onError: (err) => {
-      console.error("[useCreateCircle] Failed to create circle:", err);
+      logger.error("[useCreateCircle] Failed to create circle:", err);
       addToast({
         type: "error",
         title: "Failed to create circle",
@@ -180,7 +181,7 @@ export function useJoinCircle() {
       queryClient.invalidateQueries({ queryKey: queryKeys.circles.members(variables.circleId) });
     },
     onError: (err) => {
-      console.error("[useJoinCircle] Failed to join circle:", err);
+      logger.error("[useJoinCircle] Failed to join circle:", err);
       addToast({
         type: "error",
         title: "Failed to join circle",
@@ -240,7 +241,7 @@ export function useContribute(circleId: string) {
       });
     },
     onError: (err) => {
-      console.error("[useContribute] Failed to contribute:", err);
+      logger.error("[useContribute] Failed to contribute:", err);
       addToast({
         type: "error",
         title: "Contribution failed",

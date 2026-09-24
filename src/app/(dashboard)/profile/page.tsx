@@ -172,9 +172,9 @@ export default function ProfilePage() {
           {isEditing ? (
             <div className="w-full max-w-sm space-y-4">
               <div>
-                <label className="mb-1.5 block text-xs font-heading tracking-wider uppercase text-muted-foreground">
+                <p className="mb-1.5 block text-xs font-heading tracking-wider uppercase text-muted-foreground">
                   Display Name
-                </label>
+                </p>
                 <p className="font-heading text-xl font-semibold text-foreground text-center">{user.displayName || "Anonymous"}</p>
                 <p className="text-2xs text-muted-foreground text-center mt-1">Your unique anonymous name. Cannot be changed.</p>
               </div>
@@ -267,6 +267,7 @@ export default function ProfilePage() {
 
           {isEditing ? (
             <textarea
+              aria-label="Profile bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell us about yourself..."

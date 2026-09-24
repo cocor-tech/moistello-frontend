@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs"
 import type { AuthErrorCode } from "@/stores/auth-flow-store"
+import { attachLogFlushListeners, logger } from "@/lib/logger"
 
 export type MetricName =
   | "governance.proposal.created"
@@ -92,7 +93,12 @@ export function captureAuthError(error: unknown, context: AuthErrorContext): voi
     })
   } else {
     const message = error instanceof Error ? error.message : String(error)
-    console.error(`[AuthError] [${context.mode}/${context.step}] ${message}`, tags)
+    logger.error(`[AuthError] [${context.mode}/${context.step}] ${message}`, {
+      step: context.step ?? "unknown",
+      mode: context.mode ?? "unknown",
+      errorCode: context.errorCode ?? "unknown",
+      error,
+    })
   }
 }
 
@@ -149,7 +155,7 @@ export function flushMetrics(): void {
   } else {
     // Only warn once per session to avoid spam
     if (typeof window !== "undefined" && !(window as unknown as Record<string, unknown>).__metricsWarned) {
-      console.warn("[Metrics] NEXT_PUBLIC_METRICS_ENDPOINT not configured. Metrics collection is disabled. Set NEXT_PUBLIC_METRICS_ENDPOINT in your environment to enable metrics tracking.")
+      logger.warn("NEXT_PUBLIC_METRICS_ENDPOINT is not configured; metrics collection is disabled")
       ;(window as unknown as Record<string, unknown>).__metricsWarned = true
     }
   }
@@ -169,6 +175,7 @@ export function initMonitoring(): void {
   if (typeof window === "undefined") return
   startFlushTimer()
   flushMetricsOnUnload()
+  attachLogFlushListeners()
 
   const pagePath = window.location.pathname
   recordMetric("page.view", 1, { path: pagePath })

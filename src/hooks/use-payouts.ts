@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOptimisticMutation, OPTIMISTIC_PENDING_USER_ID } from "./use-optimistic-mutation";
+import { logger } from "@/lib/logger"
+import { useQuery } from "@tanstack/react-query";
+import { useOptimisticMutation } from "./use-optimistic-mutation";
 import { get, post } from "@/lib/api-client";
 import { useUIStore } from "@/stores/ui-store";
 import type { ApiResponse, Payout } from "@/types";
@@ -94,7 +95,6 @@ export function useCirclePayouts(circleId: string, filters?: Omit<PayoutFilters,
 }
 
 export function useCreatePayout() {
-  const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
 
   return useOptimisticMutation<CreatePayoutPayload, Payout>({
@@ -160,7 +160,7 @@ export function useCreatePayout() {
       });
     },
     onError: (err) => {
-      console.error("[useCreatePayout] Failed:", err);
+      logger.error("[useCreatePayout] Failed:", err);
       addToast({
         type: "error",
         title: "Failed to create payout",

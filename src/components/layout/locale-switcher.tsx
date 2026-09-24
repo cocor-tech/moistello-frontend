@@ -27,10 +27,54 @@ export function LocaleSwitcher() {
   const { locale, setLocale } = useTranslate();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const currentLang = LANGUAGES.find((l) => l.value === locale) ?? LANGUAGES[0];
 
-  const close = useCallback(() => setIsOpen(false), []);
+  const close = useCallback(() => {
+    setIsOpen(false)
+    triggerRef.current?.focus()
+  }, [])
+
+  const focusLanguage = (value: string) => {
+    optionRefs.current[value]?.focus();
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = LANGUAGES.findIndex((language) => language.value === locale);
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? LANGUAGES.length - 1
+        : event.key === "ArrowDown"
+          ? Math.min(currentIndex + 1, LANGUAGES.length - 1)
+          : Math.max(currentIndex - 1, 0);
+    setIsOpen(true);
+    window.requestAnimationFrame(() => focusLanguage(LANGUAGES[nextIndex].value));
+  };
+
+  const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, value: string) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+      triggerRef.current?.focus();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = LANGUAGES.findIndex((language) => language.value === value);
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? LANGUAGES.length - 1
+        : event.key === "ArrowDown"
+          ? (currentIndex + 1) % LANGUAGES.length
+          : (currentIndex - 1 + LANGUAGES.length) % LANGUAGES.length;
+    focusLanguage(LANGUAGES[nextIndex].value);
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -61,17 +105,21 @@ export function LocaleSwitcher() {
   function handleSelect(value: string) {
     setLocale(value);
     close();
+    triggerRef.current?.focus();
   }
 
   return (
     <div ref={containerRef} className="relative">
       {/* Trigger button */}
       <button
+        ref={triggerRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-controls="locale-listbox"
         aria-label={`Language: ${currentLang.label}`}
         onClick={() => setIsOpen((prev) => !prev)}
+        onKeyDown={handleTriggerKeyDown}
         className={cn(
           "inline-flex h-9 items-center gap-1 rounded-xl px-2",
           "text-muted-foreground hover:text-foreground hover:glass-whisper",
@@ -91,9 +139,9 @@ export function LocaleSwitcher() {
       {/* Dropdown */}
       {isOpen && (
         <div
+          id="locale-listbox"
           role="listbox"
           aria-label="Select language"
-          aria-activedescendant={`locale-option-${locale}`}
           className={cn(
             "absolute right-0 top-full mt-1.5 z-50",
             "w-44 py-1",
@@ -107,11 +155,15 @@ export function LocaleSwitcher() {
             return (
               <button
                 key={lang.value}
+                ref={(node) => {
+                  optionRefs.current[lang.value] = node
+                }}
                 id={`locale-option-${lang.value}`}
                 role="option"
                 aria-selected={isSelected}
                 type="button"
                 onClick={() => handleSelect(lang.value)}
+                onKeyDown={(event) => handleOptionKeyDown(event, lang.value)}
                 className={cn(
                   "flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors",
                   isSelected

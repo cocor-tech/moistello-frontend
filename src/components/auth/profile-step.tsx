@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, { useId, useRef, useState } from "react"
 import { useTranslate } from "@/lib/locale/context"
 
 const LANGUAGES = [
@@ -64,6 +64,20 @@ function langLabel(code: string): string {
   return LANG_NAMES[code] ?? code
 }
 
+const TAB_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",")
+
+function getTabbableElements(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>(TAB_FOCUSABLE_SELECTOR))
+    .filter((element) => element.tabIndex >= 0)
+}
+
 export function ProfileStep({
   displayName,
   language,
@@ -74,16 +88,149 @@ export function ProfileStep({
   const { t, setLocale } = useTranslate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const optionRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const focusOnOpenRef = useRef<string | null>(null)
+  const id = useId().replace(/:/g, "")
+  const triggerId = `${id}-language-trigger`
+  const labelId = `${id}-language-label`
+  const listboxId = `${id}-language-options`
+
+  const close = React.useCallback(() => {
+    focusOnOpenRef.current = null
+    setOpen(false)
+    triggerRef.current?.focus()
+  }, [])
+
+  const focusLanguage = React.useCallback((value: string) => {
+    optionRefs.current[value]?.focus()
+  }, [])
+
+  const focusAfterRender = React.useCallback((value: string) => {
+    if (typeof window === "undefined") return
+    window.requestAnimationFrame(() => focusLanguage(value))
+  }, [focusLanguage])
+
+  const handleTab = (event: React.KeyboardEvent<HTMLElement>) => {
+    const current = event.currentTarget
+    const candidates = getTabbableElements()
+    const target = event.shiftKey
+      ? [...candidates].reverse().find((element) =>
+          Boolean(current.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_PRECEDING),
+        )
+      : candidates.find((element) =>
+          Boolean(current.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING),
+        )
+    event.preventDefault()
+    setOpen(false)
+    focusOnOpenRef.current = null
+    const fallback = target ?? triggerRef.current
+    fallback?.focus()
+  }
+
+  const selectLanguage = (value: string) => {
+    onUpdateLanguage(value)
+    setLocale(value)
+    close()
+  }
+
+  const handleTriggerClick = () => {
+    if (isSubmitting) return
+    if (open) {
+      close()
+      return
+    }
+    setOpen(true)
+  }
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Escape" && open) {
+      event.preventDefault()
+      event.stopPropagation()
+      close()
+      return
+    }
+    if (event.key === "Tab" && open) {
+      handleTab(event)
+      return
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    event.preventDefault()
+    const currentIndex = LANGUAGES.indexOf(language)
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? LANGUAGES.length - 1
+        : event.key === "ArrowDown"
+          ? Math.min(Math.max(currentIndex, 0) + 1, LANGUAGES.length - 1)
+          : Math.max(Math.max(currentIndex, 0) - 1, 0)
+    const nextLanguage = LANGUAGES[nextIndex]
+    focusOnOpenRef.current = nextLanguage
+    setOpen(true)
+    focusAfterRender(nextLanguage)
+  }
+
+  const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, value: string) => {
+    if (event.key === "Escape") {
+      event.preventDefault()
+      event.stopPropagation()
+      close()
+      return
+    }
+    if (event.key === "Tab") {
+      handleTab(event)
+      return
+    }
+    if (event.key === "Enter" || event.key === " " || event.code === "Space") {
+      event.preventDefault()
+      selectLanguage(value)
+      return
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    event.preventDefault()
+    const currentIndex = LANGUAGES.indexOf(value)
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? LANGUAGES.length - 1
+        : event.key === "ArrowDown"
+          ? (currentIndex + 1) % LANGUAGES.length
+          : (currentIndex - 1 + LANGUAGES.length) % LANGUAGES.length
+    focusLanguage(LANGUAGES[nextIndex])
+  }
 
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+        focusOnOpenRef.current = null
+      }
     }
     document.addEventListener("mousedown", handleClick)
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
+  React.useEffect(() => {
+    if (!open) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      close()
+    }
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [open, close])
+
+  React.useEffect(() => {
+    if (!open) return
+    const value = focusOnOpenRef.current || language || LANGUAGES[0]
+    focusOnOpenRef.current = null
+    focusAfterRender(value)
+  }, [open, language, focusAfterRender])
+
   const selected = language
+  const selectedLanguageLabel = selected ? langLabel(selected) : t("auth.profile.selectLanguage")
+  const triggerLabel = `${t("auth.profile.selectLanguage")}: ${selectedLanguageLabel}`
 
   return (
     <div className={`flex flex-col items-center min-h-[500px] pt-48 transition-all duration-300 ${open ? "-translate-y-40" : ""}`}>
@@ -100,31 +247,46 @@ export function ProfileStep({
 
       {/* Language — custom dropdown */}
       <div className="flex flex-col items-center gap-3">
-        <label className="text-2xs text-muted-foreground uppercase tracking-[0.2em] font-medium">
+        <label id={labelId} htmlFor={triggerId} className="text-2xs text-muted-foreground uppercase tracking-[0.2em] font-medium">
           {t("auth.profile.language")}
         </label>
         <div ref={ref} className="relative w-56">
           <button
+            id={triggerId}
+            ref={triggerRef}
             type="button"
-            onClick={() => !isSubmitting && setOpen(!open)}
+            onClick={handleTriggerClick}
+            onKeyDown={handleTriggerKeyDown}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-controls={open ? listboxId : undefined}
+            aria-label={triggerLabel}
             disabled={isSubmitting}
             className="w-full flex items-center justify-between bg-white/10 hover:bg-white/[0.14] border border-white/25 text-sm text-foreground py-3 px-4 rounded-xl focus:outline-none focus:border-white/40 transition-all"
           >
             <span className={selected ? "text-foreground" : "text-muted-foreground/50"}>
               {selected ? langLabel(selected) : t("auth.profile.selectLanguage")}
             </span>
-            <svg className={`w-4 h-4 text-muted-foreground/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg aria-hidden="true" className={`w-4 h-4 text-muted-foreground/60 transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
 
           {open && (
-            <div className="absolute z-50 top-full mt-1.5 left-0 right-0 max-h-48 overflow-y-auto rounded-xl border border-white/20 bg-[rgb(var(--background))]">
+            <div id={listboxId} role="listbox" aria-labelledby={labelId} className="absolute z-50 top-full mt-1.5 left-0 right-0 max-h-48 overflow-y-auto rounded-xl border border-white/20 bg-[rgb(var(--background))]">
               {LANGUAGES.map((code) => (
                 <button
                   key={code}
+                  ref={(node) => {
+                    optionRefs.current[code] = node
+                  }}
+                  id={`${listboxId}-${code}`}
                   type="button"
-                  onClick={() => { onUpdateLanguage(code); setLocale(code); setOpen(false) }}
+                  role="option"
+                  tabIndex={-1}
+                  aria-selected={code === language}
+                  onClick={() => selectLanguage(code)}
+                  onKeyDown={(event) => handleOptionKeyDown(event, code)}
                   className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-white/10 ${
                     code === language ? "text-foreground font-medium" : "text-muted-foreground"
                   }`}

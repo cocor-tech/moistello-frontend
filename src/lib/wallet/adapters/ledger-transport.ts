@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 export type TransportType = "webusb" | "webble" | "none"
 
 export interface LedgerTransport {
@@ -209,7 +210,7 @@ export class LedgerTransportManager {
           }
         })
       } catch (e) {
-        console.warn("[ledger] Failed to register USB disconnect handler:", e)
+        logger.warn("[ledger] Failed to register USB disconnect handler:", e)
       }
     }
 
@@ -287,7 +288,7 @@ export class LedgerTransportManager {
           }
         }
       } catch (e) {
-        console.warn("[ledger] Reconnect poll failed:", e)
+        logger.warn("[ledger] Reconnect poll failed:", e)
       }
     }, RECONNECT_POLL_MS)
 
@@ -337,7 +338,7 @@ export class LedgerTransportManager {
       channel.postMessage({ type, ...data })
       channel.close()
     } catch (e) {
-      console.warn("[ledger] BroadcastChannel unavailable:", e)
+      logger.warn("[ledger] BroadcastChannel unavailable:", e)
     }
   }
 
@@ -355,7 +356,7 @@ export class LedgerTransportManager {
           await transport.close()
         }
       } catch (e) {
-        console.warn("[ledger] Failed to close transport:", e)
+        logger.warn("[ledger] Failed to close transport:", e)
       }
       this.transportInstance = null
     }
