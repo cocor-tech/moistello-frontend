@@ -13,7 +13,7 @@ import type { Circle, Contribution, Payout } from '@/types'
 
 export function DashboardContent() {
   const { t } = useTranslate()
-  const [contributionPeriod, setContributionPeriod] = useState<'week' | 'month' | 'all'>('month')
+  const [contributionPeriod] = useState<'week' | 'month' | 'all'>('month')
 
   const circlesQuery = useQuery({
     queryKey: ['dashboard', 'circles'],

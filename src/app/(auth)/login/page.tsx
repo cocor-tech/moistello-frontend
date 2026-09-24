@@ -32,7 +32,7 @@ export default function LoginPage() {
     async (values: LoginInput) => {
       setLoading(true)
       try {
-        const res = await post<{ token?: string; user?: any }>("/auth/login", values)
+        const res = await post<{ token?: string; user?: unknown }>("/auth/login", values)
         if (res?.token) {
           login(res.token, res.user)
           toast.success("Welcome back!")

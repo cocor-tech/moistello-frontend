@@ -31,7 +31,7 @@ export default function RegisterPage() {
     async (values: RegisterInput) => {
       setLoading(true)
       try {
-        const res = await post<{ token?: string; user?: any }>("/auth/register", values)
+        const res = await post<{ token?: string; user?: unknown }>("/auth/register", values)
         if (res?.token) {
           login(res.token, res.user)
           toast.success("Account created successfully!")

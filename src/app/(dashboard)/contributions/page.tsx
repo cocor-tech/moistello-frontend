@@ -9,9 +9,9 @@ import { useTranslate } from "@/lib/locale/context";
 
 export default function ContributionsPage() {
   const { t } = useTranslate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [contributions, setContributions] = useState<any[]>([]);
+  const [contributions] = useState<unknown[]>([]);
 
   if (isLoading) {
     return (

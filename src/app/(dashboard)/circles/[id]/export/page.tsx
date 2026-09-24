@@ -327,7 +327,11 @@ export default function ExportPage() {
                         onChange={(v) => {
                           setContribCols((prev) => {
                             const next = new Set(prev)
-                            v ? next.add(col.key) : next.delete(col.key)
+                            if (v) {
+                              next.add(col.key)
+                            } else {
+                              next.delete(col.key)
+                            }
                             return next
                           })
                         }}
@@ -349,7 +353,11 @@ export default function ExportPage() {
                         onChange={(v) => {
                           setPayoutCols((prev) => {
                             const next = new Set(prev)
-                            v ? next.add(col.key) : next.delete(col.key)
+                            if (v) {
+                              next.add(col.key)
+                            } else {
+                              next.delete(col.key)
+                            }
                             return next
                           })
                         }}
@@ -371,13 +379,18 @@ export default function ExportPage() {
                         onChange={(v) => {
                           setMemberCols((prev) => {
                             const next = new Set(prev)
-                            v ? next.add(col.key) : next.delete(col.key)
+                            if (v) {
+                              next.add(col.key)
+                            } else {
+                              next.delete(col.key)
+                            }
                             return next
                           })
                         }}
                       />
                     ))}
                   </div>
+
                 </div>
               )}
             </div>

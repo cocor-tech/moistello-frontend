@@ -2,14 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Trash2, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield } from "lucide-react";
+import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatRelativeTime } from "@/lib/formatters";
-import { cn } from "@/lib/cn";
 import { useUIStore } from "@/stores/ui-store";
-import type { Notification } from "@/types";
 
 const iconMap: Record<string, React.ReactNode> = {
   contribution: <ArrowUp className="h-4 w-4" />,
@@ -30,7 +28,7 @@ export default function NotificationsArchivePage() {
   const { archivedNotifications, isLoading, unarchiveNotification, bulkUnarchive } = useNotifications();
   const { addToast } = useUIStore();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(archivedNotifications.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);

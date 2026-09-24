@@ -22,7 +22,7 @@ import { Routes } from "@/lib/constants"
 import { copyToClipboard } from "@/lib/clipboard"
 
 /* Query data contracts are shared by the community hooks. */
-interface Community {
+export interface Community {
   id: string
   name: string
   slug: string
@@ -38,7 +38,7 @@ interface Community {
   createdAt: string
 }
 
-interface Member {
+export interface Member {
   userId: string
   role: string
   joinedAt: string
@@ -47,7 +47,7 @@ interface Member {
   moiScore?: number
 }
 
-interface CommunityCircle {
+export interface CommunityCircle {
   id: string
   name: string
   status: string
@@ -60,6 +60,7 @@ interface CommunityCircle {
   memberCount?: number
   requiresInvite?: boolean
 }
+
 
 interface Announcement {
   id: string
@@ -109,7 +110,7 @@ export default function CommunityDetailPage() {
   const activityQuery = useCommunityActivity(communityId)
   const circlesQuery = useCommunityCircles(communityId)
   const membershipQuery = useCommunityMembership(communityId, !!user)
-  const { join, togglePin, deleteAnnouncement, removeMember, transferOwnership, createAnnouncement } = useCommunityMutation(communityId)
+  const { join, togglePin, deleteAnnouncement, removeMember, transferOwnership } = useCommunityMutation(communityId)
   const community = communityQuery.data ?? null
   const members = membersQuery.data ?? []
   const announcements = announcementsQuery.data ?? []

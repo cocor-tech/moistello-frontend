@@ -80,7 +80,7 @@ describe("Auth Security - Token Storage", () => {
 
   describe("AuthStore", () => {
     it("should not persist access token to localStorage", () => {
-      const store = useAuthStore.getState();
+      const _store = useAuthStore.getState();
 
       // Check all localStorage keys
       const allKeys = Object.keys(localStorage);
