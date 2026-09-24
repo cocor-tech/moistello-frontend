@@ -1,69 +1,76 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useForm } from "react-hook-form"
+import { loginSchema, zodResolver, type LoginInput } from "@/lib/validation"
+import { useAuthStore } from "@/stores/auth-store"
+import { useToast } from "@/hooks/use-toast"
+import { post } from "@/lib/api-client"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { WalletSelector } from "@/components/wallet/wallet-selector"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useAuthStore } from "@/stores/auth-store"
-import { useUIStore } from "@/stores/ui-store"
-import { post } from "@/lib/api-client"
 
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((s) => s.login)
-  const addToast = useUIStore((s) => s.addToast)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const toast = useToast()
   const [loading, setLoading] = useState(false)
 
-  const handleEmailLogin = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const res = await post<{ token?: string; user?: any }>("/auth/login", { email, password })
-      if (res?.token) {
-        login(res.token, res.user)
-        addToast({ type: "success", title: "Welcome back!" })
-        router.replace("/")
-      } else {
-        throw new Error("Invalid login response")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: "onTouched",
+  })
+
+  const onSubmit = useCallback(
+    async (values: LoginInput) => {
+      setLoading(true)
+      try {
+        const res = await post<{ token?: string; user?: any }>("/auth/login", values)
+        if (res?.token) {
+          login(res.token, res.user)
+          toast.success("Welcome back!")
+          router.replace("/")
+        } else {
+          throw new Error("Invalid login response")
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Login failed"
+        toast.error(msg)
+      } finally {
+        setLoading(false)
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Login failed"
-      addToast({ type: "error", title: msg })
-    } finally {
-      setLoading(false)
-    }
-  }, [email, password, login, addToast, router])
+    },
+    [login, toast, router],
+  )
 
   return (
     <AuthLayout title="Sign in to Moistello">
       <div className="space-y-6">
-        <form onSubmit={handleEmailLogin} className="space-y-4" aria-label="Email login form">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate aria-label="Email login form">
           <Input
             id="email"
-            name="email"
             type="email"
             label="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             autoComplete="email"
-            required
+            error={errors.email?.message}
+            {...register("email")}
           />
           <Input
             id="password"
-            name="password"
             type="password"
             label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             autoComplete="current-password"
-            required
+            error={errors.password?.message}
+            {...register("password")}
           />
           <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={loading}>
             Sign In with Email

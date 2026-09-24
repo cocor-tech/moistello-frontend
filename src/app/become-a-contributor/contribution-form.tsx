@@ -1,14 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { contributorSchema, zodResolver, type ContributorInput } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
-
-interface FormData {
-  name: string
-  github: string
-  contribution: string
-  bio: string
-}
 
 const contributionAreas = [
   "Frontend Development (TypeScript/Next.js)",
@@ -23,32 +18,23 @@ const contributionAreas = [
   "Other",
 ]
 
+type FormState = "idle" | "submitting" | "success" | "error"
+
 export function ContributionForm() {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    github: "",
-    contribution: "",
-    bio: "",
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ContributorInput>({
+    resolver: zodResolver(contributorSchema),
+    mode: "onTouched",
+    defaultValues: { name: "", github: "", contribution: "", bio: "" },
   })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [formState, setFormState] = useState<"idle" | "submitting" | "success" | "error">("idle")
+  const [formState, setFormState] = useState<FormState>("idle")
   const [formError, setFormError] = useState<string | null>(null)
 
-  const validateForm = () => {
-    const errors: Record<string, string> = {}
-    if (!formData.name.trim()) errors.name = "Name is required"
-    if (!formData.github.trim()) errors.github = "GitHub profile is required"
-    else if (!formData.github.startsWith("https://github.com/"))
-      errors.github = "Please enter a valid GitHub URL"
-    if (!formData.contribution) errors.contribution = "Select an area"
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-
+  const handleSubmitContribution = async (values: ContributorInput) => {
     setFormState("submitting")
     setFormError(null)
 
@@ -56,14 +42,14 @@ export function ContributionForm() {
       const res = await fetch("/api/contributors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(values),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || "Failed to submit")
       }
       setFormState("success")
-      setFormData({ name: "", github: "", contribution: "", bio: "" })
+      reset({ name: "", github: "", contribution: "", bio: "" })
     } catch (err) {
       setFormState("error")
       setFormError(err instanceof Error ? err.message : "Something went wrong")
@@ -93,8 +79,14 @@ export function ContributionForm() {
     )
   }
 
+  const inputClass = (hasError: boolean) =>
+    `w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${hasError ? "border-red-400/50" : "border-white/10"}`
+
+  const errorText = (message?: string) =>
+    message ? <p className="text-xs text-red-400 mt-1" role="alert">{message}</p> : null
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(handleSubmitContribution)} className="space-y-4" noValidate>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="app-name" className="block text-xs font-medium text-muted-foreground mb-1.5">
@@ -103,15 +95,11 @@ export function ContributionForm() {
           <input
             id="app-name"
             type="text"
-            value={formData.name}
-            onChange={(e) => {
-              setFormData({ ...formData, name: e.target.value })
-              if (formErrors.name) setFormErrors({ ...formErrors, name: "" })
-            }}
-            className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.name ? "border-red-400/50" : "border-white/10"}`}
             placeholder="Your name"
+            {...register("name")}
+            className={inputClass(Boolean(errors.name))}
           />
-          {formErrors.name && <p className="text-xs text-red-400 mt-1">{formErrors.name}</p>}
+          {errorText(errors.name?.message)}
         </div>
       </div>
 
@@ -122,15 +110,11 @@ export function ContributionForm() {
         <input
           id="app-github"
           type="text"
-          value={formData.github}
-          onChange={(e) => {
-            setFormData({ ...formData, github: e.target.value })
-            if (formErrors.github) setFormErrors({ ...formErrors, github: "" })
-          }}
-          className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.github ? "border-red-400/50" : "border-white/10"}`}
           placeholder="https://github.com/username"
+          {...register("github")}
+          className={inputClass(Boolean(errors.github))}
         />
-        {formErrors.github && <p className="text-xs text-red-400 mt-1">{formErrors.github}</p>}
+        {errorText(errors.github?.message)}
       </div>
 
       <div>
@@ -139,12 +123,8 @@ export function ContributionForm() {
         </label>
         <select
           id="app-area"
-          value={formData.contribution}
-          onChange={(e) => {
-            setFormData({ ...formData, contribution: e.target.value })
-            if (formErrors.contribution) setFormErrors({ ...formErrors, contribution: "" })
-          }}
-          className={`w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${formErrors.contribution ? "border-red-400/50" : "border-white/10"}`}
+          {...register("contribution")}
+          className={inputClass(Boolean(errors.contribution))}
         >
           <option value="">Select area</option>
           {contributionAreas.map((area) => (
@@ -153,7 +133,7 @@ export function ContributionForm() {
             </option>
           ))}
         </select>
-        {formErrors.contribution && <p className="text-xs text-red-400 mt-1">{formErrors.contribution}</p>}
+        {errorText(errors.contribution?.message)}
       </div>
 
       <div>
@@ -163,15 +143,15 @@ export function ContributionForm() {
         <textarea
           id="app-bio"
           rows={4}
-          value={formData.bio}
-          onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-y min-h-[80px]"
           placeholder="Tell us about yourself..."
+          {...register("bio")}
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-y min-h-[80px]"
         />
+        {errorText(errors.bio?.message)}
       </div>
 
       {formState === "error" && formError && (
-        <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 rounded-xl px-4 py-3" role="alert">
           <AlertCircleIcon />
           <span>{formError}</span>
         </div>

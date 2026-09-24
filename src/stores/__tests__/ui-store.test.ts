@@ -226,6 +226,30 @@ describe("useUIStore", () => {
       vi.useRealTimers();
       vi.restoreAllMocks();
     });
+
+    it("caps stacked toasts so the corner never overflows", () => {
+      vi.useFakeTimers();
+      vi.spyOn(Date, "now").mockReturnValue(1000);
+
+      for (let i = 0; i < 8; i++) {
+        useUIStore.getState().addToast({
+          type: "info",
+          title: `Toast ${i}`,
+          duration: 60000,
+        });
+      }
+
+      const toasts = useUIStore.getState().toasts;
+      expect(toasts).toHaveLength(5);
+      expect(toasts[0].title).toBe("Toast 3");
+      expect(toasts[4].title).toBe("Toast 7");
+
+      // Evicted toasts must not leave orphaned dismiss timers behind.
+      expect(vi.getTimerCount()).toBe(5);
+
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
   });
 
   describe("density and fontSize", () => {
