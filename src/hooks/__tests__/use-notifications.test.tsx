@@ -293,6 +293,43 @@ describe("useMarkAllAsReadMutation", () => {
     const data = queryClient.getQueryData<Notification[]>(["notifications"]);
     expect(data?.every((n) => n.isRead)).toBe(true);
   });
+
+  // #403 — rollback on failure
+  it("rolls back the optimistic mark-all-read when the API rejects", async () => {
+    mockedGet.mockResolvedValue({
+      data: {
+        notifications: [
+          makeNotification({ id: "n1", isRead: false }),
+          makeNotification({ id: "n2", isRead: false }),
+        ],
+      },
+    } as never);
+    mockedPatch.mockRejectedValue(new Error("Server error"));
+    const loggerWarn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+
+    const { QueryWrapper, queryClient } = createQueryWrapper();
+    const { result } = renderHook(
+      () => ({
+        query: useNotificationsQuery(),
+        mutation: useMarkAllAsReadMutation(),
+      }),
+      { wrapper: QueryWrapper }
+    );
+
+    await waitFor(() =>
+      expect(queryClient.getQueryData(["notifications"])).toBeDefined()
+    );
+
+    act(() => {
+      result.current.mutation.mutate();
+    });
+
+    await waitFor(() => {
+      const data = queryClient.getQueryData<Notification[]>(["notifications"]);
+      expect(data?.every((n) => !n.isRead)).toBe(true);
+    });
+    loggerWarn.mockRestore();
+  });
 });
 
 describe("shared notification filtering and grouping", () => {

@@ -324,3 +324,84 @@ export function useNotifications() {
     fetchNotifications,
   };
 }
+
+// ── React Query variants ──────────────────────────────────────────────────────
+
+export function useNotificationsQuery() {
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await get("/notifications");
+      const d = (res as Record<string, unknown>)?.data as Record<string, unknown> ?? res;
+      return ((d?.notifications ?? d) as Notification[]) || [];
+    },
+  });
+}
+
+export function useUnreadCount() {
+  const queryClient = useQueryClient();
+  const data = queryClient.getQueryData<Notification[]>(["notifications"]);
+  const { data: fetched } = useNotificationsQuery();
+  const source = data ?? fetched ?? [];
+  return source.filter((n) => !n.isRead).length;
+}
+
+export function useMarkAsReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => patch(`/notifications/${id}/read`),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previous = queryClient.getQueryData<Notification[]>(["notifications"]);
+      queryClient.setQueryData<Notification[]>(
+        ["notifications"],
+        (old) => old?.map((n) => (n.id === id ? { ...n, isRead: true } : n)) ?? [],
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(["notifications"], context.previous);
+      }
+      const err = _err as { response?: { status?: number } };
+      if (err?.response?.status === 401) {
+        window.dispatchEvent(new Event("auth:required"));
+      }
+      console.warn("[notifications] markAsRead failed:", _err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+/**
+ * #403 — Optimistically marks all notifications as read and rolls back
+ * the cache if the API call fails, so the UI never shows a false read-state.
+ */
+export function useMarkAllAsReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => patch("/notifications/read-all"),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previous = queryClient.getQueryData<Notification[]>(["notifications"]);
+      queryClient.setQueryData<Notification[]>(
+        ["notifications"],
+        (old) => old?.map((n) => ({ ...n, isRead: true })) ?? [],
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      // #403 — Restore the pre-mutation snapshot so notifications
+      // don't appear read when the server rejected the request.
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(["notifications"], context.previous);
+      }
+      console.warn("[notifications] markAllAsRead failed:", _err);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
