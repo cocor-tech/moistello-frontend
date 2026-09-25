@@ -184,3 +184,25 @@ Review the generated lockfile in the application repository after installation. 
 ## Important
 
 This is a review scaffold. It does not certify that the production application is XSS-free until the implementation is integrated and the full test suite passes.
+
+# V2-BE-355 — Real-Time WebSocket Broadcast Scaffold
+
+This scaffold provides a framework-neutral WebSocket hub contract, circle-scoped subscriptions,
+health monitoring, graceful disconnect handling, and client-side subscription helpers.
+
+A Next.js frontend process is not automatically a durable WebSocket server in every deployment
+environment. The hub should run in a long-lived Node.js process or a dedicated WebSocket service.
+
+Security requirements:
+- Authenticate connections before accepting subscriptions.
+- Authorize every circle subscription.
+- Treat client-provided circle IDs as requests, not proof of membership.
+- Use bounded payloads, rate limits, event IDs, and sequence numbers.
+- Do not broadcast secrets or unnecessary personal data.
+- For multiple instances, use Redis Pub/Sub or Streams with documented delivery semantics.
+
+Suggested dependency for a Node hub:
+npm install ws
+npm install -D @types/ws
+
+This is a review scaffold, not a production certification.
