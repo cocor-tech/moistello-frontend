@@ -12,6 +12,8 @@ import { AuthProvider } from "@/providers/auth-provider"
 import { ToastProvider } from "@/providers/toast-provider"
 import { MonitoringProvider } from "@/providers/monitoring-provider"
 import { LocaleProvider } from "@/lib/locale/context"
+import { getServerDictionary } from "@/lib/locale/server-dictionaries"
+import { LOCALE_BOOTSTRAP_SCRIPT, dirForLocale, resolveLocale } from "@/lib/locale/locale-cookie"
 import { HmacProvider } from "@/providers/HmacProvider"
 import { PwaRegister } from "@/components/pwa-register"
 
@@ -108,8 +110,16 @@ export default function RootLayout({
   const csrfToken = requestHeaders.get("x-csrf-token") ?? undefined
   
   // #211: Get locale from headers/cookies for lang attribute
-  const locale = requestHeaders.get("x-locale") ?? "en"
-  const dir = locale === "ar" || locale === "he" ? "rtl" : "ltr"
+  const locale = resolveLocale(requestHeaders.get("x-locale"))
+  const dir = dirForLocale(locale)
+  // Resolved here rather than in the provider so the first paint carries real
+  // translated copy. Fetching the dictionary in an effect would always render
+  // English first and then swap, which reads to the user as a flash of the
+  // wrong language even though <html lang> was already correct. The cost is
+  // that the dictionary travels in the RSC payload (~30 KB, gzips to under a
+  // tenth of that) — unavoidable, since hydration has to produce the same
+  // strings the server rendered or React will patch the whole tree.
+  const dictionary = getServerDictionary(locale)
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
@@ -119,6 +129,12 @@ export default function RootLayout({
             nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: `(function(){try{var t=localStorage.getItem('moistello_theme');var theme='system';var density='comfortable';var fontSize='medium';if(t){var p=JSON.parse(t);if(p.state){theme=p.state.theme||'system';density=p.state.density||'comfortable';fontSize=p.state.fontSize||'medium'}}if(theme==='light'){document.documentElement.classList.remove('dark')}else if(theme==='dark'){document.documentElement.classList.add('dark')}else{var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;if(prefersDark){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}document.documentElement.setAttribute('data-density',density);document.documentElement.setAttribute('data-font-size',fontSize)}catch(e){void e}})()`,
+            }}
+          />
+         <script
+            nonce={nonce}
+            dangerouslySetInnerHTML={{
+              __html: LOCALE_BOOTSTRAP_SCRIPT,
             }}
           />
          <script
@@ -207,7 +223,7 @@ export default function RootLayout({
           <ThemeProvider>
             <MotionProvider>
               <AuthProvider>
-                <LocaleProvider>
+                <LocaleProvider initialLocale={locale} initialDictionary={dictionary}>
                   <ToastProvider>
                     <MonitoringProvider>
                       <HmacProvider>
