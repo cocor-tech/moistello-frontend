@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, PiggyBank, CircleDot, Users, User } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Routes } from "@/lib/constants";
+import { isRouteActive } from "@/lib/navigation";
 import { useTranslate } from "@/lib/locale/context";
 
 interface MobileNavItem {
@@ -26,10 +27,7 @@ function MobileNavComponent() {
     { label: t("nav.profile"), href: Routes.PROFILE, icon: <User className="h-5 w-5" /> },
   ], [t]);
 
-  const isActive = (href: string) => {
-    if (href === Routes.DASHBOARD) return pathname === Routes.DASHBOARD;
-    return pathname.startsWith(href);
-  };
+  const isActive = (href: string) => isRouteActive(pathname, href);
 
   return (
     <nav
