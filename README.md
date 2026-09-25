@@ -206,3 +206,22 @@ npm install ws
 npm install -D @types/ws
 
 This is a review scaffold, not a production certification.
+
+# V2-BE-359 Multi-Network Support Scaffold
+
+This scaffold provides a framework-neutral starting point for supporting Stellar testnet
+and mainnet through a central MultiNetworkClient.
+
+Included:
+- Typed network configuration
+- Network-specific RPC URLs and passphrases
+- Network-specific contract IDs
+- Runtime network switching
+- Tests for network switching and contract resolution
+
+Important:
+- Replace placeholder contract IDs with verified deployed IDs.
+- Do not expose secret keys or signing material in client-side configuration.
+- Validate the selected network against the RPC node using getNetwork before signing/submitting.
+- Ensure wallet signing uses the selected network passphrase.
+- Confirm the repository's existing Stellar/Soroban client conventions before integration.
