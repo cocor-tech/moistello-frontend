@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Routes } from "@/lib/constants";
+import { isRouteActive } from "@/lib/navigation";
 import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUnreadCount } from "@/hooks/use-notifications";
@@ -66,10 +67,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
     { label: t("nav.support"), href: Routes.SUPPORT, icon: <LifeBuoy className="h-4 w-4" /> },
   ], [t]);
 
-  const isActive = (href: string) => {
-    if (href === Routes.DASHBOARD) return pathname === Routes.DASHBOARD;
-    return pathname.startsWith(href);
-  };
+  const isActive = (href: string) => isRouteActive(pathname, href);
 
   const handleLogout = () => {
     logout();
