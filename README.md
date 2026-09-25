@@ -225,3 +225,22 @@ Important:
 - Validate the selected network against the RPC node using getNetwork before signing/submitting.
 - Ensure wallet signing uses the selected network passphrase.
 - Confirm the repository's existing Stellar/Soroban client conventions before integration.
+
+
+# V2-BE-360 k6 Concurrent Transaction Load Testing
+
+This scaffold introduces a k6 load test for 100 concurrent virtual users.
+
+The test measures:
+- Transaction confirmation duration
+- Confirmation p95
+- Transaction failures
+- HTTP/API failures
+- Confirmation timeouts
+
+Important:
+- Use a dedicated test environment.
+- Do not point the test at mainnet without explicit approval and safeguards.
+- Do not place secret keys in the k6 script or source control.
+- The default transaction endpoint is a placeholder and must be adapted to the repository's API.
+- A successful HTTP response is not sufficient; the endpoint must return a transaction identifier and a confirmed status, or the polling endpoint must be configured.
