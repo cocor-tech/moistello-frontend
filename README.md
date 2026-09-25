@@ -147,3 +147,40 @@ See [`docs/logging.md`](docs/logging.md) for structured log levels, redaction, b
 ## License
 
 Apache 2.0
+
+# V2-BE-369 — XSS Audit and CSP Hardening
+
+This scaffold addresses issue #369 in `cocor-tech/moistello-frontend`.
+
+## Security approach
+
+1. Replace the regex-based HTML sanitizer with a parser-based sanitizer.
+2. Keep Markdown rendering separate from HTML sanitization.
+3. Permit only the tags and attributes required by documentation pages.
+4. Restrict URL protocols and image sources.
+5. Preserve nonce-based inline scripts in `src/app/layout.tsx`.
+6. Add a nonce-aware Content Security Policy in middleware.
+7. Add regression tests for script injection, event handlers, dangerous URLs, SVG/MathML, and unsafe attributes.
+8. Document the residual risk of `dangerouslySetInnerHTML`.
+
+## Proposed dependency
+
+Use a maintained parser-based sanitizer rather than regular expressions:
+
+```bash
+npm install isomorphic-dompurify
+```
+
+Review the generated lockfile in the application repository after installation. The scaffold intentionally does not fabricate a lockfile update.
+
+## Required implementation work
+
+- Replace the existing `src/lib/security/html-sanitizer.ts` implementation.
+- Add or update `src/middleware.ts` (or merge the CSP logic into the existing middleware if one exists).
+- Ensure all inline scripts receive the nonce emitted by middleware.
+- Verify external script and image origins against actual production requirements.
+- Run unit, integration, build, and browser security tests.
+
+## Important
+
+This is a review scaffold. It does not certify that the production application is XSS-free until the implementation is integrated and the full test suite passes.
