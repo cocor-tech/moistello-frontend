@@ -147,3 +147,100 @@ See [`docs/logging.md`](docs/logging.md) for structured log levels, redaction, b
 ## License
 
 Apache 2.0
+
+# V2-BE-369 — XSS Audit and CSP Hardening
+
+This scaffold addresses issue #369 in `cocor-tech/moistello-frontend`.
+
+## Security approach
+
+1. Replace the regex-based HTML sanitizer with a parser-based sanitizer.
+2. Keep Markdown rendering separate from HTML sanitization.
+3. Permit only the tags and attributes required by documentation pages.
+4. Restrict URL protocols and image sources.
+5. Preserve nonce-based inline scripts in `src/app/layout.tsx`.
+6. Add a nonce-aware Content Security Policy in middleware.
+7. Add regression tests for script injection, event handlers, dangerous URLs, SVG/MathML, and unsafe attributes.
+8. Document the residual risk of `dangerouslySetInnerHTML`.
+
+## Proposed dependency
+
+Use a maintained parser-based sanitizer rather than regular expressions:
+
+```bash
+npm install isomorphic-dompurify
+```
+
+Review the generated lockfile in the application repository after installation. The scaffold intentionally does not fabricate a lockfile update.
+
+## Required implementation work
+
+- Replace the existing `src/lib/security/html-sanitizer.ts` implementation.
+- Add or update `src/middleware.ts` (or merge the CSP logic into the existing middleware if one exists).
+- Ensure all inline scripts receive the nonce emitted by middleware.
+- Verify external script and image origins against actual production requirements.
+- Run unit, integration, build, and browser security tests.
+
+## Important
+
+This is a review scaffold. It does not certify that the production application is XSS-free until the implementation is integrated and the full test suite passes.
+
+# V2-BE-355 — Real-Time WebSocket Broadcast Scaffold
+
+This scaffold provides a framework-neutral WebSocket hub contract, circle-scoped subscriptions,
+health monitoring, graceful disconnect handling, and client-side subscription helpers.
+
+A Next.js frontend process is not automatically a durable WebSocket server in every deployment
+environment. The hub should run in a long-lived Node.js process or a dedicated WebSocket service.
+
+Security requirements:
+- Authenticate connections before accepting subscriptions.
+- Authorize every circle subscription.
+- Treat client-provided circle IDs as requests, not proof of membership.
+- Use bounded payloads, rate limits, event IDs, and sequence numbers.
+- Do not broadcast secrets or unnecessary personal data.
+- For multiple instances, use Redis Pub/Sub or Streams with documented delivery semantics.
+
+Suggested dependency for a Node hub:
+npm install ws
+npm install -D @types/ws
+
+This is a review scaffold, not a production certification.
+
+# V2-BE-359 Multi-Network Support Scaffold
+
+This scaffold provides a framework-neutral starting point for supporting Stellar testnet
+and mainnet through a central MultiNetworkClient.
+
+Included:
+- Typed network configuration
+- Network-specific RPC URLs and passphrases
+- Network-specific contract IDs
+- Runtime network switching
+- Tests for network switching and contract resolution
+
+Important:
+- Replace placeholder contract IDs with verified deployed IDs.
+- Do not expose secret keys or signing material in client-side configuration.
+- Validate the selected network against the RPC node using getNetwork before signing/submitting.
+- Ensure wallet signing uses the selected network passphrase.
+- Confirm the repository's existing Stellar/Soroban client conventions before integration.
+
+
+# V2-BE-360 k6 Concurrent Transaction Load Testing
+
+This scaffold introduces a k6 load test for 100 concurrent virtual users.
+
+The test measures:
+- Transaction confirmation duration
+- Confirmation p95
+- Transaction failures
+- HTTP/API failures
+- Confirmation timeouts
+
+Important:
+- Use a dedicated test environment.
+- Do not point the test at mainnet without explicit approval and safeguards.
+- Do not place secret keys in the k6 script or source control.
+- The default transaction endpoint is a placeholder and must be adapted to the repository's API.
+- A successful HTTP response is not sufficient; the endpoint must return a transaction identifier and a confirmed status, or the polling endpoint must be configured.
