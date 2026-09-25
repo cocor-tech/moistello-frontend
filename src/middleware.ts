@@ -8,6 +8,7 @@ import {
   CSRF_TOKEN_MAX_AGE,
   SESSION_COOKIE_OPTIONS,
 } from "@/lib/auth/session-cookies"
+import { LOCALE_COOKIE, resolveLocale } from "@/lib/locale/locale-cookie"
 
 // Protected routes that require authentication
 const PROTECTED_PATHS = ["/circles", "/communities", "/wallet", "/settings", "/profile", "/notifications", "/contributions", "/payouts"]
@@ -95,8 +96,15 @@ export function middleware(request: NextRequest) {
   requestHeaders.set(NONCE_HEADER, nonce)
   requestHeaders.set(CSRF_HEADER, csrfToken)
   
-  // #211: Add locale header for dynamic lang attribute
-  const locale = request.cookies.get("moistello_locale")?.value || "en"
+  // #211: Add locale header for dynamic lang attribute. The cookie is the only
+  // locale state the server can see, and it is written the moment the visitor
+  // picks a language — so this survives the login redirect instead of falling
+  // back to English on every document request.
+  //
+  // resolveLocale() rather than the raw value: the cookie is attacker-settable
+  // and this header ends up in the <html lang> attribute, so an unvalidated
+  // value must never be forwarded as-is.
+  const locale = resolveLocale(request.cookies.get(LOCALE_COOKIE)?.value)
   requestHeaders.set("x-locale", locale)
 
   // Log ingestion is a same-origin, non-state-changing telemetry endpoint. It
