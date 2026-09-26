@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { PlusCircle, Bookmark, Users, Compass } from "lucide-react";
 
 export interface EmptyStateProps {
   icon: React.ReactNode;
@@ -56,3 +57,57 @@ export function EmptyState({
     </div>
   );
 }
+
+export interface PresetEmptyStateProps {
+  onAction?: () => void;
+  className?: string;
+}
+
+export function CircleListEmptyState({ onAction, className }: PresetEmptyStateProps) {
+  return (
+    <EmptyState
+      icon={<Compass className="h-6 w-6" />}
+      title="No circles found"
+      description="Start your financial ROSCA journey by exploring public circles or creating your own."
+      action={
+        onAction
+          ? { label: "Create a Circle", onClick: onAction }
+          : undefined
+      }
+      className={className}
+    />
+  );
+}
+
+export function SavedCirclesEmptyState({ onAction, className }: PresetEmptyStateProps) {
+  return (
+    <EmptyState
+      icon={<Bookmark className="h-6 w-6" />}
+      title="No saved circles"
+      description="Bookmark public circles you are interested in joining to easily find them later."
+      action={
+        onAction
+          ? { label: "Browse Circles", onClick: onAction }
+          : undefined
+      }
+      className={className}
+    />
+  );
+}
+
+export function MemberTabsEmptyState({ onAction, className }: PresetEmptyStateProps) {
+  return (
+    <EmptyState
+      icon={<Users className="h-6 w-6" />}
+      title="No members in this tab"
+      description="Invite friends and colleagues to join this circle and build your savings pool together."
+      action={
+        onAction
+          ? { label: "Invite Members", onClick: onAction }
+          : undefined
+      }
+      className={className}
+    />
+  );
+}
+
