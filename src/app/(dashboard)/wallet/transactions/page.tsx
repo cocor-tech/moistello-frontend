@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useCallback, useMemo, useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowUpCircle, ArrowDownCircle, Search, ChevronLeft, ChevronRight, X, DollarSign, Filter } from "lucide-react"
+import { CircleArrowUp, CircleArrowDown, Search, ChevronLeft, ChevronRight, X, DollarSign, ListFilter } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { PageHeader } from "@/components/shared/page-header"
@@ -30,8 +30,8 @@ const PAGE_SIZE = 15
 
 const TYPE_OPTIONS = [
   { value: "all", label: "All Types" },
-  { value: "sent", label: "Sent", icon: ArrowUpCircle, color: "text-red-500" },
-  { value: "received", label: "Received", icon: ArrowDownCircle, color: "text-green-500" },
+  { value: "sent", label: "Sent", icon: CircleArrowUp, color: "text-red-500" },
+  { value: "received", label: "Received", icon: CircleArrowDown, color: "text-green-500" },
 ] as const
 
 const STATUS_OPTIONS = [
@@ -213,7 +213,7 @@ function ActiveFiltersBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/50 rounded-lg border border-border">
-      <Filter className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      <ListFilter className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
       <span className="text-xs font-medium text-muted-foreground">Active filters:</span>
       <div className="flex flex-wrap gap-1.5">
         {filters.map((f) => (
@@ -448,9 +448,9 @@ export default function TransactionsPage() {
       cell: (tx) => (
         <div className="flex items-center gap-2">
           {tx.type === "sent" ? (
-            <ArrowUpCircle className="h-5 w-5 text-red-500" />
+            <CircleArrowUp className="h-5 w-5 text-red-500" />
           ) : (
-            <ArrowDownCircle className="h-5 w-5 text-green-500" />
+            <CircleArrowDown className="h-5 w-5 text-green-500" />
           )}
           <span className="capitalize font-medium">{tx.type}</span>
         </div>
@@ -530,7 +530,7 @@ export default function TransactionsPage() {
           hasValue={!!search}
         />
 
-        {/* Filter Chips */}
+        {/* ListFilter Chips */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <FilterChipGroup
             label="Type"
@@ -576,7 +576,7 @@ export default function TransactionsPage() {
               {hasActiveFilters ? (
                 <Search className="h-8 w-8 text-muted-foreground" />
               ) : (
-                <ArrowDownCircle className="h-8 w-8 text-muted-foreground" />
+                <CircleArrowDown className="h-8 w-8 text-muted-foreground" />
               )}
             </div>
             <h3 className="font-heading text-lg font-semibold text-foreground">

@@ -37,7 +37,7 @@ interface DateRangePickerProps {
   className?: string
 }
 
-export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
+export function DateRangePicker({ value, onChange, className }: DateRangePickerProps) {
   const [open, setOpen] = useState(false)
   const [customFrom, setCustomFrom] = useState(value.from ?? "")
   const [customTo, setCustomTo] = useState(value.to ?? "")

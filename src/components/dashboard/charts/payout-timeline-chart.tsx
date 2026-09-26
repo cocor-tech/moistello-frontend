@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { Calendar, Inbox } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import type { Payout } from '@/types'

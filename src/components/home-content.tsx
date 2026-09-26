@@ -3,7 +3,7 @@
 import { PublicLayout } from "@/components/layout/public-layout"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { LandingContent } from "@/components/landing/landing-content"
-import DashboardContent from "@/components/dashboard/dashboard-content"
+import { DashboardContent } from "@/components/dashboard/dashboard-content"
 import { useAuthStore } from "@/stores/auth-store"
 
 export function HomeContent() {

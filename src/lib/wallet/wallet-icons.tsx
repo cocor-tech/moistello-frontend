@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { QrCode, Usb, Fingerprint, Wallet, type LucideIcon } from "lucide-react"
+import { QrCode, Usb, ScanFace, Wallet, type LucideIcon } from "lucide-react"
 
 const LUCIDE_ICONS: Record<string, LucideIcon> = {
   walletconnect: QrCode,
   ledger: Usb,
-  passkey: Fingerprint,
+  passkey: ScanFace,
   freighter: Wallet,
   rabet: Wallet,
   xbull: Wallet,
