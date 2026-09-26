@@ -9,15 +9,15 @@ const variantClasses = {
   primary:
     "gradient-bg-extended text-white holo-glow tracking-wide uppercase",
   secondary:
-    "glass text-foreground dark:text-ink-900",
+    "bg-secondary text-secondary-foreground",
   outline:
-    "glass text-foreground dark:text-ink-900",
+    "border border-border bg-transparent text-foreground",
   ghost:
-    "text-muted-foreground",
+    "text-foreground hover:bg-secondary",
   premium:
     "gradient-bg-premium text-white holo-glow font-heading tracking-wide uppercase shadow-[0_0_24px_rgb(var(--premium-gold)/0.2)]",
   destructive:
-    "bg-destructive text-white holo-glow",
+    "bg-destructive text-destructive-foreground holo-glow",
 } as const;
 
 const sizeClasses = {
@@ -50,9 +50,9 @@ export function buttonStyles({
     "w-full md:w-auto",
     variant === "primary" && "font-heading",
     variant === "premium" && "rounded-xl",
-    variant === "ghost" && "hover:glass-whisper hover:text-foreground dark:hover:text-ink-900",
-    variant === "outline" && "hover:holo-border",
-    variant === "secondary" && "hover:glass-strong",
+    variant === "ghost" && "hover:bg-secondary",
+    variant === "outline" && "hover:bg-secondary",
+    variant === "secondary" && "hover:bg-secondary/80",
     variantClasses[variant],
     sizeClasses[size],
     isLoading && "animate-shimmer",

@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { MobileMenu } from "@/components/layout/mobile-menu";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsOverlay } from "@/components/shared/keyboard-shortcuts-overlay";
+import { AutoBreadcrumbs } from "@/components/shared/auto-breadcrumbs";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -52,6 +53,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         >
           <div className="container-premium py-2.5">
+            <AutoBreadcrumbs className="mb-4 lg:mb-6" maxVisible={5} />
             {children}
           </div>
         </main>
