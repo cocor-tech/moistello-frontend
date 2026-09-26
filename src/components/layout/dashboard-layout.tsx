@@ -8,6 +8,8 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { MobileMenu } from "@/components/layout/mobile-menu";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { KeyboardShortcutsOverlay } from "@/components/shared/keyboard-shortcuts-overlay";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -17,6 +19,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [mobileMenuPath, setMobileMenuPath] = useState<string | null>(null);
   const mobileMenuOpen = mobileMenuPath === pathname;
+  const { shortcuts, helpOpen, closeHelp } = useKeyboardShortcuts();
 
   const toggleMobileMenu = useCallback(() => {
     setMobileMenuPath((openPath) => openPath === pathname ? null : pathname);
@@ -54,6 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
         <MobileNav />
       </div>
+      <KeyboardShortcutsOverlay isOpen={helpOpen} onClose={closeHelp} shortcuts={shortcuts} />
     </div>
   );
 }
