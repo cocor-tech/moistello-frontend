@@ -39,6 +39,7 @@ export default function UploadPage() {
       status={upload.status}
       message={upload.message}
       uploadedUrl={upload.uploadedUrl}
+      progress={upload.progress}
       showSamples={showSamples}
       onToggleSamples={() => setShowSamples((visible) => !visible)}
       onFileSelect={upload.selectFile}
