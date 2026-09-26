@@ -3,7 +3,7 @@
 import React, { useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/shared/empty-state"
-import { BarChart3 } from "lucide-react"
+import { ChartColumn } from "lucide-react"
 import { formatCurrency } from "@/lib/formatters"
 
 export interface ContributionDataPoint {
@@ -78,7 +78,7 @@ export function ContributionChart({
   if (error) {
     return (
       <div className="glass rounded-2xl p-5 holo-border flex flex-col items-center justify-center text-center gap-3">
-        <BarChart3 className="h-8 w-8 text-destructive" />
+        <ChartColumn className="h-8 w-8 text-destructive" />
         <p className="text-sm text-muted-foreground">Failed to load contribution chart.</p>
         {onRetry && (
           <button onClick={onRetry} className="text-xs text-aurora-violet hover:underline">
@@ -102,11 +102,11 @@ export function ContributionChart({
     return (
       <div className="glass rounded-2xl p-5 holo-border">
         <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="h-4 w-4 text-aurora-violet" />
+          <ChartColumn className="h-4 w-4 text-aurora-violet" />
           <h3 className="font-heading text-sm font-semibold text-foreground">Contribution trend</h3>
         </div>
         <EmptyState
-          icon={<BarChart3 className="h-6 w-6" />}
+          icon={<ChartColumn className="h-6 w-6" />}
           title="No data"
           description="Contributions will appear here once available."
           className="max-w-xs mx-auto py-8"
@@ -126,7 +126,7 @@ export function ContributionChart({
     <div className="glass rounded-2xl p-5 holo-border relative overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-aurora-violet" />
+          <ChartColumn className="h-4 w-4 text-aurora-violet" />
           <h3 className="font-heading text-sm font-semibold text-foreground">Contribution trend</h3>
         </div>
         <span className="text-2xs text-muted-foreground font-body">

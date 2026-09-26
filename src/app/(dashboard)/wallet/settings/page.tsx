@@ -3,7 +3,7 @@
 import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Copy, Check, Trash2, Edit3, X, CheckCircle, Wallet as WalletIcon, Shield, Clock } from "lucide-react"
+import { ArrowLeft, Copy, Check, Trash2, Pencil, X, CircleCheck, Wallet as WalletIcon, Shield, Clock } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -111,14 +111,14 @@ export default function WalletSettingsPage() {
                   <div className="flex items-center gap-2">
                     <Input label="Wallet nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Nickname" className="w-40 h-8 text-sm" />
                     <button type="button" onClick={saveNickname} disabled={savingNickname} className="text-emerald-400 hover:text-emerald-300 disabled:opacity-50" aria-label="Save wallet nickname">
-                      {savingNickname ? <Clock className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                      {savingNickname ? <Clock className="h-4 w-4 animate-spin" /> : <CircleCheck className="h-4 w-4" />}
                     </button>
                     <button type="button" onClick={() => setEditingNickname(false)} disabled={savingNickname} className="text-muted-foreground hover:text-foreground disabled:opacity-50" aria-label="Cancel editing wallet nickname"><X className="h-4 w-4" aria-hidden="true" /></button>
                   </div>
                 ) : (
                   <>
                     <span className="text-sm font-medium text-foreground">{nickname || "My Wallet"}</span>
-                    <button type="button" onClick={() => setEditingNickname(true)} className="text-muted-foreground hover:text-foreground" aria-label="Edit wallet nickname"><Edit3 className="h-3.5 w-3.5" aria-hidden="true" /></button>
+                    <button type="button" onClick={() => setEditingNickname(true)} className="text-muted-foreground hover:text-foreground" aria-label="Edit wallet nickname"><Pencil className="h-3.5 w-3.5" aria-hidden="true" /></button>
                   </>
                 )}
               </div>

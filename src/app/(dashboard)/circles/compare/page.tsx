@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useCircle } from "@/hooks/use-circles"
 import { formatCurrency } from "@/lib/formatters"
-import { Search, X, BarChart3 } from "lucide-react"
+import { Search, X, ChartColumn } from "lucide-react"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ATTRIBUTES: { key: string; label: string; format: (v: any, c?: any) => string }[] = [
@@ -80,7 +80,7 @@ export default function ComparePage() {
 
       {circleIds.length === 0 ? (
         <EmptyState
-          icon={<BarChart3 className="h-6 w-6" />}
+          icon={<ChartColumn className="h-6 w-6" />}
           title="Add circles to compare"
           description="Paste circle IDs above to compare attributes side-by-side. You can compare up to 4 circles."
         />

@@ -5,7 +5,7 @@ import { getCsrfHeaders } from "@/lib/auth/csrf"
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Shield, AlertCircle, CheckCircle } from "lucide-react";
+import { Shield, CircleAlert, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -74,7 +74,7 @@ function SetupForm() {
 
         {step === "error" && !token && (
           <div className="glass rounded-xl p-4 flex items-center gap-3 text-sm">
-            <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+            <CircleAlert className="h-5 w-5 text-red-400 shrink-0" />
             <p className="text-muted-foreground">
               No setup token found. Use the link provided by your server administrator.
             </p>
@@ -83,7 +83,7 @@ function SetupForm() {
 
         {step === "success" ? (
           <div className="text-center py-4">
-            <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
+            <CircleCheck className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
             <p className="font-heading text-lg">Account created!</p>
             <p className="text-muted-foreground text-sm mt-1">Redirecting to upload page...</p>
           </div>
@@ -94,7 +94,7 @@ function SetupForm() {
             <Input label="Confirm Password" type="password" placeholder="Re-enter password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={step === "loading"} onKeyDown={(e) => e.key === "Enter" && handleSubmit()} />
             {error && (
               <div className="glass rounded-xl p-3 flex items-center gap-2 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4" />{error}
+                <CircleAlert className="h-4 w-4" />{error}
               </div>
             )}
             <Button variant="premium" size="lg" className="w-full rounded-xl" disabled={step === "loading"} isLoading={step === "loading"} onClick={handleSubmit}>

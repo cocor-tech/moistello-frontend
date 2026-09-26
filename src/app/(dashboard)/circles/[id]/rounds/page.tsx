@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   ArrowLeft,
-  CheckCircle,
+  CircleCheck,
   ExternalLink,
   Inbox,
   RotateCw,
@@ -164,7 +164,7 @@ export default function CircleRoundsPage() {
                     )}
                   >
                     {round.isCompleted ? (
-                      <CheckCircle className="h-5 w-5" />
+                      <CircleCheck className="h-5 w-5" />
                     ) : (
                       round.roundNumber
                     )}

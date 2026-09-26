@@ -3,7 +3,7 @@
 import { logger } from "@/lib/logger"
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { TriangleAlert, LoaderCircle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -66,14 +66,14 @@ export function ConfirmDialog({
       >
         {variant === "danger" && (
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 ring-1 ring-destructive/15">
-            <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+            <TriangleAlert className="h-5 w-5 text-destructive" aria-hidden="true" />
           </div>
         )}
 
         {/* Warning for danger variant */}
         {variant === "danger" && (
           <div className="mb-3 flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/15 p-3">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+            <TriangleAlert className="h-4 w-4 shrink-0 text-destructive" />
             <span className="text-sm text-destructive font-body">
               This action cannot be undone. Please proceed with caution.
             </span>
@@ -104,7 +104,7 @@ export function ConfirmDialog({
                 "shadow-[0_0_28px_rgba(239,68,68,0.25)] gradient-bg",
             )}
           >
-            {loading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+            {loading && <LoaderCircle className="mr-1.5 h-4 w-4 animate-spin" />}
             {confirmLabel || (variant === "danger" ? "Delete" : "Confirm")}
           </Button>
         </div>

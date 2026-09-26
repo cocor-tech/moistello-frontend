@@ -33,10 +33,10 @@ export function AccountSwitcher() {
       triggerRef.current?.focus()
       return
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    if (!["ArrowDown", "ArrowUp", "House", "End"].includes(event.key)) return
     event.preventDefault()
     setIsOpen(true)
-    const index = event.key === "Home"
+    const index = event.key === "House"
       ? 0
       : event.key === "End"
         ? connectedWallets.length - 1
@@ -53,9 +53,9 @@ export function AccountSwitcher() {
       triggerRef.current?.focus()
       return
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    if (!["ArrowDown", "ArrowUp", "House", "End"].includes(event.key)) return
     event.preventDefault()
-    const nextIndex = event.key === "Home"
+    const nextIndex = event.key === "House"
       ? 0
       : event.key === "End"
         ? connectedWallets.length - 1

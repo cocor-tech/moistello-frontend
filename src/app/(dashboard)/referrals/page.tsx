@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, AlertCircle } from "lucide-react";
+import { Users, CircleAlert } from "lucide-react";
 
 export default function ReferralsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function ReferralsPage() {
   if (isError) {
     return (
       <EmptyState
-        icon={<AlertCircle />}
+        icon={<CircleAlert />}
         title="Failed to load referrals"
         description="Unable to load your referral statistics and invited users."
         action={{

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Award, AlertCircle } from "lucide-react";
+import { Award, CircleAlert } from "lucide-react";
 
 export default function PayoutsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function PayoutsPage() {
   if (isError) {
     return (
       <EmptyState
-        icon={<AlertCircle />}
+        icon={<CircleAlert />}
         title="Failed to load payouts"
         description="Something went wrong while retrieving your payouts. Please try again."
         action={{

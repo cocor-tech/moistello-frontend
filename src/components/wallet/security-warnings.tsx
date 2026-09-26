@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertTriangle, ShieldAlert, Info, ArrowUpRight } from "lucide-react"
+import { TriangleAlert, ShieldAlert, Info, ArrowUpRight } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 interface WarningProps {
@@ -37,7 +37,7 @@ const STYLES = {
 
 export function SecurityWarning({ type, title, message, action, className }: WarningProps) {
   const s = STYLES[type]
-  const Icon = type === "danger" ? ShieldAlert : type === "info" ? Info : AlertTriangle
+  const Icon = type === "danger" ? ShieldAlert : type === "info" ? Info : TriangleAlert
 
   return (
     <div className={cn("border rounded-xl p-4 space-y-2", s.border, s.bg, className)}>

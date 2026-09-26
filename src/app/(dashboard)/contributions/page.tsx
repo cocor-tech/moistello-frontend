@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, AlertCircle } from "lucide-react";
+import { DollarSign, CircleAlert } from "lucide-react";
 
 export default function ContributionsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,7 @@ export default function ContributionsPage() {
   if (isError) {
     return (
       <EmptyState
-        icon={<AlertCircle />}
+        icon={<CircleAlert />}
         title="Failed to load contributions"
         description="Something went wrong while fetching your contributions. Please try again later."
         action={{

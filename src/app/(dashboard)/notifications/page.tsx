@@ -14,14 +14,14 @@ import {
   ArrowUp,
   ArrowDown,
   CircleDot,
-  AlertTriangle,
+  TriangleAlert,
   CheckCheck,
   UserPlus,
   DollarSign,
   Shield,
   Info,
   Archive,
-  CheckSquare,
+  SquareCheck,
   Square,
 } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -51,7 +51,7 @@ const iconMap: Record<string, React.ReactNode> = {
   circle_joined: <UserPlus className="h-4 w-4" />,
   circle_completed: <CheckCheck className="h-4 w-4" />,
   system: <Info className="h-4 w-4" />,
-  warning: <AlertTriangle className="h-4 w-4" />,
+  warning: <TriangleAlert className="h-4 w-4" />,
   penalty: <Shield className="h-4 w-4" />,
 };
 
@@ -143,7 +143,7 @@ function NotificationItem({
         className="mt-2 shrink-0 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50"
       >
         {selected ? (
-          <CheckSquare className="h-4 w-4 text-aurora-violet" />
+          <SquareCheck className="h-4 w-4 text-aurora-violet" />
         ) : (
           <Square className="h-4 w-4" />
         )}
@@ -367,7 +367,7 @@ export default function NotificationsPage() {
 
         <div className="flex items-center gap-2">
           <select
-            aria-label="Filter notifications by type"
+            aria-label="ListFilter notifications by type"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"
@@ -427,7 +427,7 @@ export default function NotificationsPage() {
             onClick={handleSelectAll}
             className="flex items-center gap-2 text-foreground hover:text-aurora-violet transition-colors"
           >
-            {allSelected ? <CheckSquare className="h-4 w-4 text-aurora-violet" /> : <Square className="h-4 w-4" />}
+            {allSelected ? <SquareCheck className="h-4 w-4 text-aurora-violet" /> : <Square className="h-4 w-4" />}
             <span>Select All</span>
           </button>
         </div>

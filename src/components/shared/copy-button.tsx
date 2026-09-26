@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Copy, Check, AlertCircle } from "lucide-react";
+import { Copy, Check, CircleAlert } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { copyToClipboard } from "@/lib/clipboard";
 
@@ -68,7 +68,7 @@ export function CopyButton({ text, label, className, onError }: CopyButtonProps)
         </span>
       ) : hasError ? (
         <span className="text-red-400 animate-scale-in">
-          <AlertCircle className="h-3.5 w-3.5" />
+          <CircleAlert className="h-3.5 w-3.5" />
         </span>
       ) : (
         <span className="animate-scale-in">

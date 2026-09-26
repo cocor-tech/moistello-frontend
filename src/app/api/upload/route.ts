@@ -1,18 +1,10 @@
-import { logger } from "@/lib/logger"
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { blockInProduction } from "@/lib/security/dev-only-route";
-import { sanitizeHtml } from "@/lib/security/html-sanitizer";
-
-const PAGES_DIR = path.join(process.cwd(), "content/pages");
-const ALLOWED_EXTENSIONS = [".md", ".html"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-
-// Ensure pages directory exists
-if (!fs.existsSync(PAGES_DIR)) {
-  fs.mkdirSync(PAGES_DIR, { recursive: true });
-}
+import { isSlugTaken, validateUpload } from "./publish";
+import { purgeUpload, stageUpload, sweepStaging } from "./staging";
 
 const SESSIONS_FILE = path.join(process.cwd(), "content", "sessions.json");
 
@@ -34,16 +26,27 @@ function isAuthorized(request: NextRequest): boolean {
   }
 }
 
+/**
+ * Phase 1 of the two-phase upload: accept the bytes and stage them.
+ *
+ * This request deliberately does **not** publish. It validates, stores the
+ * payload under a server-generated id, and hands that id back so the client
+ * can drive phase 2 (`POST /api/upload/finalize`) as a separate, retryable
+ * step. Reserving the slug here means the collision check happens once, before
+ * the user waits on the publish call.
+ */
 export async function POST(request: NextRequest) {
   // Local-development scaffolding — writes files via fs and authenticates
   // against a flat JSON session store.
   const blocked = blockInProduction();
   if (blocked) return blocked;
 
-  // Auth check
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Opportunistic cleanup of uploads that were staged but never finalized.
+  sweepStaging();
 
   let formData: FormData;
   try {
@@ -57,100 +60,62 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  // Validate extension
-  const originalName = file.name;
-  const ext = path.extname(originalName).toLowerCase();
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+  const validation = validateUpload(file.name, file.size);
+  if (!validation.ok) {
     return NextResponse.json(
-      { error: "Only .md and .html files are allowed" },
-      { status: 400 },
+      { error: validation.failure.error },
+      { status: validation.failure.status },
     );
   }
 
-  // Validate size
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json(
-      { error: `File too large (max ${MAX_SIZE / 1024 / 1024}MB)` },
-      { status: 400 },
-    );
-  }
-
-  // Generate slug from filename (unique — reject if exists)
-  const slug = originalName.replace(ext, "");
-  // Only allow slugs with letters, numbers, hyphens, underscores
-  if (!/^[a-zA-Z0-9\-_]+$/.test(slug)) {
-    return NextResponse.json(
-      {
-        error:
-          "Filename must contain only letters, numbers, hyphens, or underscores",
-      },
-      { status: 400 },
-    );
-  }
-
-  // Check for slug collision before writing
-  const filename = `${slug}.md`;
-  const filePath = path.join(PAGES_DIR, filename);
-
-  if (fs.existsSync(filePath)) {
+  if (isSlugTaken(validation.slug)) {
     const overwrite = request.nextUrl.searchParams.get("overwrite");
     if (overwrite !== "true") {
       return NextResponse.json(
         {
-          error: `A page with slug "${slug}" already exists. Add ?overwrite=true to confirm overwrite.`,
-          slug,
+          error: `A page with slug "${validation.slug}" already exists. Add ?overwrite=true to confirm overwrite.`,
+          slug: validation.slug,
         },
         { status: 409 },
       );
     }
   }
 
-  // Read content
-  const buffer = await file.arrayBuffer();
-  let content = new TextDecoder().decode(buffer);
-
-  // For .html files: strip everything except the body content
-  if (ext === ".html") {
-    const titleMatch = content.match(/<title>(.*?)<\/title>/i);
-    const descMatch = content.match(
-      /<meta\s+name=["']description["']\s+content=["'](.*?)["']/i,
-    );
-    const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-
-    const extractedTitle = titleMatch ? titleMatch[1].trim() : slug;
-    const extractedDesc = descMatch ? descMatch[1].trim() : "";
-
-    // Strip html/head/body wrappers, keep only body inner content
-    let strippedContent = bodyMatch ? bodyMatch[1].trim() : content;
-    // Sanitize the HTML to remove all dangerous content
-    strippedContent = sanitizeHtml(strippedContent);
-
-    // Convert to .md with frontmatter
-    content = [
-      "---",
-      `title: ${extractedTitle}`,
-      `description: ${extractedDesc}`,
-      "---",
-      "",
-      strippedContent,
-    ].join("\n");
-  }
-
-  // Write the file (checked for collision above)
+  let staged;
   try {
-    fs.writeFileSync(filePath, content, "utf-8");
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (_err) {
-    return NextResponse.json(
-      { error: "Failed to write file" },
-      { status: 500 },
-    );
+    const buffer = Buffer.from(await file.arrayBuffer());
+    staged = stageUpload(buffer, {
+      originalName: file.name,
+      slug: validation.slug,
+      extension: validation.extension,
+    });
+  } catch (error) {
+    logger.error("[api:upload] Failed to stage upload:", error);
+    return NextResponse.json({ error: "Failed to store file" }, { status: 500 });
   }
 
   return NextResponse.json({
-    success: true,
-    slug,
-    url: `/p/${slug}`,
-    message: `Published as /p/${slug}`,
+    staged: true,
+    uploadId: staged.uploadId,
+    slug: staged.slug,
+    bytes: staged.bytes,
   });
+}
+
+/** Cancel a staged upload the client decided not to publish. */
+export async function DELETE(request: NextRequest) {
+  const blocked = blockInProduction();
+  if (blocked) return blocked;
+
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const uploadId = request.nextUrl.searchParams.get("uploadId");
+  if (!uploadId) {
+    return NextResponse.json({ error: "uploadId is required" }, { status: 400 });
+  }
+
+  purgeUpload(uploadId);
+  return NextResponse.json({ cancelled: true });
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Calendar, Clock, ArrowRight, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, ArrowRight, CircleAlert } from 'lucide-react'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/formatters'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -52,7 +52,7 @@ export function UpcomingPayoutsWidget({
         </div>
       ) : isError ? (
         <EmptyState
-          icon={<AlertCircle className="h-5 w-5 text-destructive" />}
+          icon={<CircleAlert className="h-5 w-5 text-destructive" />}
           title="Failed to load payouts"
           description="Could not retrieve scheduled upcoming payouts right now."
         />

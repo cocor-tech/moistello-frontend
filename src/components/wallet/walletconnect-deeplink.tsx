@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { ExternalLink, Copy, Check, Smartphone, Loader2, AlertCircle } from "lucide-react"
+import { ExternalLink, Copy, Check, Smartphone, LoaderCircle, CircleAlert } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { copyToClipboard } from "@/lib/clipboard"
 
@@ -91,7 +91,7 @@ export function WalletConnectDeepLink({
     return (
       <div className={cn("flex flex-col items-center gap-3 py-4", className)}>
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20">
-          <AlertCircle className="h-7 w-7 text-amber-400" />
+          <CircleAlert className="h-7 w-7 text-amber-400" />
         </div>
         <p className="text-sm font-medium text-foreground">Connection Error</p>
         <p className="text-xs text-muted-foreground text-center">{error}</p>
@@ -109,7 +109,7 @@ export function WalletConnectDeepLink({
   if (!uri) {
     return (
       <div className={cn("flex flex-col items-center gap-3 py-4", className)}>
-        <Loader2 className="h-8 w-8 animate-spin text-aurora-violet" />
+        <LoaderCircle className="h-8 w-8 animate-spin text-aurora-violet" />
         <p className="text-sm text-muted-foreground">Preparing connection...</p>
       </div>
     )

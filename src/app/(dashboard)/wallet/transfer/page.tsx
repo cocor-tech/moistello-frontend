@@ -4,8 +4,8 @@ import { useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
+  CircleCheckBig,
+  CircleAlert,
   ArrowRight,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
@@ -100,7 +100,7 @@ function WalletTransferContent() {
 
       {error && (
         <div role="alert" className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <CircleAlert className="w-5 h-5 flex-shrink-0" />
           <p className="text-sm">{error}</p>
         </div>
       )}
@@ -213,7 +213,7 @@ function WalletTransferContent() {
       {step === "success" && (
         <div className="glass-card p-8 rounded-3xl text-center space-y-6">
           <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-8 h-8" />
+            <CircleCheckBig className="w-8 h-8" />
           </div>
           <h3 className="text-2xl font-heading font-semibold">Transfer Successful!</h3>
           <p className="text-muted-foreground text-sm">

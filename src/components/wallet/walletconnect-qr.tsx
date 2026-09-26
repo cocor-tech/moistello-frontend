@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger"
 import { useEffect, useRef, useState, useCallback } from "react"
-import { Copy, Check, Loader2, XCircle, RefreshCw, AlertCircle } from "lucide-react"
+import { Copy, Check, LoaderCircle, CircleX, RefreshCw, CircleAlert } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { copyToClipboard } from "@/lib/clipboard"
 
@@ -94,7 +94,7 @@ export function WalletConnectQR({
     return (
       <div className={cn("flex flex-col items-center gap-3 py-4", className)}>
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/20">
-          <XCircle className="h-7 w-7 text-red-400" />
+          <CircleX className="h-7 w-7 text-red-400" />
         </div>
         <p className="text-sm font-medium text-foreground">Connection Cancelled</p>
         <p className="text-xs text-muted-foreground text-center">
@@ -116,7 +116,7 @@ export function WalletConnectQR({
     return (
       <div className={cn("flex flex-col items-center gap-3 py-4", className)}>
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20">
-          <AlertCircle className="h-7 w-7 text-amber-400" />
+          <CircleAlert className="h-7 w-7 text-amber-400" />
         </div>
         <p className="text-sm font-medium text-foreground">
           {countdown === 0 || pairingState === "timeout" ? "Connection Timed Out" : "Connection Error"}
@@ -139,7 +139,7 @@ export function WalletConnectQR({
   if (!uri) {
     return (
       <div className={cn("flex flex-col items-center gap-3 py-4", className)}>
-        <Loader2 className="h-8 w-8 animate-spin text-aurora-violet" />
+        <LoaderCircle className="h-8 w-8 animate-spin text-aurora-violet" />
         <p className="text-sm text-muted-foreground">Generating connection code...</p>
       </div>
     )

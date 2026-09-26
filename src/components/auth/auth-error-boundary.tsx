@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react"
+import { CircleAlert, RefreshCw, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 interface AuthErrorBoundaryProps {
@@ -30,7 +30,7 @@ export function AuthErrorBoundary({
       role="alert"
       aria-live="polite"
     >
-      <AlertCircle className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
+      <CircleAlert className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-red-400 mb-1 capitalize">
           {error.code.replace(/_/g, " ")}

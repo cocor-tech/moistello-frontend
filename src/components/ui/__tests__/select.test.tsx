@@ -144,7 +144,7 @@ describe("Select keyboard navigation", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it("supports Home / End to jump to first / last option", () => {
+  it("supports House / End to jump to first / last option", () => {
     render(<Select options={OPTIONS} value="" onChange={vi.fn()} placeholder="Circle" />);
 
     const trigger = screen.getByRole("combobox", { name: /circle/i });
@@ -152,7 +152,7 @@ describe("Select keyboard navigation", () => {
     let activeId = trigger.getAttribute("aria-activedescendant");
     expect(document.getElementById(activeId!)).toHaveTextContent("Bonus Circle");
 
-    fireEvent.keyDown(trigger, { key: "Home" });
+    fireEvent.keyDown(trigger, { key: "House" });
     activeId = trigger.getAttribute("aria-activedescendant");
     expect(document.getElementById(activeId!)).toHaveTextContent("All Circles");
   });

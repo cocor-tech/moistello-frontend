@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useId, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Shield, AlertCircle, CheckCircle } from "lucide-react"
+import { Shield, CircleAlert, CircleCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useMultiWallet } from "@/hooks/use-multi-wallet"
 import { useFocusTrap } from "@/hooks/use-focus-trap"
@@ -85,14 +85,14 @@ export function SignPrompt({ isOpen, onClose, onSign, onSuccess, title = "Sign T
             className="bg-card/80 border border-white/10 rounded-xl p-8 max-w-md w-full holo-border text-center"
           >
             {status === "success" ? (
-              <motion.div className="py-8" role="status" aria-live="polite"><CheckCircle className="h-12 w-12 text-emerald-400 mx-auto mb-3" aria-hidden="true" /><p className="font-heading text-lg">Signed Successfully</p></motion.div>
+              <motion.div className="py-8" role="status" aria-live="polite"><CircleCheck className="h-12 w-12 text-emerald-400 mx-auto mb-3" aria-hidden="true" /><p className="font-heading text-lg">Signed Successfully</p></motion.div>
             ) : (
               <>
                 <div className="w-14 h-14 rounded-2xl gradient-bg-extended flex items-center justify-center mx-auto mb-4"><Shield aria-hidden="true" className="h-6 w-6 text-white" /></div>
                 <h2 id={titleId} className="font-heading text-xl gradient-text mb-1">{title}</h2>
                 {description && <p id={descriptionId} className="text-sm text-muted-foreground mb-1">{description}</p>}
                 <p className="text-xs text-muted-foreground mb-6">Signing with: <span className="text-foreground font-medium">{walletName}</span></p>
-                {error && <div role="alert" aria-live="assertive" className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-2 text-sm text-red-400 mb-4"><AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />{error}</div>}
+                {error && <div role="alert" aria-live="assertive" className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-2 text-sm text-red-400 mb-4"><CircleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />{error}</div>}
                 <div className="flex gap-3">
                   <Button variant="outline" className="flex-1 rounded-xl" onClick={onClose} disabled={status === "signing"}>Cancel</Button>
                   <Button variant="primary" className="flex-1 rounded-xl" onClick={handleSign} disabled={status === "signing"} isLoading={status === "signing"}>{status === "signing" ? `Waiting for ${walletName}...` : "Sign"}</Button>

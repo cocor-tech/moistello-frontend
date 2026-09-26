@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { AlertTriangle, ArrowLeft, Braces, Home } from "lucide-react"
+import { TriangleAlert, ArrowLeft, Braces, House } from "lucide-react"
 
 export default function BadRequest() {
   return (
@@ -30,13 +30,13 @@ export default function BadRequest() {
                 Review input
               </button>
               <Link href="/" className="inline-flex items-center gap-2 border-b border-amber-400/40 px-2 py-3 font-heading text-foreground">
-                <Home className="h-4 w-4" />
-                Home
+                <House className="h-4 w-4" />
+                House
               </Link>
             </div>
           </div>
           <div className="relative border-l border-dashed border-amber-400/30 py-12 pl-8 text-right md:pl-12">
-            <AlertTriangle className="absolute left-[-1.25rem] top-1/2 h-10 w-10 -translate-y-1/2 bg-background p-2 text-amber-400" />
+            <TriangleAlert className="absolute left-[-1.25rem] top-1/2 h-10 w-10 -translate-y-1/2 bg-background p-2 text-amber-400" />
             <p className="-rotate-3 font-mono text-[8rem] font-black leading-none text-amber-400 md:text-[12rem]">400</p>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { logger } from "@/lib/logger"
 import React, { Component } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { TriangleAlert, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
@@ -68,7 +68,7 @@ export class ErrorBoundary extends Component<
               transition={{ delay: 0.2, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
               className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-warning/10 ring-1 ring-warning/20"
             >
-              <AlertTriangle className="h-8 w-8 text-warning" aria-hidden="true" />
+              <TriangleAlert className="h-8 w-8 text-warning" aria-hidden="true" />
             </motion.div>
 
             {/* Title */}

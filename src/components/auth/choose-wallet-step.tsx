@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react"
 import dynamic from "next/dynamic"
-import { Wallet, Loader2, Shield } from "lucide-react"
+import { Wallet, LoaderCircle, Shield } from "lucide-react"
 import { WalletGrid } from "./wallet-grid"
 import { useMultiWalletStore } from "@/stores/multi-wallet-store"
 import { useWalletConnectStore } from "@/stores/walletconnect-store"
@@ -63,7 +63,7 @@ export function ChooseWalletStep({ mode, onPasskeyLogin }: ChooseWalletStepProps
   if (isScanning) {
     return (
       <div className="flex flex-col items-center gap-4 py-8" role="status">
-        <Loader2 className="h-8 w-8 animate-spin text-aurora-violet" />
+        <LoaderCircle className="h-8 w-8 animate-spin text-aurora-violet" />
         <p className="text-sm text-muted-foreground">Detecting wallets...</p>
       </div>
     )
@@ -131,7 +131,7 @@ export function ChooseWalletStep({ mode, onPasskeyLogin }: ChooseWalletStepProps
                 </p>
               </div>
               {connectingWalletId === "passkey" && (
-                <Loader2 className="h-4 w-4 animate-spin text-aurora-violet shrink-0" />
+                <LoaderCircle className="h-4 w-4 animate-spin text-aurora-violet shrink-0" />
               )}
             </button>
           )}
@@ -192,7 +192,7 @@ export function ChooseWalletStep({ mode, onPasskeyLogin }: ChooseWalletStepProps
                 <p className="mt-0.5 text-2xs text-muted-foreground">{w.description}</p>
               </div>
               {connectingWalletId === w.id && (
-                <Loader2 className="h-4 w-4 animate-spin text-aurora-violet shrink-0" />
+                <LoaderCircle className="h-4 w-4 animate-spin text-aurora-violet shrink-0" />
               )}
             </button>
           ))}

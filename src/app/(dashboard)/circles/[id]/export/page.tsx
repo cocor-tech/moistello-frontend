@@ -9,8 +9,8 @@ import { PageHeader } from "@/components/shared/page-header"
 import { Button, ButtonLink } from "@/components/ui/button"
 import { cn } from "@/lib/cn"
 import {
-  ArrowLeft, Download, FileText, Table, Check, AlertCircle,
-  Calendar, Columns, Filter, RefreshCw,
+  ArrowLeft, Download, FileText, Table, Check, CircleAlert,
+  Calendar, Columns3, ListFilter, RefreshCw,
 } from "lucide-react"
 import { copyToClipboard } from "@/lib/clipboard"
 import {
@@ -239,7 +239,7 @@ export default function ExportPage() {
       {/* ── Scope selector — pill row ── */}
       <div>
         <p className="text-xs font-heading font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Filter className="h-3 w-3" /> Export Scope
+          <ListFilter className="h-3 w-3" /> Export Scope
         </p>
         <div className="flex flex-wrap gap-2">
           {scopes.map((s) => (
@@ -322,7 +322,7 @@ export default function ExportPage() {
             aria-controls="export-column-selection"
             className="flex items-center gap-2 text-xs font-heading font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
           >
-            <Columns className="h-3 w-3" />
+            <Columns3 className="h-3 w-3" />
             Column Selection
             <span className="text-aurora-violet text-xs normal-case font-normal">
               {showColumns ? "hide" : "show"}
@@ -464,7 +464,7 @@ export default function ExportPage() {
 
       {/* ── Info notice ── */}
       <div className="flex items-start gap-3 px-4 py-3 rounded-xl border-l-2 border-l-amber-400/40 bg-amber-400/5">
-        <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+        <CircleAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground">
           Up to 200 most recent records are exported. For complete history, use the date range
           filter to export in batches.

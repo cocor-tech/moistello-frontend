@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Check, Home, KeyRound, LogIn } from "lucide-react"
+import { Check, House, KeyRound, LogIn } from "lucide-react"
 
 const steps = ["Identity requested", "Session checked", "Sign in required"]
 
@@ -28,7 +28,7 @@ export default function Unauthorized() {
                 Sign in
               </Link>
               <Link href="/" className="inline-flex items-center gap-2 px-5 py-3 font-heading text-muted-foreground hover:text-foreground">
-                <Home className="h-4 w-4" />
+                <House className="h-4 w-4" />
                 Return home
               </Link>
             </div>

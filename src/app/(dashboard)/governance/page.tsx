@@ -7,12 +7,12 @@ import {
   Landmark,
   Plus,
   Search,
-  Filter,
+  ListFilter,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  CheckCircle2,
-  XCircle,
+  CircleCheckBig,
+  CircleX,
   Clock,
   FileText,
 } from "lucide-react"
@@ -96,13 +96,13 @@ export default function GovernancePage() {
       case "passed":
         return (
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-400 font-semibold">
-            <CheckCircle2 className="h-3 w-3" /> Passed
+            <CircleCheckBig className="h-3 w-3" /> Passed
           </span>
         )
       case "defeated":
         return (
           <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-400 font-semibold">
-            <XCircle className="h-3 w-3" /> Defeated
+            <CircleX className="h-3 w-3" /> Defeated
           </span>
         )
       default:
@@ -179,7 +179,7 @@ export default function GovernancePage() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-aurora-violet" />
+            <ListFilter className="h-4 w-4 text-aurora-violet" />
             <select
               aria-label="Proposal category"
               value={categoryFilter}

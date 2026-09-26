@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { PublicLayout } from "@/components/layout/public-layout"
-import { Activity, CheckCircle, Clock } from "lucide-react"
+import { Activity, CircleCheck, Clock } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "System Status - Moistello",
@@ -49,7 +49,7 @@ export default function StatusPage() {
                 <div key={service} className="rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 p-6 flex items-center justify-between transition-transform duration-300 hover:scale-[1.02]">
                   <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-                      <CheckCircle className="h-6 w-6" />
+                      <CircleCheck className="h-6 w-6" />
                     </div>
                     <div>
                       <h3 className="font-heading text-lg font-semibold text-foreground capitalize">{service}</h3>

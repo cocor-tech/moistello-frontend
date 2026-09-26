@@ -1,6 +1,6 @@
 "use client"
 
-import { Shield, AlertCircle } from "lucide-react"
+import { Shield, CircleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NIGERIAN_BANKS } from "../banks"
 import type { WithdrawQuote } from "../types"
@@ -69,7 +69,7 @@ export function ConfirmStep({
 
       {errMsg && (
         <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          <CircleAlert className="h-3.5 w-3.5 shrink-0" />
           {errMsg}
         </div>
       )}

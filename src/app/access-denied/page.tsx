@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, Home, LockKeyhole, ShieldQuestion } from "lucide-react"
+import { ArrowRight, House, LockKeyhole, ShieldQuestionMark } from "lucide-react"
 
 export default function Forbidden() {
   return (
@@ -23,13 +23,13 @@ export default function Forbidden() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/support" className="inline-flex items-center gap-2 bg-red-500 px-5 py-3 font-heading font-semibold text-white hover:bg-red-400">
-              <ShieldQuestion className="h-4 w-4" />
+              <ShieldQuestionMark className="h-4 w-4" />
               Contact support
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/" className="inline-flex items-center gap-2 border border-border px-5 py-3 font-heading text-foreground hover:border-red-400/50">
-              <Home className="h-4 w-4" />
-              Home
+              <House className="h-4 w-4" />
+              House
             </Link>
           </div>
         </div>

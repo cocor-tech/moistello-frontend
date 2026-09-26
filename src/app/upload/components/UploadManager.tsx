@@ -5,7 +5,7 @@ import { FileDropzone } from "./FileDropzone"
 import { SampleTemplates } from "./SampleTemplates"
 import { UploadFeedback } from "./UploadFeedback"
 import { UploadHeader } from "./UploadHeader"
-import type { UploadStatus } from "../utils/upload"
+import type { UploadErrorKind, UploadProgress, UploadStatus } from "../utils/upload"
 
 interface UploadManagerProps {
   file: File | null
@@ -13,12 +13,25 @@ interface UploadManagerProps {
   status: UploadStatus
   message: string
   uploadedUrl: string
+  progress: UploadProgress
+  errorKind: UploadErrorKind | null
+  canRetry: boolean
   showSamples: boolean
   onToggleSamples: () => void
   onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void
   onClearFile: () => void
   onUpload: () => void
+  onRetry: () => void
+  onCancel: () => void
   onLogout: () => void
+}
+
+const BUSY_LABEL: Record<UploadStatus, string> = {
+  idle: "Upload & Publish",
+  uploading: "Uploading…",
+  finalizing: "Publishing…",
+  success: "Upload & Publish",
+  error: "Upload & Publish",
 }
 
 export function UploadManager({
@@ -27,13 +40,23 @@ export function UploadManager({
   status,
   message,
   uploadedUrl,
+  progress,
+  errorKind,
+  canRetry,
   showSamples,
   onToggleSamples,
   onFileSelect,
   onClearFile,
   onUpload,
+  onRetry,
+  onCancel,
   onLogout,
 }: UploadManagerProps) {
+  // The phase panel owns the spinner for the in-flight states, so the button
+  // must not render a second one on top of it.
+  const inFlight = status === "uploading" || status === "finalizing"
+  const awaitingRetry = status === "error" && canRetry
+
   return (
     <div className="min-h-screen bg-void auroral-mesh">
       <UploadHeader onLogout={onLogout} />
@@ -52,17 +75,34 @@ export function UploadManager({
           </p>
           <SampleTemplates showSamples={showSamples} onToggle={onToggleSamples} />
           <FileDropzone file={file} fileRef={fileRef} onFileSelect={onFileSelect} onClear={onClearFile} />
-          <UploadFeedback status={status} message={message} uploadedUrl={uploadedUrl} />
+          <UploadFeedback
+            status={status}
+            message={message}
+            uploadedUrl={uploadedUrl}
+            progress={progress}
+            errorKind={errorKind}
+            canRetry={canRetry}
+            onRetry={onRetry}
+          />
           <Button
             variant="premium"
             size="lg"
             className="w-full mt-6 rounded-xl"
-            disabled={!file || status === "uploading"}
-            isLoading={status === "uploading"}
+            disabled={!file || inFlight}
+            isLoading={inFlight && !awaitingRetry}
             onClick={onUpload}
           >
-            {status === "uploading" ? "Uploading..." : "Upload & Publish"}
+            {BUSY_LABEL[status]}
           </Button>
+          {inFlight && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="mt-3 w-full text-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              Cancel upload
+            </button>
+          )}
         </motion.div>
       </main>
     </div>

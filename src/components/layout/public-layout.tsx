@@ -8,12 +8,12 @@ import {
   X,
   Sun,
   Moon,
-  ShieldQuestion,
+  ShieldQuestionMark,
   Scale,
   Lock,
   Code,
   BookOpen,
-  HelpCircle,
+  CircleQuestionMark,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useUIStore } from "@/stores/ui-store";
@@ -186,10 +186,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     Navigate
                   </p>
                   {[
-                    { label: t("nav.howItWorks"), href: "/how-it-works", icon: <ShieldQuestion className="h-[18px] w-[18px]" /> },
+                    { label: t("nav.howItWorks"), href: "/how-it-works", icon: <ShieldQuestionMark className="h-[18px] w-[18px]" /> },
                     { label: t("nav.developers"), href: "/developers", icon: <Code className="h-[18px] w-[18px]" /> },
                     { label: t("nav.docs"), href: "/docs", icon: <BookOpen className="h-[18px] w-[18px]" /> },
-                    { label: t("nav.support"), href: "/support", icon: <HelpCircle className="h-[18px] w-[18px]" /> },
+                    { label: t("nav.support"), href: "/support", icon: <CircleQuestionMark className="h-[18px] w-[18px]" /> },
                   ].map((item) => (
                     <Link
                       key={item.href}

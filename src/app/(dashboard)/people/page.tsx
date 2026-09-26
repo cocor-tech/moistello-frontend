@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import {
   Search,
-  Filter,
+  ListFilter,
   Award,
   ChevronLeft,
   ChevronRight,
@@ -190,7 +190,7 @@ export default function PeopleDirectoryPage() {
         description="Discover community members, view on-chain reputation scores, and connect."
       />
 
-      {/* Controls / Filter Bar */}
+      {/* Controls / ListFilter Bar */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border border-white/10 rounded-xl p-4 bg-white/[0.02]">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -208,9 +208,9 @@ export default function PeopleDirectoryPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-aurora-violet" />
+            <ListFilter className="h-4 w-4 text-aurora-violet" />
             <select
-              aria-label="Filter people by reputation tier"
+              aria-label="ListFilter people by reputation tier"
               value={tierFilter}
               onChange={(e) => {
                 setTierFilter(e.target.value)

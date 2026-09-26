@@ -12,6 +12,6 @@ export const metadata: Metadata = {
   },
 }
 
-export default function Home() {
+export default function House() {
   return <HomeContent />
 }

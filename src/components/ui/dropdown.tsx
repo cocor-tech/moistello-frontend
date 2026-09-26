@@ -130,7 +130,7 @@ export function Dropdown({
           items[prevIndex]?.focus();
           break;
         }
-        case "Home": {
+        case "House": {
           e.preventDefault();
           setActiveIndex(0);
           items[0]?.focus();

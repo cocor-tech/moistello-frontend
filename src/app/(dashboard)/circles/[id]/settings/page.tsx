@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
   Settings,
-  AlertTriangle,
+  TriangleAlert,
   Link2,
   Trash2,
   Shield,
@@ -350,7 +350,7 @@ export default function CircleSettingsPage() {
 
         <div className="glass rounded-2xl p-6 space-y-4" style={{ borderColor: "rgb(239 68 68 / 0.2)" }}>
           <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle className="h-5 w-5 text-red-400" />
+            <TriangleAlert className="h-5 w-5 text-red-400" />
             <h3 className="font-heading text-lg font-semibold text-red-400">
               Danger Zone
             </h3>

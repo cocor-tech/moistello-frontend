@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { X, CircleCheck, CircleAlert, TriangleAlert, Info } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/cn";
 
@@ -11,9 +11,9 @@ interface ToastProviderProps {
 }
 
 const typeIcons: Record<string, ReactNode> = {
-  success: <CheckCircle className="h-5 w-5" />,
-  error: <AlertCircle className="h-5 w-5" />,
-  warning: <AlertTriangle className="h-5 w-5" />,
+  success: <CircleCheck className="h-5 w-5" />,
+  error: <CircleAlert className="h-5 w-5" />,
+  warning: <TriangleAlert className="h-5 w-5" />,
   info: <Info className="h-5 w-5" />,
 };
 

@@ -4,11 +4,11 @@ import { memo, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Home,
+  House,
   PiggyBank,
   CircleDot,
-  ArrowUpCircle,
-  ArrowDownCircle,
+  CircleArrowUp,
+  CircleArrowDown,
   Award,
   Bell,
   Settings,
@@ -17,7 +17,7 @@ import {
   X,
   Sun,
   BookOpen,
-  HelpCircle,
+  CircleQuestionMark,
   LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -47,11 +47,11 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
   const menuRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
 
   const navLinks = useMemo(() => [
-    { label: t("nav.dashboard"), href: Routes.DASHBOARD, icon: <Home className="h-4 w-4" /> },
+    { label: t("nav.dashboard"), href: Routes.DASHBOARD, icon: <House className="h-4 w-4" /> },
     { label: t("nav.savings"), href: Routes.SAVINGS, icon: <PiggyBank className="h-4 w-4" /> },
     { label: t("nav.circles"), href: Routes.CIRCLES, icon: <CircleDot className="h-4 w-4" /> },
-    { label: t("nav.contributions"), href: Routes.CONTRIBUTIONS, icon: <ArrowUpCircle className="h-4 w-4" /> },
-    { label: t("nav.payouts"), href: Routes.PAYOUTS, icon: <ArrowDownCircle className="h-4 w-4" /> },
+    { label: t("nav.contributions"), href: Routes.CONTRIBUTIONS, icon: <CircleArrowUp className="h-4 w-4" /> },
+    { label: t("nav.payouts"), href: Routes.PAYOUTS, icon: <CircleArrowDown className="h-4 w-4" /> },
     { label: t("nav.communities"), href: Routes.COMMUNITIES, icon: <Award className="h-4 w-4" /> },
   ], [t]);
 
@@ -63,7 +63,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
 
   const docsLinks = useMemo(() => [
     { label: t("nav.documentation"), href: Routes.DOCS, icon: <BookOpen className="h-4 w-4" /> },
-    { label: t("nav.faqs"), href: Routes.FAQ, icon: <HelpCircle className="h-4 w-4" /> },
+    { label: t("nav.faqs"), href: Routes.FAQ, icon: <CircleQuestionMark className="h-4 w-4" /> },
     { label: t("nav.support"), href: Routes.SUPPORT, icon: <LifeBuoy className="h-4 w-4" /> },
   ], [t]);
 

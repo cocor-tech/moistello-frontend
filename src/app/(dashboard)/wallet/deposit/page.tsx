@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from "react"
 import Link from "next/link"
 import {
   ArrowLeft, Copy, Check,
-  ArrowDownCircle, Loader2, AlertCircle,
+  CircleArrowDown, LoaderCircle, CircleAlert,
   ExternalLink, Banknote, QrCode, Clock,
 } from "lucide-react"
 import { Button, ButtonLink } from "@/components/ui/button"
@@ -261,7 +261,7 @@ export default function DepositPage() {
 
           {errMsg && (
             <div role="alert" className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {errMsg}
             </div>
           )}
@@ -349,7 +349,7 @@ export default function DepositPage() {
 
           {errMsg && (
             <div role="alert" className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 rounded-lg px-4 py-3">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {errMsg}
             </div>
           )}
@@ -380,7 +380,7 @@ export default function DepositPage() {
               </p>
             </div>
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-amber-400" />
               Checking for incoming transfer...
             </div>
           </div>
@@ -405,7 +405,7 @@ export default function DepositPage() {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgb(var(--aurora-violet)/0.06)_0%,transparent_70%)] pointer-events-none" />
             <div className="relative z-10 space-y-4">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-aurora-violet/15">
-                <Loader2 className="h-8 w-8 animate-spin text-aurora-violet" />
+                <LoaderCircle className="h-8 w-8 animate-spin text-aurora-violet" />
               </div>
               <div>
                 <p className="font-heading text-xl font-bold text-foreground">Verifying Transaction</p>
@@ -442,7 +442,7 @@ export default function DepositPage() {
             <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
             <div className="relative z-10 space-y-4">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
-                <ArrowDownCircle className="h-8 w-8 text-emerald-400" />
+                <CircleArrowDown className="h-8 w-8 text-emerald-400" />
               </div>
               <div>
                 <p className="font-heading text-2xl font-bold gradient-text-extended">Deposit Complete</p>

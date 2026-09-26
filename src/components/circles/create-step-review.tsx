@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Check, AlertTriangle } from "lucide-react"
+import { Check, TriangleAlert } from "lucide-react"
 import type { CircleFormData } from "@/types"
 
 interface CreateStepReviewProps {
@@ -51,7 +51,7 @@ export function CreateStepReview({ formData, errors = {} }: CreateStepReviewProp
 
       {errors.submit && (
         <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400 font-body">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <TriangleAlert className="h-4 w-4 shrink-0" />
           {errors.submit}
         </div>
       )}

@@ -6,12 +6,12 @@ import {
   ArrowLeft,
   ThumbsDown,
   ThumbsUp,
-  MinusCircle,
+  CircleMinus,
   Clock,
-  CheckCircle2,
-  AlertCircle,
+  CircleCheckBig,
+  CircleAlert,
   ShieldCheck,
-  Code2,
+  CodeXml,
   User,
   Vote,
 } from "lucide-react"
@@ -82,7 +82,7 @@ export default function ProposalDetailPage() {
   if (!proposal) {
     return (
       <div className="border border-white/10 rounded-2xl p-12 text-center space-y-4">
-        <AlertCircle className="h-10 w-10 text-red-400 mx-auto" />
+        <CircleAlert className="h-10 w-10 text-red-400 mx-auto" />
         <h3 className="text-lg font-bold text-foreground">Proposal Not Found</h3>
         <p className="text-xs text-muted-foreground">The proposal #{id} could not be retrieved.</p>
         <ButtonLink href="/governance" variant="outline" size="sm">Back to Governance</ButtonLink>
@@ -163,7 +163,7 @@ export default function ProposalDetailPage() {
           {/* User Voting Status */}
           {userVoted ? (
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <CircleCheckBig className="h-4 w-4 shrink-0" />
               <span>You voted <strong>{userVoted}</strong> on this proposal.</span>
             </div>
           ) : proposal.status === "active" ? (
@@ -191,7 +191,7 @@ export default function ProposalDetailPage() {
                 </Button>
                 <Button
                   onClick={() => openVoteModal("abstain")}
-                  leftIcon={<MinusCircle className="h-4 w-4" />}
+                  leftIcon={<CircleMinus className="h-4 w-4" />}
                   variant="outline"
                   data-testid="vote-abstain-button"
                 >
@@ -207,7 +207,7 @@ export default function ProposalDetailPage() {
           {proposal.executionPayload && (
             <div className="border-t border-white/10 pt-4 space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                <Code2 className="h-4 w-4 text-aurora-cyan" />
+                <CodeXml className="h-4 w-4 text-aurora-cyan" />
                 Execution Payload
               </div>
               <pre className="bg-white/5 border border-white/10 rounded-xl p-4 text-xs font-mono text-foreground overflow-x-auto">

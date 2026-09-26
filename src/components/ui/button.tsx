@@ -2,7 +2,7 @@
 
 import React, { forwardRef } from "react";
 import Link, { type LinkProps } from "next/link";
-import { Loader2 } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const variantClasses = {
@@ -124,7 +124,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading && (
-          <Loader2
+          <LoaderCircle
             className={cn(
               "animate-spin gradient-text-extended shrink-0",
               size === "xs" ? "h-3 w-3" : size === "sm" ? "h-3.5 w-3.5" : size === "lg" ? "h-5 w-5" : size === "xl" ? "h-6 w-6" : "h-4 w-4",

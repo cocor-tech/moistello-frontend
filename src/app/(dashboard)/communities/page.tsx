@@ -99,7 +99,7 @@ export default function CommunitiesPage() {
         }
       />
 
-      {/* Search + Filter */}
+      {/* Search + ListFilter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 flex gap-2">
           <Input

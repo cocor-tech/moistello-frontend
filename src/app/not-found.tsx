@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, Home, Search } from "lucide-react"
+import { ArrowLeft, House, Search } from "lucide-react"
 import { notFound } from "next/navigation"
 
 export default function NotFound() {
@@ -34,7 +34,7 @@ export default function NotFound() {
           </div>
           <nav className="mt-10 flex flex-wrap gap-x-7 gap-y-4 border-t border-dashed border-border pt-6">
             <Link href="/" className="group inline-flex items-center gap-2 font-heading text-foreground">
-              <Home className="h-4 w-4 text-aurora-violet" />
+              <House className="h-4 w-4 text-aurora-violet" />
               <span className="border-b border-transparent group-hover:border-aurora-violet">Go home</span>
             </Link>
             <Link href="/docs" className="group inline-flex items-center gap-2 font-heading text-muted-foreground hover:text-foreground">

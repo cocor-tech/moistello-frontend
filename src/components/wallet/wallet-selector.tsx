@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger"
 import { useState } from "react"
-import { Wallet, X, Loader2, QrCode } from "lucide-react"
+import { Wallet, X, LoaderCircle, QrCode } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { useMultiWalletStore } from "@/stores/multi-wallet-store"
 import { useWalletConnectStore } from "@/stores/walletconnect-store"
@@ -171,7 +171,7 @@ function InlineWalletSelector({ className, ...s }: WalletSelectorProps & WalletS
               {s.isConnecting ? (
                 <>
                   <span className="absolute inset-0 animate-shimmer" />
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
                   Connecting...
                 </>
               ) : (

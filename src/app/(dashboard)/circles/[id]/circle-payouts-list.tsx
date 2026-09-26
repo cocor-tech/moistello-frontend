@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { ChevronRight, CheckCircle, AlertCircle } from "lucide-react"
+import { ChevronRight, CircleCheck, CircleAlert } from "lucide-react"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatCurrency, formatDate } from "@/lib/formatters"
@@ -50,7 +50,7 @@ export function CirclePayoutsList({
         </div>
       ) : isError ? (
         <EmptyState
-          icon={<AlertCircle className="h-6 w-6" />}
+          icon={<CircleAlert className="h-6 w-6" />}
           title="Failed to load payouts"
           description="The recent payout history could not be loaded right now."
         />
@@ -73,7 +73,7 @@ export function CirclePayoutsList({
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-                    <CheckCircle className="h-4 w-4" />
+                    <CircleCheck className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground dark:text-white font-heading">

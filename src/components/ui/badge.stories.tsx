@@ -37,7 +37,7 @@ export const Premium: Story = { args: { variant: "premium", children: "Premium C
 
 export const Info: Story = { args: { variant: "info", children: "New" } };
 
-export const Outline: Story = { args: { variant: "outline", children: "Filter" } };
+export const Outline: Story = { args: { variant: "outline", children: "ListFilter" } };
 
 export const Sizes: Story = {
   render: (args) => (

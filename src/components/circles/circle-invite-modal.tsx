@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger"
 import { useState, useEffect, useCallback } from "react";
-import { Clock, Users, Link2, AlertCircle, RefreshCw } from "lucide-react";
+import { Clock, Users, Link2, CircleAlert, RefreshCw } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,7 +196,7 @@ export function CircleInviteModal({
           ) : fetchError ? (
             <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                <CircleAlert className="h-4 w-4 shrink-0 text-red-500" />
                 <span>{fetchError}</span>
               </div>
               <Button variant="ghost" size="sm" onClick={fetchInvites} className="text-xs text-red-700 hover:text-red-900">

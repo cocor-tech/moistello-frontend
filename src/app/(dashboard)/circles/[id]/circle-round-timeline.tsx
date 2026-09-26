@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { CheckCircle } from "lucide-react"
+import { CircleCheck } from "lucide-react"
 import { cn } from "@/lib/cn"
 import type { Circle } from "@/types"
 
@@ -36,7 +36,7 @@ export function CircleRoundTimeline({ circle }: CircleRoundTimelineProps) {
                       isUpcoming && "glass text-muted-foreground",
                     )}
                   >
-                    {isCompleted ? <CheckCircle className="h-5 w-5" /> : roundNum}
+                    {isCompleted ? <CircleCheck className="h-5 w-5" /> : roundNum}
                   </motion.div>
                   <span className="mt-1.5 text-xs text-muted-foreground font-body">
                     {isCurrent ? "Current" : `R${roundNum}`}

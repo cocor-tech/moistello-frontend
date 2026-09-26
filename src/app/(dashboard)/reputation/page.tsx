@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { AlertCircle, Award, Sparkles } from "lucide-react"
+import { CircleAlert, Award, Sparkles } from "lucide-react"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MoiScoreGauge } from "@/components/reputation/moi-score-gauge"
@@ -35,7 +35,7 @@ export default function ReputationPage() {
   if (isError) {
     return (
       <EmptyState
-        icon={<AlertCircle />}
+        icon={<CircleAlert />}
         title="Failed to load reputation"
         description="Something went wrong. Please try again later."
         className="border border-red-400/20"

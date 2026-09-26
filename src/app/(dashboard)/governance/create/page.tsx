@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { FileCode2, Send, ArrowLeft, AlertCircle } from "lucide-react"
+import { FileCode, Send, ArrowLeft, CircleAlert } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useCreateProposal } from "@/hooks/use-governance"
@@ -160,7 +160,7 @@ export default function CreateProposalPage() {
             className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400"
             role="alert"
           >
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <CircleAlert className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -172,7 +172,7 @@ export default function CreateProposalPage() {
             size="lg"
             isLoading={createProposal.isPending}
             leftIcon={<Send className="h-4 w-4" />}
-            rightIcon={<FileCode2 className="h-4 w-4" />}
+            rightIcon={<FileCode className="h-4 w-4" />}
             data-testid="submit-proposal-button"
           >
             Submit Proposal

@@ -42,10 +42,10 @@ export function LocaleSwitcher() {
   };
 
   const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    if (!["ArrowDown", "ArrowUp", "House", "End"].includes(event.key)) return;
     event.preventDefault();
     const currentIndex = LANGUAGES.findIndex((language) => language.value === locale);
-    const nextIndex = event.key === "Home"
+    const nextIndex = event.key === "House"
       ? 0
       : event.key === "End"
         ? LANGUAGES.length - 1
@@ -63,10 +63,10 @@ export function LocaleSwitcher() {
       triggerRef.current?.focus();
       return;
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    if (!["ArrowDown", "ArrowUp", "House", "End"].includes(event.key)) return;
     event.preventDefault();
     const currentIndex = LANGUAGES.findIndex((language) => language.value === value);
-    const nextIndex = event.key === "Home"
+    const nextIndex = event.key === "House"
       ? 0
       : event.key === "End"
         ? LANGUAGES.length - 1

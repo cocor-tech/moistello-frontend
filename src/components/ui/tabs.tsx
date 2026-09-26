@@ -94,14 +94,14 @@ export function TabsTrigger({
   const isActive = activeValue === value;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+    if (!["ArrowRight", "ArrowLeft", "House", "End"].includes(event.key)) return;
     const tabs = Array.from(
       event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]') || [],
     );
     if (tabs.length === 0) return;
     event.preventDefault();
     const currentIndex = tabs.indexOf(event.currentTarget);
-    const nextIndex = event.key === "Home"
+    const nextIndex = event.key === "House"
       ? 0
       : event.key === "End"
         ? tabs.length - 1

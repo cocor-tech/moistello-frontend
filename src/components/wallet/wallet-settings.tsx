@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Trash2, AlertTriangle, Copy, CheckCircle, RefreshCw, Edit3, X } from "lucide-react"
+import { Trash2, TriangleAlert, Copy, CircleCheck, RefreshCw, Pencil, X } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { formatAddress } from "@/lib/formatters"
 import { Button } from "@/components/ui/button"
@@ -106,7 +106,7 @@ export function WalletSettings() {
                               onClick={() => saveAlias(id, renameValue)}
                               className="text-emerald-400"
                             >
-                              <CheckCircle className="h-3.5 w-3.5" />
+                              <CircleCheck className="h-3.5 w-3.5" />
                             </button>
                             <button type="button" aria-label="Cancel editing wallet nickname" onClick={() => setRenamingId(null)} className="text-red-400">
                               <X className="h-3.5 w-3.5" />
@@ -124,7 +124,7 @@ export function WalletSettings() {
                               }}
                               className="text-muted-foreground hover:text-foreground transition-colors"
                             >
-                              <Edit3 className="h-3 w-3" />
+                              <Pencil className="h-3 w-3" />
                             </button>
                           </>
                         )}
@@ -137,7 +137,7 @@ export function WalletSettings() {
                       >
                         {formatAddress(w.publicKey)}
                         {copiedKey === w.publicKey ? (
-                          <CheckCircle className="h-3 w-3 text-emerald-400" />
+                          <CircleCheck className="h-3 w-3 text-emerald-400" />
                         ) : (
                           <Copy className="h-3 w-3" />
                         )}
@@ -228,7 +228,7 @@ export function WalletSettings() {
       {/* Danger Zone */}
       <div className="glass rounded-2xl p-6 border border-red-500/20">
         <div className="flex items-start gap-3 mb-4">
-          <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+          <TriangleAlert className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-heading text-sm text-red-400">Danger Zone</h3>
             <p className="text-xs text-muted-foreground mt-1">

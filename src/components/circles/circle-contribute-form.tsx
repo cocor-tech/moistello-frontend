@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DollarSign, AlertTriangle } from "lucide-react";
+import { DollarSign, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/formatters";
@@ -128,7 +128,7 @@ export function CircleContributeForm({
 
           {error && (
             <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-800">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <TriangleAlert className="h-4 w-4 shrink-0" />
               {error}
             </div>
           )}

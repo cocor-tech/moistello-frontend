@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { DollarSign, Clock, AlertTriangle } from "lucide-react"
+import { DollarSign, Clock, TriangleAlert } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/cn"
 import type { CircleFormData, Frequency, Currency } from "@/types"
@@ -38,7 +38,7 @@ export function CreateStepFinancials({ formData, setFormData, errors }: CreateSt
 
       {belowMin && (
         <div className="flex items-start gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <TriangleAlert className="h-4 w-4 shrink-0 mt-0.5" />
           <span>Premium circles require minimum <strong>{minContribution} {formData.currency}</strong> contribution.</span>
         </div>
       )}

@@ -123,7 +123,7 @@ export default function ApiDocsPage() {
             className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-foreground glass-whisper hover:glass transition-colors"
           >
             <BookOpen className="h-4 w-4" />
-            Docs Home
+            Docs House
           </Link>
         </div>
         <div className="rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 p-6 min-h-[600px]">

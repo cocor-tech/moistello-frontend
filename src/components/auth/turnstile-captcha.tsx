@@ -3,7 +3,7 @@
 import { logger } from "@/lib/logger"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { cn } from "@/lib/cn"
-import { Loader2, Check, X } from "lucide-react"
+import { LoaderCircle, Check, X } from "lucide-react"
 
 const MAX_RETRIES = 3
 
@@ -151,7 +151,7 @@ export function TurnstileCaptcha({ onVerify, onError, className }: TurnstileCapt
     <div className={cn("flex flex-col items-center gap-2", className)}>
       {state === "loading" && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground" role="status" aria-live="polite">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
           Loading verification...
         </div>
       )}

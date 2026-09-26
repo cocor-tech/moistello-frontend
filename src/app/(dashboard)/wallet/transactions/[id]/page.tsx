@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, ArrowUpCircle, ArrowDownCircle, Copy, Check, ExternalLink } from "lucide-react"
+import { ArrowLeft, CircleArrowUp, CircleArrowDown, Copy, Check, ExternalLink } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -113,7 +113,7 @@ export default function TransactionDetailPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Transaction" />
-        <EmptyState icon={<ArrowUpCircle className="h-6 w-6" />} title="Transaction not found" description="This transaction does not exist." />
+        <EmptyState icon={<CircleArrowUp className="h-6 w-6" />} title="Transaction not found" description="This transaction does not exist." />
       </div>
     )
   }
@@ -139,7 +139,7 @@ export default function TransactionDetailPage() {
           "inline-flex h-14 w-14 items-center justify-center rounded-full",
           tx.type === "received" ? "bg-emerald-500/15 text-emerald-400" : "bg-aurora-violet/15 text-aurora-violet",
         )}>
-          {tx.type === "received" ? <ArrowDownCircle className="h-7 w-7" /> : <ArrowUpCircle className="h-7 w-7" />}
+          {tx.type === "received" ? <CircleArrowDown className="h-7 w-7" /> : <CircleArrowUp className="h-7 w-7" />}
         </div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{tx.type === "received" ? "Received" : "Sent"}</p>
         <p className={cn("text-4xl font-bold font-heading", tx.type === "received" ? "text-emerald-400" : "text-foreground")}>

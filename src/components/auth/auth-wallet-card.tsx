@@ -1,6 +1,6 @@
 "use client"
 
-import { Loader2 } from "lucide-react"
+import { LoaderCircle } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 interface WalletInfo {
@@ -46,7 +46,7 @@ export function AuthWalletCard({
     >
       {state === "connecting" && (
         <div className="absolute inset-0 rounded-2xl bg-background/80 flex items-center justify-center z-10">
-          <Loader2 className="h-5 w-5 animate-spin text-aurora-violet" />
+          <LoaderCircle className="h-5 w-5 animate-spin text-aurora-violet" />
         </div>
       )}
 

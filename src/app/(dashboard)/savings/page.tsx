@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wallet, AlertCircle } from "lucide-react";
+import { Wallet, CircleAlert } from "lucide-react";
 
 export default function SavingsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function SavingsPage() {
   if (isError) {
     return (
       <EmptyState
-        icon={<AlertCircle />}
+        icon={<CircleAlert />}
         title="Failed to load savings"
         description="Could not retrieve your savings goals and vaults."
         action={{

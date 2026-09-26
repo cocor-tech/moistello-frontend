@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { TrendingUp, BarChart3 } from 'lucide-react'
+import { TrendingUp, ChartColumn } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import type { Contribution } from '@/types'
 
@@ -76,7 +76,7 @@ export function ContributionHistoryChart({
           <h3 className="font-heading text-sm font-semibold text-foreground">Contribution History</h3>
         </div>
         <div className="py-10 text-center space-y-2">
-          <BarChart3 className="h-8 w-8 text-muted-foreground mx-auto" />
+          <ChartColumn className="h-8 w-8 text-muted-foreground mx-auto" />
           <p className="text-xs text-muted-foreground font-body">No contributions yet</p>
           <p className="text-2xs text-muted-foreground">Your history will appear after your first contribution</p>
         </div>

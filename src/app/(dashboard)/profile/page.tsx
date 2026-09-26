@@ -13,7 +13,7 @@ import {
   Link as LinkIcon,
   CircleDot,
   Trophy,
-  ArrowUpCircle,
+  CircleArrowUp,
   Globe,
   PiggyBank,
 } from "lucide-react"
@@ -210,7 +210,7 @@ export default function ProfilePage() {
           {[
             { label: "Circles Joined", value: "0", icon: CircleDot },
             { label: "Circles Completed", value: "0", icon: Trophy },
-            { label: "Total Contributed", value: "$0", icon: ArrowUpCircle },
+            { label: "Total Contributed", value: "$0", icon: CircleArrowUp },
           ].map((stat) => (
             <div
               key={stat.label}

@@ -1,6 +1,6 @@
 "use client"
 
-import { QrCode, AlertCircle, Loader2, RefreshCw, X } from "lucide-react"
+import { QrCode, CircleAlert, LoaderCircle, RefreshCw, X } from "lucide-react"
 import { cn } from "@/lib/cn"
 import dynamic from "next/dynamic"
 import { useEffect, useState, useCallback } from "react"
@@ -82,7 +82,7 @@ export function AuthConnectionState({
     return (
       <div className={cn("text-center space-y-4 py-4", className)}>
         <div className="w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center mx-auto">
-          <AlertCircle className="h-6 w-6 text-red-400" />
+          <CircleAlert className="h-6 w-6 text-red-400" />
         </div>
         <h3 className="font-heading text-lg text-red-400">Connection Failed</h3>
         <p className="text-sm text-muted-foreground">{error}</p>
@@ -111,7 +111,7 @@ export function AuthConnectionState({
   if (!pairingUri) {
     return (
       <div className={cn("text-center py-8", className)}>
-        <Loader2 className="h-8 w-8 animate-spin mx-auto text-aurora-violet mb-4" />
+        <LoaderCircle className="h-8 w-8 animate-spin mx-auto text-aurora-violet mb-4" />
         <p className="text-sm text-muted-foreground">{getStatusText()}</p>
       </div>
     )

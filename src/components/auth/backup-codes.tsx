@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Check, Copy, Download } from "lucide-react"
+import { TriangleAlert, Check, Copy, Download } from "lucide-react"
 import { copyToClipboard } from "@/lib/clipboard"
 import { Button } from "@/components/ui/button"
 
@@ -41,7 +41,7 @@ export function BackupCodes({ codes, onAcknowledged }: BackupCodesProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
-        <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <TriangleAlert className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-heading font-semibold text-amber-400">
             Save Your Backup Codes

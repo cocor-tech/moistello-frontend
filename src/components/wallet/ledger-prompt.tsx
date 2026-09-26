@@ -6,9 +6,9 @@ import { useFocusTrap } from "@/hooks/use-focus-trap";
 import {
   Usb,
   Bluetooth,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
+  CircleCheck,
+  CircleAlert,
+  LoaderCircle,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
@@ -280,7 +280,7 @@ export function LedgerPrompt({
             <div className="text-center mb-6" role="status" aria-live="polite">
               {isError ? (
                 <div className="flex items-start gap-2 text-sm text-red-400 bg-red-400/5 rounded-xl p-3">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <CircleAlert className="h-4 w-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               ) : currentStep === "connected" ? (
@@ -289,7 +289,7 @@ export function LedgerPrompt({
                   animate={{ scale: 1, opacity: 1 }}
                   className="text-center"
                 >
-                  <CheckCircle className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
+                  <CircleCheck className="h-10 w-10 text-emerald-400 mx-auto mb-2" />
                   <p className="font-heading text-lg gradient-text">
                     Connected!
                   </p>
@@ -310,7 +310,7 @@ export function LedgerPrompt({
                   <p className="text-sm text-muted-foreground">
                     {getStepMessage(currentStep, transportType)}
                     {isConnecting && (
-                      <Loader2 className="inline h-3 w-3 animate-spin ml-1" />
+                      <LoaderCircle className="inline h-3 w-3 animate-spin ml-1" />
                     )}
                   </p>
                   {currentStep === "detect" && transportType === "webusb" && (

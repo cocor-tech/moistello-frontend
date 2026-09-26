@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, BellOff, ArchiveRestore, SquareCheck, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, TriangleAlert, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -18,7 +18,7 @@ const iconMap: Record<string, React.ReactNode> = {
   circle_joined: <UserPlus className="h-4 w-4" />,
   circle_completed: <CheckCheck className="h-4 w-4" />,
   system: <Info className="h-4 w-4" />,
-  warning: <AlertTriangle className="h-4 w-4" />,
+  warning: <TriangleAlert className="h-4 w-4" />,
   penalty: <Shield className="h-4 w-4" />,
 };
 
@@ -146,7 +146,7 @@ export default function NotificationsArchivePage() {
               className="shrink-0 rounded text-muted-foreground hover:text-foreground"
             >
               {allSelected ? (
-                <CheckSquare className="h-4 w-4 text-aurora-violet" />
+                <SquareCheck className="h-4 w-4 text-aurora-violet" />
               ) : (
                 <Square className="h-4 w-4" />
               )}
@@ -174,7 +174,7 @@ export default function NotificationsArchivePage() {
                     className="shrink-0 rounded text-muted-foreground hover:text-foreground"
                   >
                     {selected ? (
-                      <CheckSquare className="h-4 w-4 text-aurora-violet" />
+                      <SquareCheck className="h-4 w-4 text-aurora-violet" />
                     ) : (
                       <Square className="h-4 w-4" />
                     )}

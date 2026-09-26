@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuthStore } from "@/stores/auth-store"
-import { AlertTriangle, LogOut } from "lucide-react"
+import { TriangleAlert, LogOut } from "lucide-react"
 
 export function SessionTimeoutBanner() {
   const tokenExpiresAt = useAuthStore((s) => s.tokenExpiresAt)
@@ -46,7 +46,7 @@ export function SessionTimeoutBanner() {
       className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400"
       role="status"
     >
-      <AlertTriangle className="h-4 w-4 shrink-0" />
+      <TriangleAlert className="h-4 w-4 shrink-0" />
       <span>
         Session expires in {minutes}:{String(seconds).padStart(2, "0")}
       </span>

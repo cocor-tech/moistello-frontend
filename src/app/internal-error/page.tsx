@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Activity, ExternalLink, Home, RefreshCw } from "lucide-react"
+import { Activity, ExternalLink, House, RefreshCw } from "lucide-react"
 
 export default function InternalError() {
   return (
@@ -49,8 +49,8 @@ export default function InternalError() {
               System status
             </Link>
             <Link href="/" className="inline-flex items-center justify-center gap-2 px-5 py-3 font-heading text-muted-foreground hover:text-foreground">
-              <Home className="h-4 w-4" />
-              Home
+              <House className="h-4 w-4" />
+              House
             </Link>
           </div>
         </div>

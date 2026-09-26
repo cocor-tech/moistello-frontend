@@ -1,6 +1,6 @@
 import type { FormEvent } from "react"
 import { motion } from "framer-motion"
-import { AlertCircle } from "lucide-react"
+import { CircleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -62,7 +62,7 @@ export function UploadLogin({
           />
           {loginError && (
             <div id="upload-login-error" className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-2 text-sm text-red-400" role="alert" aria-live="assertive">
-              <AlertCircle className="h-4 w-4" aria-hidden="true" />
+              <CircleAlert className="h-4 w-4" aria-hidden="true" />
               {loginError}
             </div>
           )}

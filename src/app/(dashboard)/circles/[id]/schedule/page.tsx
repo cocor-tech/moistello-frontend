@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Clock, Inbox, CheckCircle, Circle } from "lucide-react"
+import { ArrowLeft, Clock, Inbox, CircleCheck, Circle } from "lucide-react"
 import { useCircle, useCircleRounds } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -109,7 +109,7 @@ export default function SchedulePage() {
           >
             <div className="flex items-center gap-3">
               {s.isPast ? (
-                <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+                <CircleCheck className="h-5 w-5 text-emerald-400 shrink-0" />
               ) : s.isCurrent ? (
                 <Clock className="h-5 w-5 text-amber-400 shrink-0 animate-pulse" />
               ) : (

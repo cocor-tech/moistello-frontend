@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, RefreshCw } from "lucide-react"
+import { CircleAlert, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/cn"
 import type { AuthErrorCode } from "@/stores/auth-flow-store"
 
@@ -39,7 +39,7 @@ export function ErrorDisplay({
       )}
       role="alert"
     >
-      <AlertCircle className="h-5 w-5 shrink-0 mt-0.5 text-red-400" />
+      <CircleAlert className="h-5 w-5 shrink-0 mt-0.5 text-red-400" />
 
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm font-medium text-red-400">

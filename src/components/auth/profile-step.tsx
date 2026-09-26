@@ -154,10 +154,10 @@ export function ProfileStep({
       handleTab(event)
       return
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    if (!["ArrowDown", "ArrowUp", "House", "End"].includes(event.key)) return
     event.preventDefault()
     const currentIndex = LANGUAGES.indexOf(language)
-    const nextIndex = event.key === "Home"
+    const nextIndex = event.key === "House"
       ? 0
       : event.key === "End"
         ? LANGUAGES.length - 1
@@ -186,10 +186,10 @@ export function ProfileStep({
       selectLanguage(value)
       return
     }
-    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+    if (!["ArrowDown", "ArrowUp", "House", "End"].includes(event.key)) return
     event.preventDefault()
     const currentIndex = LANGUAGES.indexOf(value)
-    const nextIndex = event.key === "Home"
+    const nextIndex = event.key === "House"
       ? 0
       : event.key === "End"
         ? LANGUAGES.length - 1

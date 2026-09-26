@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { Check, CheckCircle } from "lucide-react"
+import { Check, CircleCheck } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 type Variant = "default" | "auth" | "compact"
@@ -91,7 +91,7 @@ export function CreateStepIndicator({ currentStep, steps, variant = "default", c
               <div className="flex flex-col items-center">
                 <div className={buildCircleClasses(variant, isCompleted, isCurrent)}>
                   {isCompleted ? (
-                    variant === "auth" ? <CheckCircle className="h-4 w-4" /> : <Check className="h-4 w-4" />
+                    variant === "auth" ? <CircleCheck className="h-4 w-4" /> : <Check className="h-4 w-4" />
                   ) : (
                     step.number ?? stepNumber
                   )}
