@@ -32,7 +32,7 @@ const require = createRequire(import.meta.url)
 const webpack = require("webpack")
 
 /**
- * The three flat-file dev-auth routes are replaced with a 404 stub at
+ * The flat-file dev-auth routes are replaced with a 404 stub at
  * build time when NODE_ENV === "production". This ensures they are physically
  * absent from the production bundle — the runtime blockInProduction() check
  * alone is insufficient because the route module (and its `fs` imports) would
@@ -42,11 +42,17 @@ const webpack = require("webpack")
  *
  * The stub (src/lib/security/dev-route-stub.ts) exports a minimal 404
  * handler that is Next.js App Router-compatible and has zero node:fs imports.
+ *
+ * Both halves of the two-phase upload (`/api/upload` and
+ * `/api/upload/finalize`) must be listed: the finalize handler reaches the
+ * same `fs` staging code through `../staging`, so leaving it out would ship
+ * that module to production.
  */
 const DEV_ONLY_ROUTES = [
   /src[/\\]app[/\\]api[/\\]auth[/\\]login[/\\]route\.[jt]s$/,
   /src[/\\]app[/\\]api[/\\]auth[/\\]setup[/\\]route\.[jt]s$/,
   /src[/\\]app[/\\]api[/\\]upload[/\\]route\.[jt]s$/,
+  /src[/\\]app[/\\]api[/\\]upload[/\\]finalize[/\\]route\.[jt]s$/,
 ]
 
 const stubPath = path.resolve(__dirname, "src/lib/security/dev-route-stub.ts")
