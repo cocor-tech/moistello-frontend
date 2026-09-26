@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useMemo } from "react"
-import { useParams } from "next/navigation"
+import React, { useMemo, useCallback } from "react"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, TrendingUp, DollarSign, Users, Clock, Activity, Zap, Inbox } from "lucide-react"
 import { useCircle, useCircleMembers, useCircleRounds } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
@@ -10,6 +10,13 @@ import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatCurrency } from "@/lib/formatters"
+import {
+  DateRangePicker,
+  paramsToDateRange,
+  dateRangeToParams,
+  filterByDateRange,
+  type DateRange,
+} from "@/components/shared/date-range-picker"
 
 function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; label: string; value: string; sub?: string; color: string }) {
   return (
@@ -41,23 +48,38 @@ function MiniBar({ label, value, max, color }: { label: string; value: number; m
 
 export default function AnalyticsPage() {
   const params = useParams()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const circleId = params.id as string
 
   const { data: circle, isLoading: cLoading } = useCircle(circleId)
   const { data: members = [], isLoading: mLoading } = useCircleMembers(circleId)
   const { data: rounds = [], isLoading: rLoading } = useCircleRounds(circleId)
 
+  const dateRange = useMemo(() => paramsToDateRange(searchParams), [searchParams])
+
+  const handleDateRangeChange = useCallback((range: DateRange) => {
+    const p = dateRangeToParams(range)
+    const sp = new URLSearchParams(p)
+    router.replace(`?${sp.toString()}`, { scroll: false })
+  }, [router])
+
   const stats = useMemo(() => {
     const allContribs = rounds.flatMap((r) => r.contributions)
-    const totalContributions = allContribs.reduce((s, c) => s + c.amount, 0)
-    const completedRounds = Array.from(new Set(allContribs.filter((c) => c.status === "confirmed" || c.onTime).map((c) => c.roundNumber))).length
-    const uniqueContributors = Array.from(new Set(allContribs.map((c) => c.userId))).length
-    const onTimeCount = allContribs.filter((c) => c.onTime).length
-    const onTimeRate = allContribs.length > 0 ? Math.round((onTimeCount / allContribs.length) * 100) : 0
+    const filteredContribs = filterByDateRange(
+      allContribs,
+      dateRange,
+      (c) => c.createdAt ?? c.paidAt,
+    )
+    const totalContributions = filteredContribs.reduce((s, c) => s + c.amount, 0)
+    const completedRounds = Array.from(new Set(filteredContribs.filter((c) => c.status === "confirmed" || c.onTime).map((c) => c.roundNumber))).length
+    const uniqueContributors = Array.from(new Set(filteredContribs.map((c) => c.userId))).length
+    const onTimeCount = filteredContribs.filter((c) => c.onTime).length
+    const onTimeRate = filteredContribs.length > 0 ? Math.round((onTimeCount / filteredContribs.length) * 100) : 0
     const activeMemberCount = members.filter((m) => m.status === "active").length
 
     const memberContributionMap = new Map<string, number>()
-    for (const c of allContribs) {
+    for (const c of filteredContribs) {
       memberContributionMap.set(c.userId, (memberContributionMap.get(c.userId) ?? 0) + c.amount)
     }
     const topContributors = Array.from(memberContributionMap.entries())
@@ -66,7 +88,7 @@ export default function AnalyticsPage() {
       .map(([userId, amount]) => ({ userId, amount }))
 
     return { totalContributions, completedRounds, uniqueContributors, onTimeCount, onTimeRate, activeMemberCount, topContributors, totalRounds: rounds.length }
-  }, [members, rounds])
+  }, [members, rounds, dateRange])
 
   if (cLoading || mLoading || rLoading) {
     return (
@@ -87,7 +109,12 @@ export default function AnalyticsPage() {
         title="Analytics"
         description={`Performance metrics for ${circle.name}`}
         breadcrumbs={[{ label: "Circles", href: "/circles" }, { label: circle.name, href: `/circles/${circleId}` }, { label: "Analytics" }]}
-        action={<ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</ButtonLink>}
+        action={
+          <div className="flex items-center gap-2">
+            <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
+            <ButtonLink href={`/circles/${circleId}`} variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</ButtonLink>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

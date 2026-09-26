@@ -18,11 +18,33 @@ export function useFocusTrap<T extends HTMLElement>(
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
+  // Capture trigger element synchronously during render, before React commits
+  // DOM changes. This is more reliable than reading document.activeElement
+  // inside useEffect, which runs after render and may find focus already moved.
+  const prevIsOpen = useRef(isOpen);
+  if (isOpen && !prevIsOpen.current) {
+    triggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
+  prevIsOpen.current = isOpen;
+
+  const restoreFocus = () => {
+    const trigger = triggerRef.current;
+    if (trigger && trigger.isConnected) {
+      trigger.focus();
+    }
+    triggerRef.current = null;
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
-    triggerRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Fallback: if the render-phase capture missed the trigger (e.g. the
+    // component mounted with isOpen=true), capture it now.
+    if (!triggerRef.current) {
+      triggerRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
 
     const getFocusableElements = () =>
       Array.from(
@@ -107,7 +129,7 @@ export function useFocusTrap<T extends HTMLElement>(
       document.removeEventListener("keydown", handleKeyDown);
       observer?.disconnect();
       if (retryTimer) clearTimeout(retryTimer);
-      triggerRef.current?.focus();
+      restoreFocus();
     };
   }, [isOpen]);
 
