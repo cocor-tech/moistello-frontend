@@ -15,7 +15,20 @@ interface PayoutTimelineChartProps {
  */
 export function PayoutTimelineChart({ payouts }: PayoutTimelineChartProps) {
   const [isClient, setIsClient] = useState(false)
+  const [containerWidth, setContainerWidth] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
   useEffect(() => { setIsClient(true) }, [])
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   const chartData = useMemo(() => {
     const map = new Map<string, { amount: number; count: number; payouts: Payout[] }>()
@@ -78,13 +91,15 @@ export function PayoutTimelineChart({ payouts }: PayoutTimelineChartProps) {
     )
   }
 
-  // Timeline visualization using SVG
+  // Responsive chart dimensions
   const height = 120
-  const width = 600
-  const padding = { top: 8, right: 8, bottom: 24, left: 8 }
-  const chartWidth = width - padding.left - padding.right
+  const padding = { top: 8, right: 8, bottom: 28, left: 8 }
   const chartHeight = height - padding.top - padding.bottom
-  const pointSpacing = chartWidth / Math.max(chartData.length - 1, 1)
+
+  // Calculate dimensions based on container width
+  const effectiveWidth = containerWidth > 0 ? containerWidth : 600
+  const chartWidth = effectiveWidth - padding.left - padding.right
+  const pointSpacing = chartData.length > 1 ? chartWidth / (chartData.length - 1) : chartWidth
   const maxAmount = Math.max(...chartData.map((d) => d.amount), 1)
 
   const points = chartData
@@ -95,17 +110,23 @@ export function PayoutTimelineChart({ payouts }: PayoutTimelineChartProps) {
     })
     .join(' ')
 
-  const areaPoints = `${padding.left},${height - padding.bottom} ${points} ${width - padding.right},${height - padding.bottom}`
+  const areaPoints = `${padding.left},${height - padding.bottom} ${points} ${effectiveWidth - padding.right},${height - padding.bottom}`
+
+  // Determine label frequency for readability
+  const labelStep = chartData.length <= 4 ? 1 : Math.ceil(chartData.length / 4)
 
   return (
-    <div className="glass rounded-2xl p-5 holo-border">
+    <div 
+      ref={containerRef}
+      className="glass rounded-2xl p-5 holo-border min-w-0"
+    >
       <div className="flex items-center gap-2 mb-4">
         <Calendar className="h-4 w-4 text-emerald-400" />
         <h3 className="font-heading text-sm font-semibold text-foreground">Payout Timeline</h3>
       </div>
 
-      <div className="depth-4 rounded-xl bg-white/[0.02] p-3">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ minHeight: `${height}px` }}>
+      <div className="depth-4 rounded-xl bg-white/[0.02] p-3 overflow-x-auto">
+        <svg viewBox={`0 0 ${effectiveWidth} ${height}`} className="w-full h-auto" style={{ minWidth: '100%', minHeight: `${height}px` }}>
           {/* Area fill */}
           <defs>
             <linearGradient id="payoutGradient" x1="0" y1="0" x2="0" y2="1">
@@ -136,16 +157,16 @@ export function PayoutTimelineChart({ payouts }: PayoutTimelineChartProps) {
             )
           })}
 
-          {/* X-axis labels (show every 5 payouts or key dates) */}
+          {/* X-axis labels */}
           {chartData.map((item, idx) => {
-            const showLabel = idx === 0 || idx === chartData.length - 1 || idx % Math.ceil(chartData.length / 4) === 0
+            const showLabel = idx === 0 || idx === chartData.length - 1 || idx % labelStep === 0
             if (showLabel) {
               const x = padding.left + idx * pointSpacing
               return (
                 <text
                   key={`label-${idx}`}
                   x={x}
-                  y={height - 6}
+                  y={height - 8}
                   textAnchor="middle"
                   fontSize="10"
                   fill="rgb(var(--muted-foreground) / 0.7)"

@@ -34,6 +34,7 @@ function getPresetRange(preset: DatePreset): { from: string | null; to: string |
 interface DateRangePickerProps {
   value: DateRange
   onChange: (range: DateRange) => void
+  className?: string
 }
 
 export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
@@ -86,7 +87,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
     : PRESET_LABELS[value.preset]
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={cn("relative", className)}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -104,7 +105,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-40 w-72 rounded-xl glass-premium border border-white/10 p-3 shadow-lg">
+        <div className="absolute right-0 top-full mt-2 z-40 w-full sm:w-72 rounded-xl glass-premium border border-white/10 p-3 shadow-lg">
           <div className="space-y-1 mb-3">
             {(Object.keys(PRESET_LABELS) as DatePreset[]).map((preset) => (
               <button
