@@ -7,7 +7,7 @@ import { ArrowLeft, Users, Inbox, Hash, Search, SlidersHorizontal, X } from "luc
 import { useCircleMembers } from "@/hooks/use-circles"
 import { useAuth } from "@/hooks/use-auth"
 import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
+import { EmptyState, MemberTabsEmptyState } from "@/components/shared/empty-state"
 import { Button, ButtonLink } from "@/components/ui/button"
 import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -151,11 +151,7 @@ export default function CircleMembersPage() {
       />
 
       {members.length === 0 ? (
-        <EmptyState
-          icon={<Users className="h-6 w-6" />}
-          title="No members yet"
-          description="This circle has no members."
-        />
+        <MemberTabsEmptyState />
       ) : (
         <>
           <div className="border-y border-border/70 py-4">

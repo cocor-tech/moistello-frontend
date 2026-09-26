@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import { useCircles } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
+import { EmptyState, CircleListEmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
 import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -330,10 +330,8 @@ export default function CirclesBrowsePage() {
           description="Something went wrong. Please try again later."
         />
       ) : circles.length === 0 ? (
-        <EmptyState
-          icon={<Search className="h-6 w-6" />}
-          title={t("circles.noCircles")}
-          description={t("circles.tryDifferent")}
+        <CircleListEmptyState
+          onAction={() => router.push("/circles/create")}
         />
       ) : (
         <motion.div

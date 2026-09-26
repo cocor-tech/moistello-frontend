@@ -58,6 +58,17 @@ const MAX_TOASTS = 5;
  */
 const toastDismissTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+/*
+ * Recent toast signatures map to deduplicate parallel error toasts.
+ * Keys are `${toast.type}:${toast.title}:${toast.description || ''}`.
+ */
+const recentToastSignatures = new Map<string, number>();
+const DEDUPLICATION_WINDOW_MS = 5000;
+
+export function clearToastDeduplication(): void {
+  recentToastSignatures.clear();
+}
+
 type UIStore = UIState & UIActions;
 
 export const useUIStore = create<UIStore>()(
@@ -90,7 +101,18 @@ export const useUIStore = create<UIStore>()(
       setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
 
       addToast: (toast: Omit<Toast, "id">) => {
-        const id = `toast-${Date.now()}-${++toastIdCounter}`;
+        const now = Date.now();
+        const signature = `${toast.type}:${toast.title}:${toast.description || ""}`;
+        const lastSeen = recentToastSignatures.get(signature);
+
+        if (lastSeen && now - lastSeen < DEDUPLICATION_WINDOW_MS) {
+          // Ignore duplicate toast within the deduplication window (5s)
+          return;
+        }
+
+        recentToastSignatures.set(signature, now);
+
+        const id = `toast-${now}-${++toastIdCounter}`;
         const newToast: Toast = { ...toast, id };
         set((state) => {
           // Evict the oldest toast(s) once the stack would exceed the cap, so
