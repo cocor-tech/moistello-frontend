@@ -60,7 +60,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       </a>
       {/* ════════════════ FLOATING HEADER ════════════════ */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 px-3 pt-3"
+        // `pt-header-safe` replaces `pt-3`: the bar stays glued to top-0 while
+        // its content clears the black-translucent status bar. `px-edge-safe`
+        // layers the landscape rounded-corner insets over the existing px-3.
+        className="fixed top-0 left-0 right-0 z-50 px-3 px-edge-safe pt-header-safe"
       >
         <div
           className={cn(
@@ -157,7 +160,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-[340px] will-change-transform"
+              className="fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-[340px] pr-edge-safe will-change-transform"
             >
               <div
                 className={cn(

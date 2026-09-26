@@ -9,8 +9,8 @@
  *  - Dev-only relaxations stay out of the production policy
  */
 
-import { describe, expect, it } from "vitest"
-import { buildCsp, generateNonce } from "../csp"
+import { describe, expect, it, vi, afterEach } from "vitest"
+import { buildCsp, cspMode, generateNonce, CSP_REPORT_PATH, CSP_REPORTING_GROUP } from "../csp"
 
 /** Pull a single directive's source list out of a serialised policy. */
 function directive(policy: string, name: string): string | undefined {
@@ -67,5 +67,81 @@ describe("buildCsp", () => {
   it("permits eval for the dev server but not in production", () => {
     expect(directive(buildCsp("n", true), "script-src")).toContain("'unsafe-eval'")
     expect(directive(prod, "script-src")).not.toContain("'unsafe-eval'")
+  })
+})
+
+// cspMode() is the single place the CSP_REPORT_ONLY env var is interpreted, and
+// its failure direction matters more than its success path: an unrecognised
+// value must fall back to ENFORCE. A report-only mode that fails open is
+// indistinguishable from a working deployment right up until someone realises
+// production has been unprotected for a week.
+describe("cspMode", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it.each(["1", "true", "TRUE", "yes", "on", "report-only", " on "])(
+    "reads %j as report-only",
+    (value) => {
+      vi.stubEnv("CSP_REPORT_ONLY", value)
+      expect(cspMode()).toBe("report-only")
+    },
+  )
+
+  it.each([
+    ["unset", undefined],
+    ["false", "false"],
+    ["zero", "0"],
+    ["empty", ""],
+    ["a typo", "ture"],
+    ["a bare 'report'", "report"],
+    ["an unrelated value", "enabled"],
+  ])("reads %s as enforce", (_label, value) => {
+    vi.stubEnv("CSP_REPORT_ONLY", value as string | undefined)
+    expect(cspMode()).toBe("enforce")
+  })
+
+  it("is re-read per call so the mode is not frozen at module load", () => {
+    // The middleware resolves the mode per request. If this were a module-level
+    // constant the flag would be baked in at import time and the env stub in
+    // every other test here would be meaningless.
+    vi.stubEnv("CSP_REPORT_ONLY", "false")
+    expect(cspMode()).toBe("enforce")
+
+    vi.stubEnv("CSP_REPORT_ONLY", "true")
+    expect(cspMode()).toBe("report-only")
+  })
+})
+
+describe("buildCsp – reporting directives", () => {
+  it("emits both report-uri and report-to in report-only mode", () => {
+    const policy = buildCsp("test-nonce", false, "report-only")
+
+    // Chrome/Safari honour report-uri; Firefox honours report-to. Emitting only
+    // one silently loses violations on the other engine.
+    expect(directive(policy, "report-uri")).toBe(`report-uri ${CSP_REPORT_PATH}`)
+    expect(directive(policy, "report-to")).toBe(`report-to ${CSP_REPORTING_GROUP}`)
+  })
+
+  it("omits reporting directives in the enforced policy", () => {
+    const policy = buildCsp("test-nonce", false, "enforce")
+
+    expect(directive(policy, "report-uri")).toBeUndefined()
+    expect(directive(policy, "report-to")).toBeUndefined()
+  })
+
+  it("changes nothing but the reporting directives between modes", () => {
+    const strip = (policy: string) =>
+      policy
+        .split("; ")
+        .filter((part) => !part.startsWith("report-uri") && !part.startsWith("report-to"))
+        .join("; ")
+
+    // If this drifts, report-only is validating a policy nobody would deploy.
+    expect(strip(buildCsp("n", false, "report-only"))).toBe(strip(buildCsp("n", false, "enforce")))
+  })
+
+  it("points at the path the collector actually serves", () => {
+    expect(CSP_REPORT_PATH).toBe("/api/csp-report")
   })
 })

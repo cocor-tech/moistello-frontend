@@ -1,53 +1,49 @@
 import { test, expect } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
 
-test.describe('WCAG 2.2 AA Automated Accessibility Audit', () => {
-  test('auth flow satisfies axe rules', async ({ page }) => {
-    await page.goto('/login')
-    const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    expect(accessibilityScanResults.violations).toEqual([])
-  })
+import { expectNoBlockingViolations } from '../a11y/axe-baseline'
 
-  test('circles flow satisfies axe rules', async ({ page }) => {
-    await page.goto('/circles')
-    const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    expect(accessibilityScanResults.violations).toEqual([])
-  })
+/**
+ * Accessibility gate for the public, unauthenticated routes.
+ *
+ * ## The protected routes moved out of this file
+ *
+ * This spec previously also "covered" /circles, /wallet and /settings — but
+ * without seeding a session cookie. All three are in PROTECTED_PATHS in
+ * src/middleware.ts, so the server redirected every one to /login and axe
+ * scanned the login page three times over. The suite was green while proving
+ * nothing about the routes it named.
+ *
+ * Those three now live in tests/a11y/dashboard-a11y.spec.ts, which seeds the
+ * cookie, asserts it actually landed on the route before scanning, and gates on
+ * serious/critical rather than on any violation at all. Keeping a copy of the
+ * broken version here would mean two specs claiming the same coverage, one of
+ * them lying.
+ *
+ * ## Severity gate
+ *
+ * Uses the shared baseline: fails on serious/critical, records the rest. The
+ * previous `expect(violations).toEqual([])` also failed on minor and moderate
+ * findings, which is stricter than the documented policy and would make the two
+ * specs disagree about what "passing" means.
+ */
+test.describe('Public route accessibility (WCAG 2.2 AA)', () => {
+  const PUBLIC_ROUTES = [
+    { name: 'login', path: '/login', ready: /sign in|log in|welcome/i },
+    { name: 'register', path: '/register', ready: /create|sign up|account/i },
+    { name: 'developers', path: '/developers', ready: /developer|api/i },
+    { name: 'upload', path: '/upload', ready: /admin login/i },
+  ] as const
 
-  test('wallet flow satisfies axe rules', async ({ page }) => {
-    await page.goto('/wallet')
-    const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    expect(accessibilityScanResults.violations).toEqual([])
-  })
+  for (const route of PUBLIC_ROUTES) {
+    test(`${route.name} has no serious or critical violations`, async ({ page }, testInfo) => {
+      await page.goto(route.path)
 
-  test('settings flow satisfies axe rules', async ({ page }) => {
-    await page.goto('/settings')
-    const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    expect(accessibilityScanResults.violations).toEqual([])
-  })
+      // Guard against a silent redirect turning this into a scan of some other
+      // page — the same class of bug that made the old protected-route tests
+      // meaningless.
+      await expect(page).toHaveURL(new RegExp(`${route.path.replace('/', '\\/')}$`))
 
-  test('developers page satisfies axe rules', async ({ page }) => {
-    await page.goto('/developers')
-    const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    expect(accessibilityScanResults.violations).toEqual([])
-  })
-
-  test('upload login satisfies axe rules', async ({ page }) => {
-    await page.goto('/upload')
-    await expect(page.getByRole('heading', { name: 'Admin Login' })).toBeVisible()
-    const accessibilityScanResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze()
-    expect(accessibilityScanResults.violations).toEqual([])
-  })
+      await expectNoBlockingViolations(page, route.path, testInfo)
+    })
+  }
 })

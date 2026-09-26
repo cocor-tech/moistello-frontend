@@ -88,7 +88,10 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
         aria-label={t("nav.navigation")}
         tabIndex={-1}
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-80 max-w-[85vw]",
+          // `pr-edge-safe` keeps the drawer glued to the right edge while its
+          // content clears the landscape notch / rounded corner. Zero-width on
+          // every device that has no right inset.
+          "absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] pr-edge-safe",
           "glass-premium backdrop-blur-2xl",
           "border-l border-white/[0.08] dark:border-white/[0.06]",
           "flex flex-col",

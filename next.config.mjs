@@ -2,6 +2,7 @@
 const { withSentryConfig } = await import("@sentry/nextjs")
 
 import { API_CSP } from "./src/lib/security/api-csp.mjs"
+import { CSP_REPORT_PATH, CSP_REPORTING_GROUP } from "./src/lib/security/csp-report-paths.mjs"
 
 // Derive the backend hostname from the API URL env var so the image allowlist
 // stays in sync with the deployment without hardcoding domain names here.
@@ -116,6 +117,19 @@ const nextConfig = {
         // receive the static CSP entry above. Static headers that do not vary
         // per request belong below.
         headers: [
+          {
+            // Publishing the Reporting API group that the page policy's
+            // `report-to` directive names. Browsers resolve `report-to` by
+            // looking the group up in this header — a group with no matching
+            // Reporting-Endpoints entry is silently discarded, which would look
+            // exactly like "no violations are happening". Served unconditionally
+            // rather than behind CSP_REPORT_ONLY because it is inert on its own:
+            // without a report-only policy nothing references the group, and
+            // header presence alone causes no traffic. Static, so it belongs
+            // here and not in the per-request middleware.
+            key: "Reporting-Endpoints",
+            value: `${CSP_REPORTING_GROUP}="${CSP_REPORT_PATH}"`,
+          },
           {
             key: "X-Frame-Options",
             value: "DENY",

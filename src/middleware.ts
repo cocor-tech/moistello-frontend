@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { buildCsp, generateNonce } from "@/lib/security/csp"
+import { buildCsp, cspMode, CSP_REPORT_PATH, generateNonce } from "@/lib/security/csp"
 import { API_CSP } from "@/lib/security/api-csp.mjs"
 import {
   ACCESS_TOKEN_COOKIE,
@@ -88,7 +88,20 @@ export function middleware(request: NextRequest) {
   // script allowances at all.
   const nonce = generateNonce()
   const isApiRoute = pathname.startsWith("/api/")
-  const csp = isApiRoute ? API_CSP : buildCsp(nonce)
+  const mode = cspMode()
+  const csp = isApiRoute ? API_CSP : buildCsp(nonce, undefined, mode)
+  // Report-only mode swaps which header carries the page policy. Same string,
+  // but the browser reports violations instead of blocking the resource, which
+  // is what makes a candidate policy safe to deploy ahead of promotion.
+  //
+  // API routes are excluded deliberately. The API policy is a different,
+  // narrower policy with no per-request nonce and no reporting directives, and
+  // it is also served statically from next.config.mjs under the enforcing
+  // header. Letting the mode rename that header would put two CSP headers with
+  // different semantics on every JSON response and silently un-enforce it.
+  const cspHeaderName = !isApiRoute && mode === "report-only"
+    ? "Content-Security-Policy-Report-Only"
+    : "Content-Security-Policy"
   const csrfToken = request.cookies.get(CSRF_TOKEN_COOKIE)?.value || generateCsrfToken()
   const shouldSetCsrfCookie = !request.cookies.has(CSRF_TOKEN_COOKIE)
 
@@ -110,7 +123,14 @@ export function middleware(request: NextRequest) {
   // Log ingestion is a same-origin, non-state-changing telemetry endpoint. It
   // intentionally bypasses the session CSRF handshake because sendBeacon cannot
   // attach custom headers; the route validates and redacts its payload instead.
-  const isTelemetryRoute = pathname === "/api/logs"
+  //
+  // CSP violation reports are in the same category for the same reason: the
+  // *browser* generates the POST, so it cannot carry x-csrf-token either. Both
+  // endpoints are treated as one class because the failure mode is identical —
+  // without the carve-out the double-submit check 403s every single report and
+  // the endpoint silently collects nothing, which is worse than not shipping it
+  // because it looks like it is working.
+  const isTelemetryRoute = pathname === "/api/logs" || pathname === CSP_REPORT_PATH
   if (isTelemetryRoute) {
     const origin = request.headers.get("origin")
     if (origin && !getAllowedOrigins(request).has(origin)) {
@@ -137,7 +157,7 @@ export function middleware(request: NextRequest) {
       if (pathname === path || pathname.startsWith(path + "/")) {
         const url = new URL("/login", request.url)
         const redirect = NextResponse.redirect(url)
-        redirect.headers.set("Content-Security-Policy", csp)
+        redirect.headers.set(cspHeaderName, csp)
         if (shouldSetCsrfCookie) attachCsrfCookie(redirect, csrfToken)
         return redirect
       }
@@ -145,7 +165,7 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } })
-  response.headers.set("Content-Security-Policy", csp)
+  response.headers.set(cspHeaderName, csp)
   if (shouldSetCsrfCookie) attachCsrfCookie(response, csrfToken)
   return response
 }
