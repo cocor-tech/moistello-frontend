@@ -20,12 +20,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"]],
   snapshotDir: "./.storybook/__visual-snapshots__",
-  snapshotPathTemplate:
-    "./.storybook/__visual-snapshots__/{testFilePath}/{arg}",
   use: {
     baseURL: "http://127.0.0.1:6100",
     trace: "on-first-retry",
     ...devices["Desktop Chrome"],
+    channel: "chrome",
   },
   webServer: {
     command:

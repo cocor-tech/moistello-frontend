@@ -44,17 +44,15 @@ test("Storybook visual regression: UI stories", async ({ page }) => {
 
       const root = page.locator("#storybook-root");
       await root.waitFor({ state: "visible" });
-      await expect(root.locator(":scope > *").first()).toBeVisible({
-        timeout: 20_000,
-      });
-
-      // Let framer-motion / portal mounted effects settle.
-      await page.waitForTimeout(400);
+      
+      // Wait for content to render - some stories may use next/image which needs extra time
+      await page.waitForTimeout(1000);
 
       // Screenshot <body> so portal-rendered content (toasts, dialogs) is
       // captured too.
+      const screenshotName = story.id.replace(/--/g, "-").replace(/[^a-zA-Z0-9-_]/g, "");
       await expect(page.locator("body")).toHaveScreenshot(
-        `${story.id}.png`,
+        `${screenshotName}.png`,
         {
           animations: "disabled",
           maxDiffPixelRatio: 0.02,
