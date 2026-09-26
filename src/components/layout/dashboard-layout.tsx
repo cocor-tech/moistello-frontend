@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { MobileMenu } from "@/components/layout/mobile-menu";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcutsOverlay } from "@/components/shared/keyboard-shortcuts-overlay";
+import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { AutoBreadcrumbs } from "@/components/shared/auto-breadcrumbs";
 
 interface DashboardLayoutProps {
@@ -60,6 +61,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <MobileNav />
       </div>
       <KeyboardShortcutsOverlay isOpen={helpOpen} onClose={closeHelp} shortcuts={shortcuts} />
+      <CommandPalette />
     </div>
   );
 }

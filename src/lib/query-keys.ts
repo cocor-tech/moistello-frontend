@@ -7,7 +7,7 @@
  * pages. Add a factory here before introducing a new `useQuery` call.
  */
 
-// Filter shapes are intentionally loose (not imported from the hooks that
+// ListFilter shapes are intentionally loose (not imported from the hooks that
 // own them) so this module never has to import back from `src/hooks` —
 // each factory only needs to know which filter fields affect the cache key.
 
@@ -18,6 +18,12 @@ export const queryKeys = {
     detail: (id: string) => ["circle", id] as const,
     members: (id: string) => ["circle-members", id] as const,
     rounds: (id: string) => ["circle-rounds", id] as const,
+    /**
+     * Command-palette circle index. Separate from `list` so the palette's
+     * unfiltered, limit-50 fetch never invalidates (or is invalidated by) the
+     * paginated circles-browser queries.
+     */
+    palette: () => ["circles", "palette"] as const,
   },
   payouts: {
     all: ["payouts"] as const,

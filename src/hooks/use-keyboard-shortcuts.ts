@@ -22,10 +22,15 @@ export function useKeyboardShortcuts() {
   const router = useRouter()
   const toggleTheme = useUIStore((s) => s.toggleTheme)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
+  const setCommandPaletteOpen = useUIStore((s) => s.setCommandPaletteOpen)
   const [helpOpen, setHelpOpen] = useState(false)
 
   const shortcuts: Shortcut[] = useMemo(() => [
     { key: "?", label: "?", description: "Show keyboard shortcuts", action: () => setHelpOpen(true) },
+    // Documentation only: the generic handler below bails out on any modifier
+    // combo, so `CommandPalette` owns the actual Cmd/Ctrl+K binding. This entry
+    // exists so the chord is discoverable in the "?" overlay.
+    { key: "mod k", label: "⌘K", description: "Open command palette", action: () => setCommandPaletteOpen(true) },
     { key: "c", label: "C", description: "New circle", action: () => router.push("/circles/create") },
     { key: "t", label: "T", description: "Toggle theme", action: toggleTheme },
     { key: "/", label: "/", description: "Focus search", action: () => {
@@ -38,7 +43,7 @@ export function useKeyboardShortcuts() {
     { key: "g s", label: "G S", description: "Go to settings", action: () => router.push("/settings") },
     { key: "g p", label: "G P", description: "Go to profile", action: () => router.push("/profile") },
     { key: "b", label: "B", description: "Toggle sidebar", action: toggleSidebar },
-  ], [router, toggleTheme, toggleSidebar])
+  ], [router, toggleTheme, toggleSidebar, setCommandPaletteOpen])
 
   const shortcutsRef = useRef(shortcuts)
   shortcutsRef.current = shortcuts

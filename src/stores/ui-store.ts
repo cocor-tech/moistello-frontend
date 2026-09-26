@@ -7,6 +7,8 @@ type Theme = "light" | "dark" | "system";
 type Density = "comfortable" | "compact";
 type FontSize = "small" | "medium" | "large";
 
+export type { Theme, Density, FontSize };
+
 export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface Toast {
@@ -22,6 +24,11 @@ interface UIState {
   density: Density;
   fontSize: FontSize;
   sidebarOpen: boolean;
+  /**
+   * Transient flag for the Cmd+K palette. Deliberately excluded from
+   * `partialize` so a reload never restores an open palette.
+   */
+  commandPaletteOpen: boolean;
   toasts: Toast[];
 }
 
@@ -32,6 +39,8 @@ interface UIActions {
   setFontSize: (fontSize: FontSize) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  setCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
   addToast: (toast: Omit<Toast, "id">) => void;
   removeToast: (id: string) => void;
 }
@@ -67,6 +76,7 @@ export const useUIStore = create<UIStore>()(
       density: "comfortable",
       fontSize: "medium",
       sidebarOpen: false,
+      commandPaletteOpen: false,
       toasts: [],
 
       toggleTheme: () => {
@@ -88,6 +98,11 @@ export const useUIStore = create<UIStore>()(
         set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
       setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+
+      setCommandPaletteOpen: (open: boolean) => set({ commandPaletteOpen: open }),
+
+      toggleCommandPalette: () =>
+        set((state) => ({ commandPaletteOpen: !state.commandPaletteOpen })),
 
       addToast: (toast: Omit<Toast, "id">) => {
         const id = `toast-${Date.now()}-${++toastIdCounter}`;
