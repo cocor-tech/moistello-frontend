@@ -1,9 +1,10 @@
-"use client"
-
 import Link from "next/link"
 import { ArrowLeft, Home, Search } from "lucide-react"
+import { notFound } from "next/navigation"
 
 export default function NotFound() {
+  notFound()
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-background">
       <div

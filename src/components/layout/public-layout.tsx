@@ -256,7 +256,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       </AnimatePresence>
 
       {/* ════════════════ PAGE CONTENT ════════════════ */}
-      <div id="main-content" tabIndex={-1} className="pt-20">{children}</div>
+      <main id="main-content" tabIndex={-1} className="pt-20">{children}</main>
 
       {/* ════════════════ FOOTER ════════════════ */}
       <footer className="glass mt-20 py-8 border-t border-border">
