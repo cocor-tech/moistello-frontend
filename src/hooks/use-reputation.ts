@@ -17,5 +17,14 @@ export function useReputation(userId: string) {
       return response.data?.reputation ?? null
     },
     enabled: !!userId,
+    // Keep reputation data fresh for 60 seconds after it's fetched.
+    // Without a staleTime the query is treated as immediately stale, which
+    // causes a background refetch on every mount — including after a page
+    // refresh — so the tier card briefly receives `undefined` and renders a
+    // 0 % progress bar before the refetch resolves (issue #394).
+    staleTime: 60_000,
+    // Return the last successfully fetched value while a background refetch
+    // is in flight so the progress bar never snaps to 0.
+    placeholderData: (previousData) => previousData ?? undefined,
   })
 }

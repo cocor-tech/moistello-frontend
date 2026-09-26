@@ -13,6 +13,7 @@ interface UploadManagerProps {
   status: UploadStatus
   message: string
   uploadedUrl: string
+  progress: number
   showSamples: boolean
   onToggleSamples: () => void
   onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void
@@ -27,6 +28,7 @@ export function UploadManager({
   status,
   message,
   uploadedUrl,
+  progress,
   showSamples,
   onToggleSamples,
   onFileSelect,
@@ -52,7 +54,7 @@ export function UploadManager({
           </p>
           <SampleTemplates showSamples={showSamples} onToggle={onToggleSamples} />
           <FileDropzone file={file} fileRef={fileRef} onFileSelect={onFileSelect} onClear={onClearFile} />
-          <UploadFeedback status={status} message={message} uploadedUrl={uploadedUrl} />
+          <UploadFeedback status={status} message={message} uploadedUrl={uploadedUrl} progress={progress} />
           <Button
             variant="premium"
             size="lg"
