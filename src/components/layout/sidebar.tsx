@@ -13,8 +13,6 @@ import {
   Bell,
   Settings,
   Wallet,
-  Sun,
-  Moon,
   BookOpen,
   CircleQuestionMark,
   LifeBuoy,
@@ -22,6 +20,7 @@ import {
   Gift,
   Search,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/cn";
 import { Routes } from "@/lib/constants";
 import { isRouteActive } from "@/lib/navigation";
@@ -44,15 +43,11 @@ interface NavGroup {
 
 function SidebarComponent() {
   const pathname = usePathname();
-  const theme = useUIStore((s) => s.theme);
-  const toggleTheme = useUIStore((s) => s.toggleTheme);
   const setCommandPaletteOpen = useUIStore((s) => s.setCommandPaletteOpen);
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const unreadCount = useUnreadCount();
   const { t } = useTranslate();
-
-  const isDark = theme === "dark";
 
   const openCommandPalette = () => setCommandPaletteOpen(true);
 
@@ -114,21 +109,7 @@ function SidebarComponent() {
               Moistello
             </span>
           </Link>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-xl",
-              "glass-whisper text-muted-foreground",
-            )}
-            aria-label="Toggle theme"
-          >
-            {isDark ? (
-              <Sun className="h-3.5 w-3.5 text-amber-400" />
-            ) : (
-              <Moon className="h-3.5 w-3.5 text-indigo-400" />
-            )}
-          </button>
+          <ThemeToggle size="sm" />
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-none" aria-label="Dashboard navigation">

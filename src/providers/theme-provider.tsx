@@ -15,53 +15,42 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const root = document.documentElement;
 
-    const applyTheme = () => {
-      const current = useUIStore.getState().theme;
+    const applyTheme = (current: string) => {
+      const prefersDark =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const isDark = current === "dark" || (current === "system" && prefersDark);
+      const resolved = isDark ? "dark" : "light";
 
-      if (current === "dark") {
+      if (isDark) {
         root.classList.add("dark");
-      } else if (current === "light") {
-        root.classList.remove("dark");
       } else {
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-        if (prefersDark) {
-          root.classList.add("dark");
-        } else {
-          root.classList.remove("dark");
-        }
+        root.classList.remove("dark");
       }
+      root.setAttribute("data-theme", resolved);
+      root.style.colorScheme = resolved;
     };
 
-    applyTheme();
+    applyTheme(theme);
+
+    if (typeof window === "undefined" || !window.matchMedia) return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
-      if (useUIStore.getState().theme === "system") {
-        applyTheme();
+      const activeTheme = useUIStore.getState().theme;
+      if (activeTheme === "system") {
+        applyTheme("system");
       }
     };
 
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else if (theme === "light") {
-      root.classList.remove("dark");
-    } else {
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      if (prefersDark) {
-        root.classList.add("dark");
-      } else {
-        root.classList.remove("dark");
-      }
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    } else if (typeof (mediaQuery as { addListener?: (fn: () => void) => void }).addListener === "function") {
+      (mediaQuery as { addListener: (fn: () => void) => void }).addListener(handleChange);
+      return () =>
+        (mediaQuery as { removeListener: (fn: () => void) => void }).removeListener(handleChange);
     }
   }, [theme]);
 

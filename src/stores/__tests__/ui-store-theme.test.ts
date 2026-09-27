@@ -19,7 +19,7 @@ describe("useUIStore – theme persistence", () => {
       density: "comfortable",
       fontSize: "medium",
       sidebarOpen: false,
-      activeModal: null,
+      commandPaletteOpen: false,
       toasts: [],
     })
   })

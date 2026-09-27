@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   House,
   PiggyBank,
@@ -15,15 +15,14 @@ import {
   Wallet,
   LogOut,
   X,
-  Sun,
   BookOpen,
   CircleQuestionMark,
   LifeBuoy,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/cn";
 import { Routes } from "@/lib/constants";
 import { isRouteActive } from "@/lib/navigation";
-import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { useTranslate } from "@/lib/locale/context";
@@ -36,13 +35,9 @@ interface MobileMenuProps {
 
 function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const theme = useUIStore((s) => s.theme);
-  const toggleTheme = useUIStore((s) => s.toggleTheme);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
   const unreadCount = useUnreadCount();
-  const isDark = theme === "dark";
   const { t } = useTranslate();
   const menuRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
 
@@ -197,14 +192,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
         </nav>
 
         <div className="shrink-0 border-t border-white/[0.05] px-4 py-4 space-y-2">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:glass-whisper"
-          >
-            <Sun className="h-4 w-4" />
-            <span>{isDark ? t("common.darkMode") : t("common.lightMode")}</span>
-          </button>
+          <ThemeToggle showLabel className="w-full justify-start px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:glass-whisper" />
 
           {isAuthenticated && (
             <button

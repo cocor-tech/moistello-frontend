@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
   X,
-  Sun,
-  Moon,
   ShieldQuestionMark,
   Scale,
   Lock,
@@ -15,8 +13,8 @@ import {
   BookOpen,
   CircleQuestionMark,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/cn";
-import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTranslate } from "@/lib/locale/context";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -29,10 +27,7 @@ interface PublicLayoutProps {
 export function PublicLayout({ children }: PublicLayoutProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [menuOpen, setMenuOpen] = useState(false);
-  const theme = useUIStore((s) => s.theme);
-  const toggleTheme = useUIStore((s) => s.toggleTheme);
   const { t } = useTranslate();
-  const isDark = theme === "dark";
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
@@ -96,23 +91,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
           {/* Right: Theme Toggle + Hamburger */}
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className={cn(
-                "inline-flex h-9 w-9 items-center justify-center rounded-full shrink-0",
-                "glass-whisper text-muted-foreground",
-                "transition-all duration-300 hover:text-foreground",
-                "hover:shadow-[0_0_18px_rgb(var(--aurora-violet)/0.2)]",
-              )}
-              aria-label="Toggle theme"
-            >
-              {isDark ? (
-                <Sun className="h-4 w-4 text-amber-400" />
-              ) : (
-                <Moon className="h-4 w-4 text-indigo-400" />
-              )}
-            </button>
+            <ThemeToggle />
 
             <button
               type="button"
@@ -223,29 +202,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                   ))}
                 </nav>
                 <div className="shrink-0 border-t border-white/[0.06] px-4 py-4">
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className={cn(
-                      "flex items-center gap-3 w-full rounded-xl px-4 py-2.5",
-                      "text-sm font-body transition-all duration-300",
-                      "glass-whisper hover:glass-strong",
-                      "hover:shadow-[0_0_20px_rgb(var(--aurora-violet)/0.15)]",
-                    )}
-                  >
-                    <span className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full glass-strong",
-                    )}>
-                      {isDark ? (
-                        <Sun className="h-4 w-4 text-amber-400" />
-                      ) : (
-                        <Moon className="h-4 w-4 text-indigo-400" />
-                      )}
-                    </span>
-                    <span className="flex-1 text-left text-foreground">
-                      {isDark ? "Light Mode" : "Dark Mode"}
-                    </span>
-                  </button>
+                  <ThemeToggle showLabel className="w-full justify-start px-4 py-2.5 rounded-xl glass-whisper hover:glass-strong" />
                 </div>
                 <div className="shrink-0 border-t border-white/[0.04] px-5 py-3">
                   <p className="text-[10px] text-muted-foreground/40">
