@@ -2,7 +2,7 @@
 
 import { logger } from "@/lib/logger"
 import { useEffect, useRef, useState, useCallback } from "react"
-import { Copy, Check, LoaderCircle, CircleX, RefreshCw, CircleAlert } from "lucide-react"
+import { Copy, Check, LoaderCircle, CircleX, RefreshCw, CircleAlert, Download } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { copyToClipboard } from "@/lib/clipboard"
 

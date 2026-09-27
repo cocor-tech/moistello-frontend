@@ -1,6 +1,11 @@
 import { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { PublicLayout } from "@/components/layout/public-layout"
-import { ContributionForm } from "./contribution-form"
+
+const ContributionForm = dynamic(
+  () => import("./contribution-form").then((m) => m.ContributionForm),
+  { ssr: false }
+)
 
 export const metadata: Metadata = {
   title: "Become a Contributor - Moistello",

@@ -1,10 +1,27 @@
 "use client"
 
-import { PublicLayout } from "@/components/layout/public-layout"
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { LandingContent } from "@/components/landing/landing-content"
-import { DashboardContent } from "@/components/dashboard/dashboard-content"
+import dynamic from "next/dynamic"
 import { useAuthStore } from "@/stores/auth-store"
+
+const PublicLayout = dynamic(
+  () => import("@/components/layout/public-layout").then((m) => m.PublicLayout),
+  { ssr: true }
+)
+
+const LandingContent = dynamic(
+  () => import("@/components/landing/landing-content").then((m) => m.LandingContent),
+  { ssr: true }
+)
+
+const DashboardLayout = dynamic(
+  () => import("@/components/layout/dashboard-layout").then((m) => m.DashboardLayout),
+  { ssr: false }
+)
+
+const DashboardContent = dynamic(
+  () => import("@/components/dashboard/dashboard-content").then((m) => m.DashboardContent),
+  { ssr: false }
+)
 
 export function HomeContent() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)

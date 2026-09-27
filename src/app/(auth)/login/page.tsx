@@ -8,10 +8,15 @@ import { loginSchema, zodResolver, type LoginInput } from "@/lib/validation"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { post } from "@/lib/api-client"
+import dynamic from "next/dynamic"
 import { AuthLayout } from "@/components/auth/auth-layout"
-import { WalletSelector } from "@/components/wallet/wallet-selector"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+
+const WalletSelector = dynamic(
+  () => import("@/components/wallet/wallet-selector").then((m) => m.WalletSelector),
+  { ssr: false }
+)
 
 export default function LoginPage() {
   const router = useRouter()

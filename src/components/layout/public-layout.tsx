@@ -19,8 +19,13 @@ import { cn } from "@/lib/cn";
 import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTranslate } from "@/lib/locale/context";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import dynamic from "next/dynamic";
 import { useFocusTrap } from "@/hooks/use-focus-trap";
+
+const DashboardLayout = dynamic(
+  () => import("@/components/layout/dashboard-layout").then((m) => m.DashboardLayout),
+  { ssr: false }
+);
 
 interface PublicLayoutProps {
   children: React.ReactNode;

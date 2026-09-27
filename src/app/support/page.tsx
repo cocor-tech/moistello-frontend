@@ -1,8 +1,17 @@
 import { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { PublicLayout } from "@/components/layout/public-layout"
 import { SearchForm } from "./search-form"
-import { TicketForm } from "./ticket-form"
-import { TicketLookup } from "./ticket-lookup"
+
+const TicketForm = dynamic(
+  () => import("./ticket-form").then((m) => m.TicketForm),
+  { ssr: false }
+)
+
+const TicketLookup = dynamic(
+  () => import("./ticket-lookup").then((m) => m.TicketLookup),
+  { ssr: false }
+)
 
 export const metadata: Metadata = {
   title: "Support - Moistello",

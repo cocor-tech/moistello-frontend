@@ -8,10 +8,19 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { MobileMenu } from "@/components/layout/mobile-menu";
+import dynamic from "next/dynamic";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { KeyboardShortcutsOverlay } from "@/components/shared/keyboard-shortcuts-overlay";
-import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { AutoBreadcrumbs } from "@/components/shared/auto-breadcrumbs";
+
+const CommandPalette = dynamic(
+  () => import("@/components/command-palette/CommandPalette").then((m) => m.CommandPalette),
+  { ssr: false }
+);
+
+const KeyboardShortcutsOverlay = dynamic(
+  () => import("@/components/shared/keyboard-shortcuts-overlay").then((m) => m.KeyboardShortcutsOverlay),
+  { ssr: false }
+);
 
 interface DashboardLayoutProps {
   children: ReactNode;

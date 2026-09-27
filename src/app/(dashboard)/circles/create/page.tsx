@@ -1,7 +1,12 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { PageHeader } from "@/components/shared/page-header"
-import CreateCircleWizard from "@/components/circles/create-circle-wizard"
+
+const CreateCircleWizard = dynamic(
+  () => import("@/components/circles/create-circle-wizard"),
+  { ssr: false }
+)
 
 export default function CreateCirclePage() {
   return (

@@ -6,8 +6,13 @@ import Link from "next/link"
 import { ArrowUpRight, ArrowDownRight, ArrowDownLeft, Wallet as WalletIcon, Settings, Clock, ArrowRight, ListOrdered, BookCopy, ExternalLink, QrCode, Copy, Check } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { CopyButton } from "@/components/shared/copy-button"
+import dynamic from "next/dynamic"
 import { Button, ButtonLink } from "@/components/ui/button"
-import { WalletSettings } from "@/components/wallet/wallet-settings"
+
+const WalletSettings = dynamic(
+  () => import("@/components/wallet/wallet-settings").then((m) => m.WalletSettings),
+  { ssr: false }
+)
 import { get } from "@/lib/api-client"
 import { useTranslate } from "@/lib/locale/context"
 import { formatAddress, DEFAULT_LOCALE } from "@/lib/formatters"

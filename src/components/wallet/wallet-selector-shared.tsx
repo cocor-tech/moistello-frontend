@@ -3,9 +3,21 @@
 import { useState } from "react"
 import { LoaderCircle, CircleAlert, QrCode, Shield, Usb, WifiOff, X } from "lucide-react"
 import { cn } from "@/lib/cn"
+import dynamic from "next/dynamic"
 import type { WalletId } from "@/lib/wallet/types"
-import { WalletConnectQR } from "./walletconnect-qr"
 import { WalletConnectDeepLink } from "./walletconnect-deeplink"
+
+const WalletConnectQR = dynamic(
+  () => import("./walletconnect-qr").then((m) => m.WalletConnectQR),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center p-8">
+        <LoaderCircle className="h-6 w-6 animate-spin text-aurora-violet" />
+      </div>
+    ),
+  }
+)
 
 export interface WalletDescriptor {
   id: WalletId
@@ -307,7 +319,7 @@ export function ConnectedWalletCard({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground">
-          Connected &#x2713; {name}
+          Connected &#x2713; <span>{name}</span>
         </p>
         <p className="text-xs text-muted-foreground font-mono truncate">
           {address ? address : ""}

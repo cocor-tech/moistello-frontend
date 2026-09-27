@@ -117,3 +117,5 @@ export function formatDuration(minutes: number): string {
   }
   return `${days}d ${remainingHours}h`
 }
+
+export const STELLAR_ADDRESS_REGEX = /^G[A-Z2-7]{55}$/;

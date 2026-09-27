@@ -27,14 +27,27 @@ import { Button, ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/formatters";
+import dynamic from "next/dynamic";
 import { CircleMembersPreview } from "./circle-members-preview";
 import { CircleStatCards } from "./circle-stat-cards";
 import { CircleRoundTimeline } from "./circle-round-timeline";
 import { CirclePayoutsList } from "./circle-payouts-list";
-import { CircleContributeModal } from "./circle-contribute-modal";
-import { CircleInviteModal } from "./circle-invite-modal";
-import { CircleJoinCodeModal } from "./circle-join-code-modal";
 import { useInviteGeneration } from "./use-invite-generation";
+
+const CircleContributeModal = dynamic(
+  () => import("./circle-contribute-modal").then((m) => m.CircleContributeModal),
+  { ssr: false }
+);
+
+const CircleInviteModal = dynamic(
+  () => import("./circle-invite-modal").then((m) => m.CircleInviteModal),
+  { ssr: false }
+);
+
+const CircleJoinCodeModal = dynamic(
+  () => import("./circle-join-code-modal").then((m) => m.CircleJoinCodeModal),
+  { ssr: false }
+);
 
 const CIRCLE_SUB_NAV = (circleId: string, isOrganizer: boolean) => [
   { href: `/circles/${circleId}/activity`, label: "Activity" },
