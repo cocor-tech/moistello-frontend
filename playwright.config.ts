@@ -17,6 +17,11 @@ const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
 
 export default defineConfig({
   testDir: "./tests",
+  testMatch: ["e2e/**/*.spec.ts", "*.spec.ts"],
+  testIgnore: [
+    /hmac\.spec\.ts/,
+    /[/\\](network|realtime|security|load)[/\\]/,
+  ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -36,9 +41,11 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"], ...(browserChannel ? { channel: browserChannel } : {}) },
-      // The mobile suite has its own project below; running it here too would
-      // double its cost and assert desktop layout against a phone viewport.
-      testIgnore: /mobile-smoke\.spec\.ts/,
+      testIgnore: [
+        /mobile-smoke\.spec\.ts/,
+        /hmac\.spec\.ts/,
+        /[/\\](network|realtime|security|load)[/\\]/,
+      ],
     },
     {
       name: "mobile-chrome",

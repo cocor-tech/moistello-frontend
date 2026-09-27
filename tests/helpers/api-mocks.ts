@@ -247,6 +247,157 @@ export class ApiMocker {
   }
 
   /**
+   * Mock circle detail endpoint
+   */
+  async mockCircleDetail(circleOverrides: Record<string, any> = {}): Promise<void> {
+    const defaultCircle = {
+      id: 'circle-123',
+      name: 'Test Savings Circle',
+      description: 'A test circle for E2E testing',
+      circleType: 'public',
+      payoutType: 'random',
+      contributionAmount: 100,
+      currency: 'USDC',
+      frequency: 'monthly',
+      maxMembers: 10,
+      memberCount: 3,
+      currentRound: 2,
+      totalContributions: 300,
+      status: 'active',
+      organizerId: 'user-1',
+      organizerName: 'Test Organizer',
+      createdAt: new Date().toISOString(),
+      ...circleOverrides,
+    }
+
+    await this.mockEndpoint(new RegExp('^https?://[^/]+/(api|v1)/circles/circle-123$'), {
+      status: 200,
+      body: { circle: defaultCircle },
+    }, 'GET')
+
+    await this.mockEndpoint(new RegExp('/(api|v1)/circles/circle-123/members'), {
+      status: 200,
+      body: {
+        members: [
+          {
+            id: 'member-1',
+            circleId: 'circle-123',
+            userId: 'user-1',
+            position: 1,
+            status: 'active',
+            userName: 'Test Organizer',
+            userAddress: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            joinedAt: new Date().toISOString(),
+          },
+        ],
+      },
+    }, 'GET')
+
+    await this.mockEndpoint(new RegExp('/(api|v1)/circles/circle-123/payouts'), {
+      status: 200,
+      body: { payouts: [] },
+    }, 'GET')
+  }
+
+  /**
+   * Mock disputed circle endpoint
+   */
+  async mockDisputedCircle(): Promise<void> {
+    await this.mockCircleDetail({
+      status: 'disputed',
+      name: 'Disputed Savings Circle',
+      description: 'Circle currently under dispute resolution',
+    })
+  }
+
+  /**
+   * Mock dispute resolution endpoints
+   */
+  async mockDisputeEndpoints(): Promise<void> {
+    // Raise a dispute on a circle
+    await this.mockEndpoint(new RegExp('/(api|v1)/circles/[^/]+/dispute'), {
+      status: 200,
+      body: {
+        success: true,
+        disputeId: 'dispute-999',
+        circleId: 'circle-123',
+        status: 'disputed',
+        reason: 'Payment defaulted in round 2',
+        createdAt: new Date().toISOString(),
+        message: 'Dispute submitted successfully and is now under review.',
+      },
+    }, 'POST')
+
+    // Resolve a dispute
+    await this.mockEndpoint(new RegExp('/(api|v1)/circles/[^/]+/(resolve-dispute|dispute/resolve)'), {
+      status: 200,
+      body: {
+        success: true,
+        disputeId: 'dispute-999',
+        circleId: 'circle-123',
+        status: 'resolved',
+        resolution: 'refund_issued',
+        resolvedAt: new Date().toISOString(),
+        message: 'Dispute resolved successfully.',
+      },
+    }, 'POST')
+
+    // Get dispute details / status
+    await this.mockEndpoint(new RegExp('/(api|v1)/circles/[^/]+/dispute'), {
+      status: 200,
+      body: {
+        dispute: {
+          id: 'dispute-999',
+          circleId: 'circle-123',
+          initiatorId: 'user-123',
+          status: 'disputed',
+          reason: 'Member defaulted and organizer unresponsive',
+          evidence: 'https://stellar.expert/tx/mock-evidence-hash',
+          votesForResolution: 3,
+          votesAgainstResolution: 0,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    }, 'GET')
+  }
+
+  /**
+   * Mock support ticket submission endpoint for dispute resolution tickets
+   */
+  async mockSupportTickets(): Promise<void> {
+    await this.mockEndpoint('**/api/support/tickets', {
+      status: 200,
+      body: {
+        success: true,
+        ticketId: 'TCK-2026-DISPUTE-01',
+        message: 'Support ticket submitted successfully.',
+      },
+    }, 'POST')
+  }
+
+  /**
+   * Mock user notification preferences (including dispute notifications)
+   */
+  async mockNotificationPreferences(): Promise<void> {
+    await this.mockEndpoint('**/api/users/me/notifications', {
+      status: 200,
+      body: {
+        email: true,
+        push: true,
+        categories: {
+          circle_updates: true,
+          contributions: true,
+          payouts: true,
+          dispute: true,
+          invitations: true,
+          marketing: false,
+        },
+        frequency: 'instant',
+      },
+    })
+  }
+
+  /**
    * Mock session check endpoint.
    *
    * Matches the real /api/auth/session GET handler which returns

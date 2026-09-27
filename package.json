@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:critical": "playwright test tests/e2e/registration.spec.ts tests/e2e/passkey-login.spec.ts tests/e2e/circle-creation.spec.ts tests/e2e/contributions.spec.ts tests/e2e/payout-claim.spec.ts tests/e2e/dispute-resolution.spec.ts",
+    "test:e2e:visual": "playwright test tests/e2e/visual-regression.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "storybook": "storybook dev -p 6006",
