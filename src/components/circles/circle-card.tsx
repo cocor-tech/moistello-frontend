@@ -110,6 +110,7 @@ export const CircleCard = memo(function CircleCard({ circle, onClick, className 
             </span>
           </div>
           <Progress
+            aria-label="Circle round progress"
             value={(circle.currentRound / totalRounds) * 100}
             size="sm"
             variant="primary"

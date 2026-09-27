@@ -37,4 +37,4 @@ if (fs.existsSync(frPath)) {
 }
 
 fs.writeFileSync(path.join(localeDir, "translations.json"), JSON.stringify(merged))
-console.log(`Built translations.json with ${Object.keys(merged).length} languages, ${Object.keys(en).length} keys each`)
+process.stdout.write(`Built translations.json with ${Object.keys(merged).length} languages, ${Object.keys(en).length} keys each\n`)

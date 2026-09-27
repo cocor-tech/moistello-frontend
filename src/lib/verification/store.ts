@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 const CODE_TTL_MS = 10 * 60 * 1000
 const MAX_SENDS_PER_WINDOW = 3
 const SEND_WINDOW_MS = 10 * 60 * 1000
@@ -73,7 +74,7 @@ export function sendCode(email: string): { verificationId: string; expiresIn: nu
   history.push({ sentAt: now })
   sendHistory.set(normalized, history)
 
-  console.log(`[verification] Code for ${normalized}: ${code} (id: ${verificationId})`)
+  logger.debug("Verification code generated")
 
   return { verificationId, expiresIn: Math.floor(CODE_TTL_MS / 1000), remainingAttempts: MAX_VERIFY_ATTEMPTS }
 }
@@ -128,7 +129,7 @@ export function resendCode(verificationId: string): { expiresIn: number } | { er
   history.push({ sentAt: now })
   sendHistory.set(entry.email, history)
 
-  console.log(`[verification] Resent code for ${entry.email}: ${newCode} (id: ${verificationId})`)
+  logger.debug("Verification code resent")
 
   return { expiresIn: Math.floor(CODE_TTL_MS / 1000) }
 }

@@ -10,11 +10,12 @@ export interface InputProps
   hint?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  endAction?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    { label, error, hint, leftIcon, rightIcon, className, id, onFocus, onBlur, ...props },
+    { label, error, hint, leftIcon, rightIcon, endAction, className, id, placeholder, "aria-label": ariaLabel, onFocus, onBlur, ...props },
     ref,
   ) => {
     const generatedId = useId();
@@ -64,6 +65,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            placeholder={placeholder}
+            aria-label={ariaLabel ?? (!label ? placeholder : undefined)}
             aria-invalid={error ? true : undefined}
             aria-describedby={errorId || hintId || undefined}
             onFocus={handleFocus}
@@ -77,6 +80,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               "disabled:cursor-not-allowed disabled:opacity-40",
               leftIcon && "pl-10",
               rightIcon && "pr-10",
+               endAction && "pr-24",
               error && "border-b-red-500 shadow-[0_0_12px_rgb(239_68_68/0.1)]",
               className,
             )}
@@ -88,6 +92,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               aria-hidden="true"
             >
               {rightIcon}
+            </span>
+          )}
+          {endAction && (
+            <span className="absolute inset-y-0 right-0 flex items-center pr-2">
+              {endAction}
             </span>
           )}
         </div>

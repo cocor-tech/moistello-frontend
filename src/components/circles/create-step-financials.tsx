@@ -54,16 +54,15 @@ export function CreateStepFinancials({ formData, setFormData, errors }: CreateSt
           error={errors.contributionAmount}
         />
         <div>
-          <label className="mb-2 block font-heading text-xs tracking-wider uppercase text-muted-foreground">
+          <p id="currency-label" className="mb-2 block font-heading text-xs tracking-wider uppercase text-muted-foreground">
             Currency
-          </label>
-          <div className="flex gap-2">
+          </p>
+          <div role="group" aria-labelledby="currency-label" className="flex gap-2">
             {CURRENCIES.map((c) => (
               <button
                 key={c.value}
                 type="button"
-                
-                
+                aria-pressed={formData.currency === c.value}
                 onClick={() => setFormData((prev) => ({ ...prev, currency: c.value }))}
                 className={cn(
                   "flex-1 rounded-xl py-2.5 text-sm font-heading font-medium transition-all duration-300",
@@ -80,16 +79,15 @@ export function CreateStepFinancials({ formData, setFormData, errors }: CreateSt
       </div>
 
       <div>
-        <label className="mb-2 block font-heading text-sm text-muted-foreground">
+        <p id="frequency-label" className="mb-2 block font-heading text-sm text-muted-foreground">
           Contribution Frequency
-        </label>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        </p>
+        <div role="group" aria-labelledby="frequency-label" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {FREQUENCIES.map((f) => (
             <button
               key={f.value}
               type="button"
-              
-              
+              aria-pressed={formData.frequency === f.value}
               onClick={() => setFormData((prev) => ({ ...prev, frequency: f.value }))}
               className={cn(
                 "glass rounded-xl p-3 text-center transition-all duration-300",
@@ -127,10 +125,12 @@ export function CreateStepFinancials({ formData, setFormData, errors }: CreateSt
         </h4>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-2 block font-heading text-xs tracking-wider uppercase text-muted-foreground">
+            <label htmlFor="late-fee-percent" className="mb-2 block font-heading text-xs tracking-wider uppercase text-muted-foreground">
               Late Fee ({formData.lateFeePercent}%)
             </label>
             <input
+              id="late-fee-percent"
+              aria-label="Late fee percentage"
               type="range"
               min={0}
               max={50}

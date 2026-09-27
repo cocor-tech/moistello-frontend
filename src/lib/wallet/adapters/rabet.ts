@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { WalletAdapter, WalletMeta, SignOptions } from "../types"
 
 
@@ -39,7 +40,7 @@ export function createRabetAdapter(): WalletAdapter {
     },
     async disconnect() {
       const api = getRabetAPI()
-      if (api) { try { await api.disconnect() } catch (e) { console.warn("[rabet] Failed to disconnect:", e) } }
+      if (api) { try { await api.disconnect() } catch (e) { logger.warn("[rabet] Failed to disconnect:", e) } }
     },
     async isConnected() {
       const api = getRabetAPI()

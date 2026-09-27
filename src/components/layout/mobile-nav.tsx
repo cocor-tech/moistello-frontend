@@ -33,6 +33,7 @@ function MobileNavComponent() {
 
   return (
     <nav
+      aria-label="Mobile dashboard navigation"
       className={cn(
         "fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md",
         "lg:hidden",
@@ -51,6 +52,7 @@ function MobileNavComponent() {
             <Link
               key={item.href}
               href={item.href}
+               aria-current={active ? "page" : undefined}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1",
                 "h-full min-w-[64px] px-4 py-2",

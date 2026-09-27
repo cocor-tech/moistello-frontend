@@ -1,5 +1,9 @@
 import React from "react";
+<<<<<<< HEAD
 import { render, screen } from "@testing-library/react";
+=======
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+>>>>>>> origin/master
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import NotificationsPage from "../page";
 import type { Notification } from "@/types";
@@ -15,7 +19,7 @@ vi.mock("@/hooks/use-notifications", () => ({
 }));
 
 vi.mock("@/stores/ui-store", () => ({
-  useUIStore: () => ({ addToast: vi.fn() }),
+  useUIStore: () => vi.fn(),
 }));
 
 vi.mock("@/lib/motion/list", () => ({
@@ -41,8 +45,11 @@ function makeNotification(
 }
 
 describe("NotificationsPage bulk-select accessibility", () => {
+  const mockBulkArchive = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockBulkArchive.mockResolvedValue(true);
     mockUseNotifications.mockReturnValue({
       notifications: [
         makeNotification({ id: "n1", title: "Payout received", isRead: false }),
@@ -57,6 +64,7 @@ describe("NotificationsPage bulk-select accessibility", () => {
       isLoading: false,
       markAsRead: vi.fn(),
       markAllAsRead: vi.fn(),
+      bulkArchive: mockBulkArchive,
       fetchNotifications: vi.fn(),
     });
   });
@@ -73,5 +81,13 @@ describe("NotificationsPage bulk-select accessibility", () => {
       name: "Select notification: You joined a circle",
     });
     expect(circleCheckbox).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("uses the bulk archive operation for the Archive action", async () => {
+    render(<NotificationsPage />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select notification: Payout received" }));
+    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
+
+    await waitFor(() => expect(mockBulkArchive).toHaveBeenCalledWith(["n1"]));
   });
 });

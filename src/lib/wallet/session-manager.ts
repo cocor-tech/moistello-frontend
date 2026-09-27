@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import type {
   WalletAdapter,
   WalletSession,
@@ -118,7 +119,7 @@ export class WalletSessionManager {
         // This rotates automatically on wallet switch/reconnect
         const passphrase = this.getEncryptionPassphrase()
         encryptToStorage(STORAGE_KEY, store, passphrase).catch((e) => {
-          console.warn(
+          logger.warn(
             "[SessionManager] Encryption failed, falling back to plaintext:",
             e,
           )
@@ -126,10 +127,10 @@ export class WalletSessionManager {
         })
       } catch (e) {
         if (e instanceof DOMException && e.name === "QuotaExceededError") {
-          console.warn("[SessionManager] localStorage full — sessions not persisted")
+          logger.warn("[SessionManager] localStorage full — sessions not persisted")
           return
         }
-        console.warn("[SessionManager] Failed to persist sessions:", e)
+        logger.warn("[SessionManager] Failed to persist sessions:", e)
       }
     })
   }
@@ -170,7 +171,7 @@ export class WalletSessionManager {
         JSON.stringify(store.sessions),
       );
       if (store.hmac !== expectedHMAC) {
-        console.warn(
+        logger.warn(
           "[SessionManager] HMAC mismatch — session store may be tampered",
         );
         localStorage.removeItem(STORAGE_KEY);
@@ -183,7 +184,7 @@ export class WalletSessionManager {
       );
       this.activeWalletId = store.activeWalletId;
     } catch (e) {
-      console.warn(
+      logger.warn(
         "[session-manager] Failed to restore sessions from storage:",
         e,
       );
@@ -206,7 +207,7 @@ export class WalletSessionManager {
       case "wallet_disconnected":
       case "active_switched":
         this.restore().catch((e) =>
-          console.warn(
+          logger.warn(
             "[session-manager] Failed to restore after broadcast:",
             e,
           ),
@@ -219,7 +220,7 @@ export class WalletSessionManager {
     window.addEventListener("storage", (event) => {
       if (event.key === STORAGE_KEY) {
         this.restore().catch((e) =>
-          console.warn(
+          logger.warn(
             "[session-manager] Failed to restore after storage event:",
             e,
           ),

@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useCallback, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, Monitor, Smartphone, Globe, Clock, Shield } from "lucide-react"
@@ -56,7 +57,7 @@ export default function SessionsSettingsPage() {
       const body = (res as Record<string, unknown>)?.data as Record<string, unknown> ?? res
       setSessions((body?.sessions ?? []) as SessionInfo[])
       setLoadingSessions(false)
-    }).catch((e) => { console.warn("[sessions] Failed to load sessions:", e); setLoadingSessions(false) })
+    }).catch((e) => { logger.warn("[sessions] Failed to load sessions:", e); setLoadingSessions(false) })
   }, [])
 
   const handleSaveTTL = useCallback(async () => {
@@ -66,7 +67,7 @@ export default function SessionsSettingsPage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      console.error("[sessions] Failed to save session TTL:", e)
+      logger.error("[sessions] Failed to save session TTL:", e)
     }
     setSaving(false)
   }, [sessionTTL])
@@ -76,7 +77,7 @@ export default function SessionsSettingsPage() {
       await del(`/sessions/${sessionId}`)
       setSessions((prev) => prev.filter((s) => s.id !== sessionId))
     } catch (e) {
-      console.error("[sessions] Failed to revoke session:", e)
+      logger.error("[sessions] Failed to revoke session:", e)
     }
     setConfirmRevoke(null)
   }, [])
@@ -86,14 +87,14 @@ export default function SessionsSettingsPage() {
       await del("/sessions")
       setSessions((prev) => prev.filter((s) => s.isCurrent))
     } catch (e) {
-      console.error("[sessions] Failed to revoke all sessions:", e)
+      logger.error("[sessions] Failed to revoke all sessions:", e)
     }
   }, [])
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -116,15 +117,15 @@ export default function SessionsSettingsPage() {
             <span className="font-heading font-semibold text-foreground">{Math.round(sessionTTL / 60)}h {sessionTTL % 60}m</span>
             <span className="text-muted-foreground">{t("session.twentyFourHours")}</span>
           </div>
-          <input type="range" min={60} max={1440} step={30} value={sessionTTL}
+          <input aria-label="Session time-to-live" type="range" min={60} max={1440} step={30} value={sessionTTL}
             onChange={(e) => setSessionTTL(Number(e.target.value))}
             className="w-full accent-aurora-violet h-2 rounded-full appearance-none bg-white/10 cursor-pointer" />
           <div className="flex justify-between text-2xs text-muted-foreground">
-            <button type="button" onClick={() => setSessionTTL(60)} className="hover:text-foreground">1h</button>
-            <button type="button" onClick={() => setSessionTTL(240)} className="hover:text-foreground">4h</button>
-            <button type="button" onClick={() => setSessionTTL(480)} className="hover:text-foreground">8h</button>
-            <button type="button" onClick={() => setSessionTTL(720)} className="hover:text-foreground">12h</button>
-            <button type="button" onClick={() => setSessionTTL(1440)} className="hover:text-foreground">24h</button>
+            <button type="button" aria-pressed={sessionTTL === 60} onClick={() => setSessionTTL(60)} className="hover:text-foreground">1h</button>
+            <button type="button" aria-pressed={sessionTTL === 240} onClick={() => setSessionTTL(240)} className="hover:text-foreground">4h</button>
+            <button type="button" aria-pressed={sessionTTL === 480} onClick={() => setSessionTTL(480)} className="hover:text-foreground">8h</button>
+            <button type="button" aria-pressed={sessionTTL === 720} onClick={() => setSessionTTL(720)} className="hover:text-foreground">12h</button>
+            <button type="button" aria-pressed={sessionTTL === 1440} onClick={() => setSessionTTL(1440)} className="hover:text-foreground">24h</button>
           </div>
         </div>
         <div className="flex items-center justify-end gap-3 pt-2">

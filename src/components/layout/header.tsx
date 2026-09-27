@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 import { useMultiWallet } from "@/hooks/use-multi-wallet";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { useFocusTrap } from "@/hooks/use-focus-trap";
 
 interface HeaderProps {
   onToggleMobileMenu: () => void;
@@ -51,6 +52,7 @@ function HeaderComponent({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) 
             <LocaleSwitcher />
 
             <button
+              type="button"
               onClick={onToggleMobileMenu}
               className={cn(
                 "inline-flex h-9 w-9 items-center justify-center rounded-xl",
@@ -59,6 +61,8 @@ function HeaderComponent({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) 
                 "lg:hidden",
               )}
               aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-dashboard-menu"
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -77,6 +81,7 @@ function HeaderComponent({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) 
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setShowConnectModal(true)}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-body",
@@ -92,16 +97,15 @@ function HeaderComponent({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) 
             </div>
 
             <div>
-              <Link href={Routes.NOTIFICATIONS} className="relative inline-flex">
+              <Link href={Routes.NOTIFICATIONS} className="relative inline-flex" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}>
                 <div
                   className={cn(
                     "relative inline-flex h-9 w-9 items-center justify-center rounded-full",
                     "glass-whisper text-muted-foreground",
                     "hover:text-foreground",
                   )}
-                  aria-label="Notifications"
                 >
-                  <Bell className="h-4 w-4" />
+                  <Bell className="h-4 w-4" aria-hidden="true" />
                   {unreadCount > 0 && (
                     <span
                       className={cn(
@@ -131,6 +135,7 @@ export const Header = memo(HeaderComponent);
 
 function ConnectWalletModal({ onClose }: { onClose: () => void }) {
   const { isConnecting, error, setSelectorOpen } = useMultiWallet();
+  const dialogRef = useFocusTrap<HTMLDivElement>(true, onClose);
 
   const handleConnect = () => {
     setSelectorOpen(true);
@@ -138,17 +143,31 @@ function ConnectWalletModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-sm rounded-2xl glass-premium p-6 depth-4">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full glass-strong">
-          <Wallet className="h-6 w-6 text-aurora-violet" />
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+      <button
+        type="button"
+        aria-label="Close connect wallet dialog"
+        tabIndex={-1}
+        onClick={onClose}
+        className="absolute inset-0 cursor-default"
+      />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="connect-wallet-title"
+        tabIndex={-1}
+        className="relative z-10 w-full max-w-sm rounded-2xl glass-premium p-6 depth-4"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full glass-strong" aria-hidden="true">
+            <Wallet className="h-6 w-6 text-aurora-violet" />
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close connect wallet dialog" className="rounded-full p-2 text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
-        <h3 className="text-lg font-heading font-bold gradient-text-extended mb-1.5">
+        <h3 id="connect-wallet-title" className="text-lg font-heading font-bold gradient-text-extended mb-1.5">
           Connect Wallet
         </h3>
         <p className="text-sm text-muted-foreground font-body mb-5">

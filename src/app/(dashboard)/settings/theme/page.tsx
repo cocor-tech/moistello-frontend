@@ -28,7 +28,7 @@ export default function ThemeSettingsPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -43,7 +43,9 @@ export default function ThemeSettingsPage() {
         <div className="grid grid-cols-3 gap-3">
           {getThemeOptions(t).map((opt) => (
             <button
+              type="button"
               key={opt.value}
+              aria-pressed={theme === opt.value}
               onClick={() => setTheme(opt.value)}
               className={cn(
                 "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
@@ -109,7 +111,10 @@ export default function ThemeSettingsPage() {
         <div className="flex gap-2">
           {(["small", "medium", "large"] as const).map((size) => (
             <button
+              type="button"
               key={size}
+              aria-label={`Set font size to ${size}`}
+              aria-pressed={fontSize === size}
               onClick={() => setFontSize(size)}
               className={cn(
                 "flex-1 py-3 rounded-xl text-sm font-medium border-2 transition-all",

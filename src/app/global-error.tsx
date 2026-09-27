@@ -18,7 +18,7 @@ export default function GlobalError({
         <pre style={{ padding: "2rem", whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: "14px" }}>
           {errorMessage}
         </pre>
-        <button onClick={() => reset()} style={{ margin: "0 2rem", padding: "0.5rem 1rem" }}>
+        <button type="button" aria-label="Retry rendering the application" onClick={() => reset()} style={{ margin: "0 2rem", padding: "0.5rem 1rem" }}>
           Try again
         </button>
       </body>

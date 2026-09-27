@@ -6,6 +6,7 @@ import { ArrowLeft, PiggyBank, Target, Calendar, TrendingUp, Check, ExternalLink
 import { useQuery } from "@tanstack/react-query"
 import { get } from "@/lib/api-client"
 import { useTranslate } from "@/lib/locale/context"
+import { ButtonLink } from "@/components/ui/button"
 
 interface SavingsSettings {
   autoReserve: boolean
@@ -87,7 +88,7 @@ export default function SavingsSettingsPage() {
       {/* Header with border accent */}
       <div className="border-l-4 border-l-aurora-violet pl-5 mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="font-heading text-xl font-bold text-foreground">{t("settings.savings")}</h1>
@@ -145,6 +146,8 @@ export default function SavingsSettingsPage() {
             {FREQUENCY_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
+                type="button"
+                aria-pressed={localSettings.defaultFrequency === opt.value}
                 onClick={() => setLocalSettings((s) => ({ ...s, defaultFrequency: opt.value }))}
                 className={`rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
                   localSettings.defaultFrequency === opt.value
@@ -169,6 +172,7 @@ export default function SavingsSettingsPage() {
           <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">Default Target Amount</h3>
           <div className="flex items-center gap-4">
             <input
+              aria-label="Default savings target amount in US dollars"
               type="number"
               min={1}
               value={localSettings.defaultTargetAmount}
@@ -197,6 +201,7 @@ export default function SavingsSettingsPage() {
               type="button"
               role="switch"
               aria-checked={localSettings.autoReserve}
+              aria-label="Automatically reserve circle payouts"
               onClick={() => setLocalSettings((s) => ({ ...s, autoReserve: !s.autoReserve }))}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
                 localSettings.autoReserve ? "bg-aurora-violet" : "bg-white/10"
@@ -220,6 +225,7 @@ export default function SavingsSettingsPage() {
               type="button"
               role="switch"
               aria-checked={localSettings.notifyOnMilestone}
+              aria-label="Notify on savings milestones"
               onClick={() => setLocalSettings((s) => ({ ...s, notifyOnMilestone: !s.notifyOnMilestone }))}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
                 localSettings.notifyOnMilestone ? "bg-aurora-violet" : "bg-white/10"
@@ -242,6 +248,8 @@ export default function SavingsSettingsPage() {
               {MILESTONE_OPTIONS.map((pct) => (
                 <button
                   key={pct}
+                  type="button"
+                  aria-pressed={localSettings.milestoneThreshold === pct}
                   onClick={() => setLocalSettings((s) => ({ ...s, milestoneThreshold: pct }))}
                   className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
                     localSettings.milestoneThreshold === pct
@@ -258,17 +266,16 @@ export default function SavingsSettingsPage() {
 
         {/* Save section */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
-          <Link href="/settings">
-            <button className="px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {t("common.cancel")}
-            </button>
-          </Link>
+          <ButtonLink href="/settings" variant="ghost" size="md" className="px-5 py-2.5 text-sm text-muted-foreground hover:text-foreground">
+            {t("common.cancel")}
+          </ButtonLink>
           {saved && (
             <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
               <Check className="h-4 w-4" /> {t("common.saved")}
             </span>
           )}
           <button
+            type="button"
             onClick={handleSave}
             className="rounded-full bg-gradient-to-r from-aurora-violet to-aurora-cyan px-6 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
           >

@@ -128,6 +128,14 @@ Access at `http://localhost:1110`
 | `lint` | ESLint checks |
 | `test` | Run test suite |
 
+## Accessibility
+
+See [`docs/accessibility.md`](docs/accessibility.md) for the WCAG 2.1 AA authoring checklist, keyboard requirements, and screen-reader verification steps.
+
+## Logging
+
+See [`docs/logging.md`](docs/logging.md) for structured log levels, redaction, browser batching, and server collection.
+
 ## Contributing
 
 1. Branch from `main`

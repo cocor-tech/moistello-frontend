@@ -15,8 +15,6 @@ describe("GlobalError", () => {
 
   it("renders the stack or message in development", () => {
     vi.stubEnv("NODE_ENV", "development")
-    vi.spyOn(console, "error").mockImplementation(() => undefined)
-
     const { container } = render(<GlobalError error={error} reset={reset} />)
 
     expect(container.querySelector("pre")?.textContent).toBe(error.stack || error.message)
@@ -33,7 +31,6 @@ describe("GlobalError", () => {
 
   it("does not expose the stack or internal message in production", () => {
     vi.stubEnv("NODE_ENV", "production")
-    vi.spyOn(console, "error").mockImplementation(() => undefined)
 
     render(<GlobalError error={error} reset={reset} />)
 

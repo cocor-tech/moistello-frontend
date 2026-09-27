@@ -52,16 +52,17 @@ export function CommunityStepDetails({ formData, setFormData, errors }: Communit
       </div>
 
       <div>
-        <label className="mb-3 block font-heading text-sm text-muted-foreground">
+        <p id="access-type-label" className="mb-3 block font-heading text-sm text-muted-foreground">
           Access Type
-        </label>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        </p>
+        <div role="group" aria-labelledby="access-type-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {ACCESS_TYPES.map((at) => {
             const selected = at.value === "open" ? !isInvite : isInvite
             return (
               <button
                 key={at.value}
                 type="button"
+                aria-pressed={selected}
                 onClick={() => setFormData((prev) => ({ ...prev, requiresInvite: at.value === "invite" }))}
                 className={cn(
                   "glass rounded-xl p-4 text-left transition-all duration-300",

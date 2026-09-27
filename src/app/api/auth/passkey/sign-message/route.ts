@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { NextRequest, NextResponse } from "next/server"
 import { getCredential, getPepper } from "@/lib/passkey/store"
 import { checkRateLimit, requireAuthenticatedUser } from "@/lib/passkey/auth-guard"
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error("sign-message error:", msg)
+    logger.error("sign-message error:", msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

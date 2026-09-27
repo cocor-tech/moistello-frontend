@@ -28,7 +28,7 @@ export default function LanguageSettingsPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -45,6 +45,7 @@ export default function LanguageSettingsPage() {
           <button
             key={lang.value}
             type="button"
+            aria-pressed={locale === lang.value}
             onClick={() => setLocale(lang.value)}
             className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all ${
               locale === lang.value

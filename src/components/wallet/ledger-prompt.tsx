@@ -213,9 +213,6 @@ export function LedgerPrompt({
           onClick={(e) => {
             if (e.target === e.currentTarget) handleClose();
           }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ledger-wizard-title"
         >
           <motion.div
             initial={{ scale: 0.92, opacity: 0, y: 24 }}

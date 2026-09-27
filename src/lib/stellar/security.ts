@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 const SPENDING_KEY = "moistello_spending"
 const KNOWN_ADDR_KEY = "moistello_known_addresses"
 
@@ -12,7 +13,7 @@ export function getDailySpending(): DailySpending {
     const raw = localStorage.getItem(SPENDING_KEY)
     if (raw) return JSON.parse(raw)
   } catch (e) {
-    console.warn("[security] Failed to read spending data:", e)
+    logger.warn("[security] Failed to read spending data:", e)
   }
   return { date: new Date().toISOString().slice(0, 10), totalUsdc: 0, totalXlm: 0 }
 }
@@ -38,7 +39,7 @@ export function isKnownAddress(addr: string): boolean {
       return list.includes(addr)
     }
   } catch (e) {
-    console.warn("[security] Failed to read known addresses:", e)
+    logger.warn("[security] Failed to read known addresses:", e)
   }
   return false
 }
@@ -52,7 +53,7 @@ export function markAddressKnown(addr: string): void {
       localStorage.setItem(KNOWN_ADDR_KEY, JSON.stringify(list))
     }
   } catch (e) {
-    console.warn("[security] Failed to persist known address:", e)
+    logger.warn("[security] Failed to persist known address:", e)
   }
 }
 

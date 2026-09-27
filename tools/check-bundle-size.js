@@ -20,7 +20,7 @@ function walk(dir) {
 function main() {
   const chunksDir = path.resolve(process.cwd(), ".next", "static", "chunks");
   if (!fs.existsSync(chunksDir)) {
-    console.error("No chunks directory found at", chunksDir);
+    process.stderr.write(`No chunks directory found at ${chunksDir}\n`);
     process.exit(0);
   }
   const files = walk(chunksDir).filter((f) => f.endsWith(".js"));
@@ -29,10 +29,10 @@ function main() {
     const stat = fs.statSync(f);
     total += stat.size;
   }
-  console.log(`Bundle JS total size: ${(total / 1024).toFixed(1)} KB`);
+  process.stdout.write(`Bundle JS total size: ${(total / 1024).toFixed(1)} KB\n`);
   if (total > JS_BUDGET) {
-    console.error(
-      `JS bundle budget exceeded: ${total} bytes > ${JS_BUDGET} bytes`,
+    process.stderr.write(
+      `JS bundle budget exceeded: ${total} bytes > ${JS_BUDGET} bytes\n`,
     );
     process.exit(2);
   }

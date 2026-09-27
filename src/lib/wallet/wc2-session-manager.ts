@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import type { NetworkType } from "./types"
 import { getRelayMonitor } from "./wc2-relay"
 import { getWC2SessionStore } from "./wc2-session-store"
@@ -102,7 +103,7 @@ class WCSessionOrchestrator {
       this.signClient = sc
       return true
     } catch (e) {
-      console.warn("[wc-session] Failed to restore session:", e)
+      logger.warn("[wc-session] Failed to restore session:", e)
       return false
     }
   }
@@ -296,7 +297,7 @@ const prop = proposal as {
       try {
         await sc.disconnect({ topic: this.connectionState.sessionTopic })
       } catch (e) {
-        console.warn("[wc-session] Failed to disconnect:", e)
+        logger.warn("[wc-session] Failed to disconnect:", e)
       }
     }
     this.reset()

@@ -35,16 +35,20 @@ export function Progress({
   const clampedValue = Math.max(0, Math.min(100, value));
 
   return (
-    <div className={cn("w-full", className)} {...props}>
+    <div
+      className={cn("w-full", className)}
+      role="progressbar"
+      aria-valuenow={clampedValue}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      {...props}
+    >
       <div
         className={cn(
           "w-full overflow-hidden rounded-full bg-muted",
           sizeClasses[size],
         )}
-        role="progressbar"
-        aria-valuenow={clampedValue}
-        aria-valuemin={0}
-        aria-valuemax={100}
+        aria-hidden="true"
       >
         <motion.div
           className={cn(

@@ -56,6 +56,7 @@ export function TicketLookup() {
     <div className="space-y-4">
       <form onSubmit={handleLookupTicket} className="flex gap-2 mb-4">
         <input
+          aria-label="Ticket ID"
           type="text"
           value={ticketId}
           onChange={(e) => {

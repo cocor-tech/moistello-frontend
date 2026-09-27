@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { Dropdown, DropdownItem } from "../dropdown";
+import { Button } from "../button";
 
 describe("Dropdown component", () => {
   it("renders trigger and opens menu on click", async () => {
@@ -22,6 +23,20 @@ describe("Dropdown component", () => {
     expect(screen.getByRole("menuitem", { name: "Option 2" })).toBeInTheDocument();
   });
 
+  it("uses a supplied button as the single focusable trigger", async () => {
+    render(
+      <Dropdown trigger={<Button>Choose sort</Button>}>
+        <DropdownItem>Newest</DropdownItem>
+      </Dropdown>
+    )
+
+    const trigger = screen.getByRole("button", { name: "Choose sort" });
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(await screen.findByRole("menuitem", { name: "Newest" })).toBeInTheDocument()
+  })
+
   it("navigates options using ArrowDown and ArrowUp", async () => {
     render(
       <Dropdown trigger={<span>Open Menu</span>}>
@@ -39,17 +54,32 @@ describe("Dropdown component", () => {
     const item3 = screen.getByRole("menuitem", { name: "Option 3" });
 
     // ArrowDown moves to Option 2
-    fireEvent.keyDown(trigger.parentElement!, { key: "ArrowDown" });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
     expect(document.activeElement).toBe(item2);
 
     // ArrowDown moves to Option 3
-    fireEvent.keyDown(trigger.parentElement!, { key: "ArrowDown" });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
     expect(document.activeElement).toBe(item3);
 
     // ArrowUp moves back to Option 2
-    fireEvent.keyDown(trigger.parentElement!, { key: "ArrowUp" });
+    fireEvent.keyDown(trigger, { key: "ArrowUp" });
     expect(document.activeElement).toBe(item2);
   });
+
+  it("navigates radio menu items", async () => {
+    render(
+      <Dropdown trigger={<span>Sort circles</span>}>
+        <DropdownItem role="menuitemradio" aria-checked="true">Newest</DropdownItem>
+        <DropdownItem role="menuitemradio" aria-checked="false">Oldest</DropdownItem>
+      </Dropdown>
+    )
+
+    const trigger = screen.getByRole("button", { name: "Sort circles" })
+    fireEvent.click(trigger)
+    const oldest = await screen.findByRole("menuitemradio", { name: "Oldest" })
+    fireEvent.keyDown(trigger, { key: "ArrowDown" })
+    expect(document.activeElement).toBe(oldest)
+  })
 
   it("closes dropdown and restores focus to trigger on Escape key", async () => {
     render(
@@ -64,7 +94,7 @@ describe("Dropdown component", () => {
     await screen.findByRole("menuitem", { name: "Option 1" });
     expect(trigger).toHaveAttribute("aria-expanded", "true");
 
-    fireEvent.keyDown(trigger.parentElement!, { key: "Escape" });
+    fireEvent.keyDown(trigger, { key: "Escape" });
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(document.activeElement).toBe(trigger);

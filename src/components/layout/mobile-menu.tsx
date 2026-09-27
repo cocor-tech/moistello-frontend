@@ -14,6 +14,7 @@ import {
   Settings,
   Wallet,
   LogOut,
+  X,
   Sun,
   BookOpen,
   HelpCircle,
@@ -81,8 +82,9 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} aria-hidden="true" />
       <div
+        id="mobile-dashboard-menu"
         ref={menuRef}
         role="dialog"
         aria-modal="true"
@@ -96,11 +98,19 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
         )}
         style={{ overscrollBehavior: "contain" }}
       >
-        <div className="flex h-16 items-center px-5 border-b border-white/[0.05]">
+        <div className="flex h-16 items-center justify-between px-5 border-b border-white/[0.05]">
           <span className="gradient-text-extended font-heading font-bold text-lg">Moistello</span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close navigation menu"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:glass-whisper"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-4 py-4">
+        <nav className="flex-1 overflow-y-auto px-4 py-4" aria-label="Mobile dashboard navigation">
           <div className="space-y-1 mb-6">
             <p className="px-3 text-[10px] font-heading tracking-[0.2em] uppercase text-muted-foreground/70 mb-2">
               {t("nav.navigation")}
@@ -111,6 +121,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
                 <Link
                   key={link.href}
                   href={link.href}
+                   aria-current={active ? "page" : undefined}
                   onClick={onClose}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm",
@@ -136,6 +147,8 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
                 <Link
                   key={link.href}
                   href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={link.href === Routes.NOTIFICATIONS && unreadCount > 0 ? `${link.label} (${unreadCount} unread)` : undefined}
                   onClick={onClose}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm",
@@ -146,7 +159,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
                 >
                   {link.icon}
                   <span className="flex-1">{link.label}</span>
-                  {link.label === "Notifications" && unreadCount > 0 && (
+                  {link.href === Routes.NOTIFICATIONS && unreadCount > 0 && (
                     <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white px-1.5">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
@@ -166,6 +179,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
                 <Link
                   key={link.href}
                   href={link.href}
+                   aria-current={active ? "page" : undefined}
                   onClick={onClose}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm",
@@ -189,6 +203,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
           </div>
 
           <button
+            type="button"
             onClick={toggleTheme}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:glass-whisper"
           >
@@ -198,6 +213,7 @@ function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
 
           {isAuthenticated && (
             <button
+              type="button"
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10"
             >

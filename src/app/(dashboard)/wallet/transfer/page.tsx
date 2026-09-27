@@ -1,34 +1,24 @@
 "use client"
 
+<<<<<<< HEAD
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
+=======
+import { useState, Suspense } from "react"
+>>>>>>> origin/master
 import { useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
   CheckCircle2,
-  Copy,
-  Check,
-  ExternalLink,
   AlertCircle,
-  BookOpen,
   ArrowRight,
-  ShieldCheck,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { EmptyState } from "@/components/shared/empty-state"
 import { useUIStore } from "@/stores/ui-store"
 import { post } from "@/lib/api-client"
 import { formatAddress } from "@/lib/formatters"
-import { copyToClipboard } from "@/lib/clipboard"
-
-interface SavedAddress {
-  id: string
-  label: string
-  publicKey: string
-}
 
 function WalletTransferContent() {
   const searchParams = useSearchParams()
@@ -44,49 +34,12 @@ function WalletTransferContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [txnHash, setTxnHash] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isError, setIsError] = useState(false)
-
-  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
-  const [copiedHash, setCopiedHash] = useState(false)
 
   // Balances
   const usdcBalance = 1250.0
   const xlmBalance = 450.75
   const maxAvailable = currency === "USDC" ? usdcBalance : xlmBalance
   const networkFee = currency === "USDC" ? 0.01 : 0.0001
-
-  useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("saved_addresses") || "[]")
-      setSavedAddresses(stored)
-    } catch {
-      // fallback
-    }
-  }, [])
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6" aria-label="Loading transfer">
-        <Skeleton variant="heading" width="40%" height={40} />
-        <Skeleton variant="rectangular" height={300} />
-      </div>
-    )
-  }
-
-  if (isError) {
-    return (
-      <EmptyState
-        icon={<AlertCircle />}
-        title="Failed to load transfer page"
-        description="Something went wrong loading wallet transfer details."
-        action={{
-          label: "Try Again",
-          onClick: () => setIsError(false),
-        }}
-      />
-    )
-  }
 
   const handleValidate = () => {
     setError(null)
@@ -129,9 +82,15 @@ function WalletTransferContent() {
       })
       setTxnHash(res?.txnHash || "tx_mock_hash_stellar")
       setStep("success")
+<<<<<<< HEAD
       addToast({ title: "Transfer completed successfully", type: "success" })
     } catch (err: any) {
       setError(err?.message || "Transfer failed. Please try again.")
+=======
+      addToast({ type: "success", title: "Transfer completed successfully" })
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Transfer failed. Please try again.")
+>>>>>>> origin/master
       setStep("form")
     } finally {
       setIsSubmitting(false)
@@ -143,13 +102,10 @@ function WalletTransferContent() {
       <PageHeader
         title="Transfer Assets"
         description="Send USDC or XLM instantly across the Stellar network."
-        backButton={
-          <Link href="/wallet">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Wallet
-            </Button>
-          </Link>
+        action={
+          <ButtonLink href="/wallet" variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />}>
+            Back to Wallet
+          </ButtonLink>
         }
       />
 
@@ -163,8 +119,10 @@ function WalletTransferContent() {
       {step === "form" && (
         <form onSubmit={handleReview} className="glass-card p-6 md:p-8 rounded-3xl space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2">Recipient Address</label>
+            <label htmlFor="recipient-address" className="block text-sm font-medium mb-2">Recipient Address</label>
             <Input
+              id="recipient-address"
+              aria-label="Recipient Stellar address"
               data-testid="recipient-input"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
@@ -173,9 +131,11 @@ function WalletTransferContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Amount</label>
+            <label htmlFor="transfer-amount" className="block text-sm font-medium mb-2">Amount</label>
             <div className="flex gap-3">
               <Input
+                id="transfer-amount"
+                aria-label="Transfer amount"
                 data-testid="amount-input"
                 type="number"
                 step="any"
@@ -184,8 +144,13 @@ function WalletTransferContent() {
                 placeholder="0.00"
               />
               <select
+                aria-label="Transfer currency"
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value as any)}
+                onChange={(e) => {
+                  if (e.target.value === "USDC" || e.target.value === "XLM") {
+                    setCurrency(e.target.value)
+                  }
+                }}
                 className="bg-background border border-border rounded-xl px-4 py-2 font-medium text-foreground"
               >
                 <option value="USDC">USDC</option>
@@ -198,8 +163,10 @@ function WalletTransferContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Memo (Optional)</label>
+            <label htmlFor="payment-memo" className="block text-sm font-medium mb-2">Memo (Optional)</label>
             <Input
+              id="payment-memo"
+              aria-label="Payment memo"
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder="Payment memo or reference"
@@ -266,9 +233,7 @@ function WalletTransferContent() {
           <div className="p-3 bg-muted/30 rounded-xl font-mono text-xs break-all">
             Txn Hash: {txnHash}
           </div>
-          <Link href="/wallet">
-            <Button className="w-full mt-4">Return to Wallet</Button>
-          </Link>
+          <ButtonLink href="/wallet" className="w-full mt-4">Return to Wallet</ButtonLink>
         </div>
       )}
     </div>

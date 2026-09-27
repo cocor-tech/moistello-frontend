@@ -162,6 +162,193 @@ export default function ProfilePage() {
           variants={item}
         />
 
+<<<<<<< HEAD
+=======
+          {isEditing ? (
+            <div className="w-full max-w-sm space-y-4">
+              <div>
+                <p className="mb-1.5 block text-xs font-heading tracking-wider uppercase text-muted-foreground">
+                  Display Name
+                </p>
+                <p className="font-heading text-xl font-semibold text-foreground text-center">{user.displayName || "Anonymous"}</p>
+                <p className="text-2xs text-muted-foreground text-center mt-1">Your unique anonymous name. Cannot be changed.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1 className="font-heading text-3xl font-bold gradient-text-extended text-center">
+                {user.displayName ?? "Unnamed User"}
+              </h1>
+
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                <span className="font-mono text-sm text-muted-foreground">
+                  {formatAddress(user.walletAddress)}
+                </span>
+                <Badge variant="premium" size="sm">
+                  MoiScore {user.moiScore}
+                </Badge>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                Joined {formatDate(user.createdAt)}
+              </div>
+            </>
+          )}
+        </motion.div>
+
+        {/* Stats Row */}
+        <motion.div
+          variants={item}
+          className="grid grid-cols-3 gap-3"
+        >
+          {[
+            { label: "Circles Joined", value: "0", icon: CircleDot },
+            { label: "Circles Completed", value: "0", icon: Trophy },
+            { label: "Total Contributed", value: "$0", icon: ArrowUpCircle },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="glass rounded-2xl p-4 flex flex-col items-center gap-1.5 text-center"
+            >
+              <stat.icon className="h-4 w-4 text-aurora-violet" />
+              <span className="font-heading text-xl font-bold gradient-text">
+                {stat.value}
+              </span>
+              <span className="text-2xs text-muted-foreground uppercase tracking-wider">
+                {stat.label}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Savings Record */}
+        {savingsSummary && (savingsSummary as Record<string, unknown>).completedGoals as number > 0 && (
+          <motion.div variants={item} className="glass-premium rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+                <PiggyBank className="h-4 w-4 text-aurora-violet" />
+                Savings Record
+              </h3>
+              <Link href="/savings" className="text-xs text-aurora-violet hover:underline">
+                Manage &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="glass-whisper rounded-xl p-3 text-center">
+                <p className="font-heading text-xl font-bold gradient-text">{(savingsSummary as Record<string, unknown>).completedGoals as number}</p>
+                <p className="text-2xs text-muted-foreground uppercase tracking-wider mt-0.5">Goals Completed</p>
+              </div>
+              <div className="glass-whisper rounded-xl p-3 text-center">
+                <p className="font-heading text-xl font-bold text-foreground">{(savingsSummary as Record<string, unknown>).savingsStreak as number}m</p>
+                <p className="text-2xs text-muted-foreground uppercase tracking-wider mt-0.5">Month Streak</p>
+              </div>
+            </div>
+            {(savingsSummary as Record<string, unknown>).totalSaved as number > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Total saved</span>
+                <span className="font-heading font-semibold text-foreground">${((savingsSummary as Record<string, unknown>).totalSaved as number).toFixed(2)}</span>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Bio Section */}
+        <motion.div variants={item} className="glass-premium rounded-2xl p-5 space-y-3">
+          <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+            <User className="h-4 w-4 text-aurora-violet" />
+            Bio
+          </h3>
+
+          {isEditing ? (
+            <textarea
+              aria-label="Profile bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell us about yourself..."
+              rows={4}
+              maxLength={500}
+              className={cn(
+                "block w-full bg-transparent px-0 py-2 text-sm text-foreground",
+                "placeholder:text-muted-foreground/50",
+                "border-b-2 border-border",
+                "transition-all duration-300 rounded-none",
+                "focus:outline-none focus:border-b-aurora-violet focus:shadow-[0_0_12px_rgb(var(--aurora-violet)/0.1)]",
+                "resize-none",
+              )}
+            />
+          ) : (
+            <p className={cn(
+              "text-sm leading-relaxed",
+              bio ? "text-foreground" : "text-muted-foreground italic",
+            )}>
+              {bio || "No bio yet."}
+            </p>
+          )}
+        </motion.div>
+
+        {/* Social Links */}
+        <motion.div variants={item} className="glass-premium rounded-2xl p-5 space-y-3">
+          <h3 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
+            <LinkIcon className="h-4 w-4 text-aurora-violet" />
+            Social Links
+          </h3>
+
+          {isEditing ? (
+            <div className="space-y-4">
+              <Input
+                label="Twitter URL"
+                placeholder="https://twitter.com/yourhandle"
+                value={twitterUrl}
+                onChange={(e) => setTwitterUrl(e.target.value)}
+                leftIcon={<Globe className="h-4 w-4" />}
+              />
+              <Input
+                label="GitHub URL"
+                placeholder="https://github.com/yourhandle"
+                value={githubUrl}
+                onChange={(e) => setGithubUrl(e.target.value)}
+                leftIcon={<Globe className="h-4 w-4" />}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                {twitterUrl ? (
+                  <a
+                    href={twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-aurora-violet hover:underline truncate"
+                  >
+                    {twitterUrl}
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground italic">No Twitter link</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                {githubUrl ? (
+                  <a
+                    href={githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-aurora-violet hover:underline truncate"
+                  >
+                    {githubUrl}
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground italic">No GitHub link</span>
+                )}
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Edit Mode: Save Button */}
+>>>>>>> origin/master
         {isEditing && (
           <motion.div variants={item} className="flex justify-end gap-3">
             <Button

@@ -2,13 +2,12 @@
 
 import React, { useState, useCallback } from "react"
 import { useParams } from "next/navigation"
-import Link from "next/link"
 import { ArrowLeft, MessageSquare, Send, Heart } from "lucide-react"
 import { useCircle } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Avatar } from "@/components/ui/avatar"
 import { cn } from "@/lib/cn"
 import { formatRelativeTime } from "@/lib/formatters"
@@ -64,7 +63,7 @@ function CommentThread({ comment, onLike, onReply }: { comment: Comment; onLike:
           </div>
           <p className="text-sm text-foreground/80 mt-1">{comment.body}</p>
           <div className="flex items-center gap-3 mt-2">
-            <button type="button" onClick={() => onLike(comment.id)} className={cn("inline-flex items-center gap-1 text-xs transition-colors", comment.likedByUser ? "text-red-400" : "text-muted-foreground hover:text-red-400")}>
+            <button type="button" aria-label={comment.likedByUser ? "Unlike comment" : "Like comment"} onClick={() => onLike(comment.id)} className={cn("inline-flex items-center gap-1 text-xs transition-colors", comment.likedByUser ? "text-red-400" : "text-muted-foreground hover:text-red-400")}>
               <Heart className={cn("h-3.5 w-3.5", comment.likedByUser && "fill-current")} />
               {comment.likes > 0 && comment.likes}
             </button>
@@ -74,13 +73,14 @@ function CommentThread({ comment, onLike, onReply }: { comment: Comment; onLike:
           {showReply && (
             <div className="mt-2 flex items-start gap-2">
               <input
+                aria-label="Reply text"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmitReply()}
                 placeholder="Write a reply..."
                 className="flex-1 bg-white/5 border border-border rounded-lg px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
-              <Button variant="primary" size="xs" onClick={handleSubmitReply} disabled={!replyText.trim()}><Send className="h-3.5 w-3.5" /></Button>
+              <Button type="button" variant="primary" size="xs" aria-label="Send reply" onClick={handleSubmitReply} disabled={!replyText.trim()}><Send className="h-3.5 w-3.5" aria-hidden="true" /></Button>
             </div>
           )}
         </div>
@@ -159,13 +159,14 @@ export default function CommentsPage() {
         title="Comments"
         description={`${comments.length} comment${comments.length !== 1 ? "s" : ""}`}
         breadcrumbs={[{ label: "Circles", href: "/circles" }, { label: circle?.name ?? "Circle", href: `/circles/${circleId}` }, { label: "Comments" }]}
-        action={<Link href={`/circles/${circleId}`}><Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</Button></Link>}
+        action={<ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</ButtonLink>}
       />
 
       <div className="flex items-start gap-2">
         <Avatar fallback="You" size="sm" className="shrink-0 mt-1" />
         <div className="flex-1">
           <textarea
+            aria-label="New comment"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Share a thought about this circle..."

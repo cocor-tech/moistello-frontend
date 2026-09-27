@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { NextRequest, NextResponse } from "next/server"
 import { verifyAuthenticationResponse } from "@simplewebauthn/server"
 import type { AuthenticatorTransportFuture } from "@simplewebauthn/server"
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error("auth-verify error:", msg)
+    logger.error("auth-verify error:", msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

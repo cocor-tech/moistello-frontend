@@ -1,12 +1,13 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Users, Shield, Plus, CircleDot, DollarSign } from "lucide-react"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { get } from "@/lib/api-client"
 import { formatCurrency } from "@/lib/formatters"
 
@@ -51,7 +52,7 @@ export default function CommunityCirclesPage() {
           setCircles((d?.circles ?? []) as CommunityCircle[])
         }
       } catch (e) {
-        console.error("[community-circles] Failed to load data:", e)
+        logger.error("[community-circles] Failed to load data:", e)
       }
       setLoading(false)
     }
@@ -68,7 +69,7 @@ export default function CommunityCirclesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link href={`/communities/${communityId}`} className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href={`/communities/${communityId}`} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to community">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -80,9 +81,9 @@ export default function CommunityCirclesPage() {
       </div>
 
       <div className="flex justify-end">
-        <Link href={`/communities/${communityId}/circles/create`}>
-          <Button variant="primary" size="sm" leftIcon={<Plus className="h-4 w-4" />}>Create Circle</Button>
-        </Link>
+        <ButtonLink href={`/communities/${communityId}/circles/create`} variant="primary" size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+          Create Circle
+        </ButtonLink>
       </div>
 
       {loading ? (

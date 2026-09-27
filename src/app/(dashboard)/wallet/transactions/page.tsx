@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowUpCircle, ArrowDownCircle, Search, Filter, Calendar, DollarSign, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowUpCircle, ArrowDownCircle, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -176,6 +176,7 @@ export default function TransactionsPage() {
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
+              aria-label="Search transactions"
               type="text"
               placeholder="Search by ID, hash, or description..."
               value={search}
@@ -190,6 +191,7 @@ export default function TransactionsPage() {
           {/* Type Filter */}
           <div>
             <select
+              aria-label="Filter transactions by type"
               value={typeFilter}
               onChange={(e) => {
                 setTypeFilter(e.target.value)
@@ -206,6 +208,7 @@ export default function TransactionsPage() {
           {/* Status Filter */}
           <div>
             <select
+              aria-label="Filter transactions by status"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value)
@@ -223,6 +226,7 @@ export default function TransactionsPage() {
           {/* Date Filter */}
           <div>
             <select
+              aria-label="Filter transactions by date"
               value={dateFilter}
               onChange={(e) => {
                 setDateFilter(e.target.value)
@@ -242,6 +246,7 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-4 pt-2 border-t text-sm">
           <span className="text-muted-foreground font-medium">Amount Range:</span>
           <input
+            aria-label="Minimum transaction amount"
             type="number"
             placeholder="Min $"
             value={minAmount}
@@ -253,6 +258,7 @@ export default function TransactionsPage() {
           />
           <span>to</span>
           <input
+            aria-label="Maximum transaction amount"
             type="number"
             placeholder="Max $"
             value={maxAmount}
@@ -264,6 +270,7 @@ export default function TransactionsPage() {
           />
           {(search || typeFilter !== "all" || statusFilter !== "all" || dateFilter !== "all" || minAmount || maxAmount) && (
             <button
+              type="button"
               onClick={() => {
                 setSearch("")
                 setTypeFilter("all")
@@ -298,6 +305,8 @@ export default function TransactionsPage() {
               </p>
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  aria-label="Previous transactions page"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
                   className="p-2 border rounded-lg disabled:opacity-50 hover:bg-muted"
@@ -305,6 +314,8 @@ export default function TransactionsPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
+                  type="button"
+                  aria-label="Next transactions page"
                   onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="p-2 border rounded-lg disabled:opacity-50 hover:bg-muted"

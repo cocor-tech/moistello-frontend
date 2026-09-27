@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, Copy, Check, Plus, Trash2, Wallet as WalletIcon, Star, ExternalLink, Send } from "lucide-react"
@@ -38,13 +39,13 @@ export default function AddressesPage() {
     get("/wallets").then((res) => {
       const d = (res as Record<string, unknown>)?.data as Record<string, unknown> ?? res as Record<string, unknown>
       setWallets((d?.wallets ?? []) as StoredWallet[])
-    }).catch((e) => { console.warn("[addresses] Failed to load wallets:", e) }).finally(() => setLoading(false))
+    }).catch((e) => { logger.warn("[addresses] Failed to load wallets:", e) }).finally(() => setLoading(false))
 
     try {
       const stored = JSON.parse(localStorage.getItem("saved_addresses") || "[]") as SavedAddress[]
       setSavedAddresses(stored)
     } catch (e) {
-      console.warn("[addresses] Failed to load saved addresses:", e)
+      logger.warn("[addresses] Failed to load saved addresses:", e)
     }
   }, [])
 
@@ -104,10 +105,10 @@ export default function AddressesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="text-sm font-mono text-foreground bg-white/5 px-2 py-1 rounded">{formatAddress(autoWallet.publicKey)}</code>
-                  <button onClick={() => copyAddr(autoWallet.publicKey)} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <button type="button" onClick={() => copyAddr(autoWallet.publicKey)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Copy primary wallet public key">
                     {copiedKey === autoWallet.publicKey ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
                   </button>
-                  <a href={`https://stellar.expert/explorer/testnet/account/${autoWallet.publicKey}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-aurora-cyan transition-colors">
+                  <a href={`https://stellar.expert/explorer/testnet/account/${autoWallet.publicKey}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-aurora-cyan transition-colors" aria-label="Open primary wallet in Stellar Explorer">
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </div>
@@ -136,15 +137,13 @@ export default function AddressesPage() {
                       <code className="text-xs font-mono text-muted-foreground">{formatAddress(addr.publicKey)}</code>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Link href={`/wallet/withdraw?address=${encodeURIComponent(addr.publicKey)}&label=${encodeURIComponent(addr.label)}`}>
-                        <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 transition-colors">
-                          <Send className="h-3 w-3" /> Send
-                        </button>
+                      <Link href={`/wallet/withdraw?address=${encodeURIComponent(addr.publicKey)}&label=${encodeURIComponent(addr.label)}`} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 transition-colors" aria-label={`Send funds to ${addr.label}`}>
+                        <Send className="h-3 w-3" aria-hidden="true" /> Send
                       </Link>
-                      <button onClick={() => copyAddr(addr.publicKey)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <button type="button" onClick={() => copyAddr(addr.publicKey)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={`Copy ${addr.label} address`}>
                         {copiedKey === addr.publicKey ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                       </button>
-                      <button onClick={() => removeAddress(addr.id)} className="text-muted-foreground hover:text-red-400 transition-colors">
+                      <button type="button" onClick={() => removeAddress(addr.id)} className="text-muted-foreground hover:text-red-400 transition-colors" aria-label={`Remove saved address ${addr.label}`}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 export interface AuditEntry {
   id: string
   actor: string
@@ -29,7 +30,7 @@ export function logAuditEvent(entry: Omit<AuditEntry, "id" | "timestamp">): void
     if (trail.length > MAX_ENTRIES) trail.length = MAX_ENTRIES
     localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(trail))
   } catch (e) {
-    console.warn("[audit] Failed to persist audit event:", e)
+    logger.warn("[audit] Failed to persist audit event:", e)
   }
 }
 
@@ -48,7 +49,7 @@ export function clearAuditTrail(): void {
   try {
     localStorage.removeItem(AUDIT_STORAGE_KEY)
   } catch (e) {
-    console.warn("[audit] Failed to clear audit trail:", e)
+    logger.warn("[audit] Failed to clear audit trail:", e)
   }
 }
 

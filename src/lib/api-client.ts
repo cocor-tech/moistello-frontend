@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import axios, {
   AxiosError,
   AxiosRequestConfig,
@@ -5,17 +6,12 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios"
 import { API_BASE_URL } from "./constants"
+import { getCsrfHeaders, getCsrfToken } from "./auth/csrf"
 import {
   clearAccessToken,
   getAccessToken,
   setAccessToken,
 } from "./auth/token-store"
-
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return ""
-  const meta = document.querySelector('meta[name="csrf-token"]')
-  return meta?.getAttribute("content") || ""
-}
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -24,6 +20,19 @@ const apiClient = axios.create({
     "Content-Type": "application/json",
   },
 })
+
+function isSameOriginApiRequest(config: InternalAxiosRequestConfig): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const base = new URL(config.baseURL || API_BASE_URL, window.location.origin);
+    const requestUrl = new URL(config.url || "", base);
+    const isApiPath =
+      requestUrl.pathname.startsWith("/api/") || base.pathname.startsWith("/api/");
+    return requestUrl.origin === window.location.origin && isApiPath;
+  } catch {
+    return false;
+  }
+}
 
 let refreshInFlight: Promise<string> | null = null
 
@@ -42,7 +51,9 @@ async function refreshAccessToken(): Promise<string> {
 
   refreshInFlight = (async () => {
     try {
-      const response = await axios.post("/api/auth/refresh")
+      const response = await axios.post("/api/auth/refresh", undefined, {
+        headers: getCsrfHeaders(),
+      })
 
       const newToken = response.data?.token
       if (!newToken) {
@@ -67,7 +78,11 @@ apiClient.interceptors.request.use(
     }
 
     const method = config.method?.toLowerCase()
-    if (method && ["post", "put", "patch", "delete"].includes(method)) {
+    if (
+      method &&
+      ["post", "put", "patch", "delete"].includes(method) &&
+      isSameOriginApiRequest(config)
+    ) {
       const csrfToken = getCsrfToken()
       if (csrfToken) {
         config.headers["X-CSRF-Token"] = csrfToken
@@ -102,21 +117,19 @@ apiClient.interceptors.response.use(
           // them. Wait for that before leaving, otherwise the middleware may
           // still see a stale cookie and bounce us straight back in.
           try {
-            await axios.delete("/api/auth/session")
+            await axios.delete("/api/auth/session", { headers: getCsrfHeaders() })
           } catch (e) {
-            console.warn("[api] Failed to clear session on refresh failure:", e)
+            logger.warn("[api] Failed to clear session on refresh failure:", e)
           }
+          window.dispatchEvent(new CustomEvent("auth:required"))
           window.location.href = "/login"
         }
         return Promise.reject(refreshError)
       }
     }
 
-    if (typeof console !== "undefined") {
-      const message = getErrorMessage(error)
-      if (error.response?.status) {
-        console.error(`[API ${error.response.status}] ${message}`)
-      }
+    if (error.response?.status) {
+      logger.error("API request failed", { status: error.response.status })
     }
 
     return Promise.reject(error)

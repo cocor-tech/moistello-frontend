@@ -41,6 +41,8 @@ export function TOTPSetup({ totpUri, totpSecret, onConfirm, error, isLoading }: 
       <div className="flex justify-center">
         <canvas
           ref={canvasRef}
+          role="img"
+          aria-label="QR code for authenticator app setup"
           className="rounded-xl bg-white p-4"
         />
       </div>

@@ -2,12 +2,11 @@
 
 import React, { useState, useMemo } from "react"
 import { useParams } from "next/navigation"
-import Link from "next/link"
 import { ArrowLeft, Inbox, DollarSign, UserPlus, Settings, Award, Clock } from "lucide-react"
 import { useCircle, useCircleMembers, useCircleRounds } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { cn } from "@/lib/cn"
 import { formatCurrency } from "@/lib/formatters"
 
@@ -113,9 +112,7 @@ export default function ActivityPage() {
           { label: "Activity" },
         ]}
         action={
-          <Link href={`/circles/${circleId}`}>
-            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</Button>
-          </Link>
+          <ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>Back</ButtonLink>
         }
       />
 
@@ -124,6 +121,7 @@ export default function ActivityPage() {
           <button
             key={f.value}
             type="button"
+            aria-pressed={typeFilter === f.value}
             onClick={() => setTypeFilter(f.value)}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-body font-medium transition-all",

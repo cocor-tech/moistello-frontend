@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -28,7 +29,7 @@ function isAuthorized(request: NextRequest): boolean {
     if (!session) return false;
     return Date.now() - session.createdAt < 7 * 24 * 60 * 60 * 1000;
   } catch (e) {
-    console.error("[api:upload] Session check failed:", e);
+    logger.error("[api:upload] Session check failed:", e);
     return false;
   }
 }

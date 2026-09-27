@@ -113,6 +113,7 @@ function SidebarComponent() {
               Moistello
             </span>
           </Link>
+<<<<<<< HEAD
           <div className="flex items-center gap-1.5">
             <LocaleSwitcher />
             <button
@@ -130,9 +131,26 @@ function SidebarComponent() {
               )}
             </button>
           </div>
+=======
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={cn(
+              "inline-flex h-8 w-8 items-center justify-center rounded-xl",
+              "glass-whisper text-muted-foreground",
+            )}
+            aria-label="Toggle theme"
+          >
+            {isDark ? (
+              <Sun className="h-3.5 w-3.5 text-amber-400" />
+            ) : (
+              <Moon className="h-3.5 w-3.5 text-indigo-400" />
+            )}
+          </button>
+>>>>>>> origin/master
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-none">
+        <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-none" aria-label="Dashboard navigation">
           {navGroups.map((group) => (
             <div key={group.title} className="mb-5">
               <h3
@@ -150,6 +168,7 @@ function SidebarComponent() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                         aria-current={active ? "page" : undefined}
                         className={cn(
                           "relative flex items-center gap-3 rounded-xl mx-2 px-3 py-2.5",
                           "text-sm font-body",

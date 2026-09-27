@@ -28,7 +28,7 @@ function CircleCompareChip({ id, onRemove }: { id: string; onRemove: (id: string
   const { data: circle } = useCircle(id)
   return (
     <div className="glass-premium rounded-xl p-4 holo-border relative">
-      <button onClick={() => onRemove(id)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 flex items-center justify-center"><X className="h-3 w-3" /></button>
+      <button type="button" onClick={() => onRemove(id)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 flex items-center justify-center" aria-label={`Remove circle ${id} from comparison`}><X className="h-3 w-3" aria-hidden="true" /></button>
       <Link href={`/circles/${id}`} className="font-heading font-semibold text-foreground dark:text-white text-sm hover:underline block truncate">{circle?.name ?? "Loading..."}</Link>
       <p className="text-2xs text-muted-foreground capitalize">{circle ? `${circle.circleType} · ${circle.status}` : ""}</p>
     </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ArrowLeft, CheckCircle, Clock, FileSignature, Loader2 } from "lucide-react"
 import { ConnectedBadge } from "./connected-badge"
@@ -105,7 +106,7 @@ export function SignStep({
     try {
       await onSign()
     } catch (e) {
-      console.error("[sign-step] Sign failed:", e)
+      logger.error("[sign-step] Sign failed:", e)
       setIsSigning(false)
     }
   }, [onSign])
@@ -115,7 +116,7 @@ export function SignStep({
     try {
       await onSign()
     } catch (e) {
-      console.error("[sign-step] Sign retry failed:", e)
+      logger.error("[sign-step] Sign retry failed:", e)
       setIsSigning(false)
     }
   }, [onSign])
@@ -235,11 +236,11 @@ export function SignStep({
 
         <p className="text-center text-2xs text-muted-foreground">
           {t("auth.sign.terms")}
-          <a href="/terms" target="_blank" className="text-aurora-cyan hover:underline">
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-aurora-cyan hover:underline">
             {t("auth.sign.termsLink")}
           </a>{" "}
           and{" "}
-          <a href="/privacy" target="_blank" className="text-aurora-cyan hover:underline">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-aurora-cyan hover:underline">
             {t("auth.sign.privacyLink")}
           </a>
         </p>

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { NextRequest, NextResponse } from "next/server"
 import { verifyRegistrationResponse } from "@simplewebauthn/server"
 import {
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error("register error:", msg)
+    logger.error("register error:", msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { Copy, Check, Loader2, XCircle, RefreshCw, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/cn"
@@ -39,7 +40,7 @@ export function WalletConnectQR({
         },
       })
     } catch (e) {
-      console.warn("[wc-qr] QR generation failed:", e)
+      logger.warn("[wc-qr] QR generation failed:", e)
     }
   }, [])
 
@@ -152,6 +153,7 @@ export function WalletConnectQR({
           width={260}
           height={260}
           className="rounded-xl"
+          role="img"
           aria-label="QR code for wallet connection"
         />
       </div>

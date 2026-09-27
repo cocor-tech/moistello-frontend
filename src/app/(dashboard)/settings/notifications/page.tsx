@@ -1,9 +1,10 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft, Bell, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { put } from "@/lib/api-client"
 import { useTranslate } from "@/lib/locale/context"
 
@@ -46,7 +47,7 @@ export default function NotificationsSettingsPage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      console.error("[notifications] Failed to save notification preferences:", e)
+      logger.error("[notifications] Failed to save notification preferences:", e)
     } finally {
       setSaving(false)
     }
@@ -59,7 +60,7 @@ export default function NotificationsSettingsPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -85,6 +86,7 @@ export default function NotificationsSettingsPage() {
                 type="button"
                 role="switch"
                 aria-checked={toggles[cat.key]}
+                 aria-label={cat.label}
                 onClick={() => toggle(cat.key)}
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
                   toggles[cat.key] ? "bg-aurora-violet" : "bg-white/10"
@@ -121,9 +123,7 @@ export default function NotificationsSettingsPage() {
       </div>
 
       <div className="flex items-center justify-end gap-3">
-        <Link href="/settings">
-          <Button variant="outline" size="md">{t("common.cancel")}</Button>
-        </Link>
+        <ButtonLink href="/settings"  variant="outline" size="md">{t("common.cancel")}</ButtonLink>
         {saved && (
           <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
             <Check className="h-4 w-4" /> {t("common.saved")}

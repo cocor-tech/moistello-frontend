@@ -32,13 +32,14 @@ export function CircleJoinCodeModal({
     >
       <div className="space-y-4">
         <input
+          aria-label="Circle invite code"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           placeholder="Paste invite code here..."
           className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 font-mono text-center text-lg tracking-widest"
         />
-        {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+        {error && <p role="alert" className="text-sm text-red-400 text-center">{error}</p>}
         <Button
           variant="primary"
           size="md"

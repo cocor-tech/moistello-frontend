@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -24,25 +24,21 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react";
-import Link from "next/link";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useWsState } from "@/hooks/use-ws-state";
 import {
   TYPE_FILTERS,
   filterNotifications,
-  groupNotificationsByType,
 } from "@/lib/notifications";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LiveIndicator } from "@/components/shared/live-indicator";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatRelativeTimeLocalized } from "@/lib/formatters";
+import { formatRelativeTime } from "@/lib/formatters";
 import { useDateLocale } from "@/hooks/use-date-locale";
 import { useTranslate } from "@/lib/locale/context";
 import { cn } from "@/lib/cn";
-import { patch } from "@/lib/api-client";
 import { useUIStore } from "@/stores/ui-store";
 import type { Notification } from "@/types";
 
@@ -120,6 +116,11 @@ function NotificationItem({
   const grad = gradientMap[notification.type] ?? gradientMap.system;
   const icol = iconColorMap[notification.type] ?? iconColorMap.system;
   const isUnread = !notification.isRead;
+  const selectLabel = t("notifications.selectNotification");
+  const deselectLabel = t("notifications.deselectNotification");
+  const selectionLabel = (selected ? deselectLabel : selectLabel).includes("{title}")
+    ? (selected ? deselectLabel : selectLabel).replace("{title}", notification.title)
+    : `${selected ? "Deselect notification" : "Select notification"}: ${notification.title}`;
 
   return (
     <motion.div
@@ -134,11 +135,15 @@ function NotificationItem({
         type="button"
         role="checkbox"
         aria-checked={selected}
+<<<<<<< HEAD
         aria-label={
           selected
             ? t("notifications.deselectNotification", "Deselect notification: {title}").replace("{title}", notification.title)
             : t("notifications.selectNotification", "Select notification: {title}").replace("{title}", notification.title)
         }
+=======
+        aria-label={selectionLabel}
+>>>>>>> origin/master
         onClick={(e) => {
           e.stopPropagation();
           onToggleSelect(notification.id);
@@ -197,7 +202,7 @@ function NotificationItem({
           )}
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-[11px] text-muted-foreground/60 font-mono">
-              {formatRelativeTimeLocalized(
+              {formatRelativeTime(
                 notification.sentAt ?? notification.createdAt,
                 dateFnsLocale,
               )}
@@ -218,7 +223,7 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslate();
   const addToast = useUIStore((s) => s.addToast);
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, fetchNotifications } = useNotifications();
+  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, bulkArchive } = useNotifications();
   const wsState = useWsState();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -227,12 +232,32 @@ export default function NotificationsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
+<<<<<<< HEAD
     const res = filterNotifications(notifications, activeTab as "all" | "unread", typeFilter);
+=======
+    let res = filterNotifications(notifications, "all", typeFilter);
+    if (activeTab === "unread") {
+      res = res.filter((n) => !n.isRead);
+    }
+>>>>>>> origin/master
     return res;
   }, [notifications, typeFilter, activeTab]);
 
   const largeList = filtered.length > STAGGER_CHILDREN_LIMIT;
+<<<<<<< HEAD
   const listMotion = useListMotion(filtered.length);
+=======
+  const listMotion = useListMotion(largeList);
+  const allSelected = filtered.length > 0 && filtered.every((n) => selectedIds.includes(n.id));
+
+  useEffect(() => {
+    const visibleIds = new Set(filtered.map((notification) => notification.id));
+    setSelectedIds((previous) => {
+      const next = previous.filter((id) => visibleIds.has(id));
+      return next.length === previous.length ? previous : next;
+    });
+  }, [filtered]);
+>>>>>>> origin/master
 
   const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) =>
@@ -241,16 +266,19 @@ export default function NotificationsPage() {
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    if (selectedIds.length === filtered.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filtered.map((n) => n.id));
-    }
-  }, [selectedIds.length, filtered]);
+    setSelectedIds((previous) => {
+      if (allSelected) {
+        const filteredIds = new Set(filtered.map((n) => n.id));
+        return previous.filter((id) => !filteredIds.has(id));
+      }
+      return Array.from(new Set([...previous, ...filtered.map((n) => n.id)]));
+    });
+  }, [allSelected, filtered]);
 
   const handleBulkMarkRead = useCallback(async () => {
     try {
-      await Promise.all(selectedIds.map((id) => markAsRead(id)));
+      const results = await Promise.all(selectedIds.map((id) => markAsRead(id)));
+      if (results.some((result) => result === false)) throw new Error("mark failed");
       setSelectedIds([]);
       addToast({ type: "success", title: "Marked selected as read" });
     } catch {
@@ -260,13 +288,14 @@ export default function NotificationsPage() {
 
   const handleBulkArchive = useCallback(async () => {
     try {
-      await Promise.all(selectedIds.map((id) => markAsRead(id)));
+      const result = await bulkArchive(selectedIds);
+      if (result === false) throw new Error("archive failed");
       setSelectedIds([]);
       addToast({ type: "success", title: "Archived selected notifications" });
     } catch {
       addToast({ type: "error", title: "Failed to archive selected" });
     }
-  }, [selectedIds, markAsRead, addToast]);
+  }, [selectedIds, bulkArchive, addToast]);
 
   const grouped = useMemo(() => {
     if (groupBy === "type") {
@@ -298,8 +327,6 @@ export default function NotificationsPage() {
     return [{ key: "all", label: "All", items: filtered }];
   }, [filtered, groupBy]);
 
-  const allSelected = filtered.length > 0 && selectedIds.length === filtered.length;
-
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -308,12 +335,16 @@ export default function NotificationsPage() {
           description={t("notifications.description")}
         />
         <div className="flex items-center gap-3">
+<<<<<<< HEAD
           <LiveIndicator connectionState={wsState.connectionState} />
           <Link href="/notifications/archive">
             <Button variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
+=======
+          <LiveIndicator isLive={wsState.isConnected} label={wsState.status} />
+          <ButtonLink href="/notifications/archive"  variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
+>>>>>>> origin/master
               {t("notifications.archive")}
-            </Button>
-          </Link>
+            </ButtonLink>
           <Button
             variant="outline"
             size="sm"
@@ -326,6 +357,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+<<<<<<< HEAD
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="all">{t("common.all")}</TabsTrigger>
@@ -339,9 +371,41 @@ export default function NotificationsPage() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+=======
+        <div className="bg-card/80 border border-white/10 rounded-xl p-1 flex items-center gap-0 holo-border" role="group" aria-label="Notification status">
+          <button
+            type="button"
+            aria-pressed={activeTab === "all"}
+            onClick={() => setActiveTab("all")}
+            className={cn(
+              "relative inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg px-4 text-sm font-heading font-medium transition-colors",
+              activeTab === "all" ? "gradient-bg text-white" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t("common.all")}
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeTab === "unread"}
+            onClick={() => setActiveTab("unread")}
+            className={cn(
+              "relative inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg px-4 text-sm font-heading font-medium transition-colors",
+              activeTab === "unread" ? "gradient-bg text-white" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {t("notifications.unread")}
+            {unreadCount > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-aurora-violet text-white rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
+>>>>>>> origin/master
 
         <div className="flex items-center gap-2">
           <select
+            aria-label="Filter notifications by type"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"
@@ -355,6 +419,7 @@ export default function NotificationsPage() {
           </select>
 
           <select
+            aria-label="Group notifications"
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as "none" | "type" | "day")}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"

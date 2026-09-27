@@ -63,7 +63,7 @@ async function validatePageCsp() {
     check(extractDirective(policy, "base-uri") === "'self'", "page base-uri must be 'self'");
     check(extractDirective(policy, "frame-ancestors") === "'none'", "page frame-ancestors must be 'none'");
   }
-  console.log("✔ page CSP: nonce-based, no unsafe-eval / unsafe-inline");
+  process.stdout.write("✔ page CSP: nonce-based, no unsafe-eval / unsafe-inline\n");
 }
 
 async function validateApiCsp() {
@@ -83,17 +83,17 @@ async function validateApiCsp() {
     check(extractDirective(policy, "default-src") === "'none'", "API default-src must be 'none'");
     check(extractDirective(policy, "frame-ancestors") === "'none'", "API frame-ancestors must be 'none'");
   }
-  console.log("✔ API CSP: default-src 'none', script-src 'none'");
+  process.stdout.write("✔ API CSP: default-src 'none', script-src 'none'\n");
 }
 
 async function main() {
-  console.log(`Validating CSP against ${BASE_URL} …`);
+  process.stdout.write(`Validating CSP against ${BASE_URL} …\n`);
   await validatePageCsp();
   await validateApiCsp();
-  console.log("All CSP validation checks passed.");
+  process.stdout.write("All CSP validation checks passed.\n");
 }
 
 main().catch((err) => {
-  console.error(err.message);
+  process.stderr.write(`${err.message}\n`);
   process.exit(1);
 });

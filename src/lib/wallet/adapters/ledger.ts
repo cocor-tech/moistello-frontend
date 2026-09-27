@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 import { WalletAdapter, WalletMeta, SignOptions, NetworkType } from "../types"
 import { detectAvailableTransport, LedgerTransportManager } from "./ledger-transport"
 import type { ConnectionState } from "./ledger-transport"
@@ -115,7 +116,7 @@ export function createLedgerAdapter(
         warnings.push(`Stellar app v${MIN_STELLAR_APP_MAJOR}.${MIN_STELLAR_APP_MINOR}.0+ recommended for full transaction detail display. Update via Ledger Live Manager.`)
       }
     } catch (e) {
-      console.warn("[ledger] Failed to read firmware version:", e)
+      logger.warn("[ledger] Failed to read firmware version:", e)
     }
 
     cachedFirmware = { firmware: firmwareStr, stellarApp: appVersion, warnings }

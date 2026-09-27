@@ -79,6 +79,78 @@ describe("ProfileStep", () => {
 
     expect(screen.getByText("Alex")).toBeInTheDocument()
     expect(screen.getByText("en")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /select.?language.*en/i })).toBeInTheDocument()
+  })
+
+  it("supports keyboard navigation and restores focus after selecting a language", async () => {
+    const handleLanguageChange = vi.fn()
+    render(
+      <LocaleProvider>
+        <ProfileStep
+          displayName="Alex"
+          language="en"
+          onUpdateLanguage={handleLanguageChange}
+          onSubmit={vi.fn()}
+        />
+      </LocaleProvider>
+    )
+
+    const trigger = screen.getByRole("button", { name: /select.?language/i })
+    trigger.focus()
+    fireEvent.keyDown(trigger, { key: "ArrowDown" })
+
+    const firstOption = await screen.findByRole("option", { name: "Afar" })
+    await waitFor(() => expect(document.activeElement).toBe(firstOption))
+
+    fireEvent.keyDown(firstOption, { key: "ArrowDown" })
+    const secondOption = screen.getByRole("option", { name: "Abkhazian" })
+    expect(document.activeElement).toBe(secondOption)
+
+    fireEvent.keyDown(secondOption, { key: "Enter" })
+    expect(handleLanguageChange).toHaveBeenCalledWith("ab")
+    await waitFor(() => expect(document.activeElement).toBe(trigger))
+  })
+
+  it("closes the language listbox with Escape and restores trigger focus", async () => {
+    render(
+      <LocaleProvider>
+        <ProfileStep
+          displayName="Alex"
+          language="en"
+          onUpdateLanguage={vi.fn()}
+          onSubmit={vi.fn()}
+        />
+      </LocaleProvider>
+    )
+
+    const trigger = screen.getByRole("button", { name: /select.?language/i })
+    fireEvent.click(trigger)
+    const option = await screen.findByRole("option", { name: "Afar" })
+    fireEvent.keyDown(option, { key: "Escape" })
+
+    expect(screen.queryByRole("listbox")).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it("closes the language listbox when Escape is dispatched outside it", async () => {
+    render(
+      <LocaleProvider>
+        <ProfileStep
+          displayName="Alex"
+          language="en"
+          onUpdateLanguage={vi.fn()}
+          onSubmit={vi.fn()}
+        />
+      </LocaleProvider>
+    )
+
+    const trigger = screen.getByRole("button", { name: /select.?language/i })
+    fireEvent.click(trigger)
+    await screen.findByRole("listbox")
+    fireEvent.keyDown(document, { key: "Escape" })
+
+    expect(screen.queryByRole("listbox")).toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 
   it("calls onSubmit when continue button clicked", () => {

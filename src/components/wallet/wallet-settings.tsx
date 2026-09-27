@@ -90,6 +90,7 @@ export function WalletSettings() {
                         {renamingId === id ? (
                           <div className="flex items-center gap-1">
                             <input
+                              aria-label="Wallet nickname"
                               value={renameValue}
                               onChange={(e) => setRenameValue(e.target.value)}
                               className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-sm w-32"
@@ -100,12 +101,14 @@ export function WalletSettings() {
                               }}
                             />
                             <button
+                              type="button"
+                              aria-label="Save wallet nickname"
                               onClick={() => saveAlias(id, renameValue)}
                               className="text-emerald-400"
                             >
                               <CheckCircle className="h-3.5 w-3.5" />
                             </button>
-                            <button onClick={() => setRenamingId(null)} className="text-red-400">
+                            <button type="button" aria-label="Cancel editing wallet nickname" onClick={() => setRenamingId(null)} className="text-red-400">
                               <X className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -113,6 +116,8 @@ export function WalletSettings() {
                           <>
                             <span className="font-heading text-sm">{getWalletName(id)}</span>
                             <button
+                              type="button"
+                              aria-label="Edit wallet nickname"
                               onClick={() => {
                                 setRenamingId(id)
                                 setRenameValue(getWalletName(id))
@@ -125,6 +130,8 @@ export function WalletSettings() {
                         )}
                       </div>
                       <button
+                        type="button"
+                        aria-label={`Copy public key for ${getWalletName(id)}`}
                         onClick={() => copyKey(w.publicKey)}
                         className="text-xs text-muted-foreground font-mono hover:text-foreground transition-colors flex items-center gap-1"
                       >
@@ -141,6 +148,8 @@ export function WalletSettings() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0">
                     <button
+                      type="button"
+                      aria-label={`Refresh balance for ${getWalletName(id)}`}
                       onClick={() => refreshBalance(id)}
                       className="glass-whisper rounded-lg p-2 hover:text-foreground transition-colors"
                       title="Refresh balance"
@@ -149,6 +158,7 @@ export function WalletSettings() {
                     </button>
                     {id !== activeWalletId && (
                       <button
+                        type="button"
                         onClick={() => switchWallet(id)}
                         className="glass-whisper rounded-lg px-3 py-1.5 text-xs hover:text-foreground transition-colors"
                       >
@@ -156,6 +166,8 @@ export function WalletSettings() {
                       </button>
                     )}
                     <button
+                      type="button"
+                      aria-label={`Disconnect ${getWalletName(id)}`}
                       onClick={() => disconnect(id)}
                       className="glass-whisper rounded-lg p-2 hover:text-red-400 transition-colors"
                       title="Disconnect"

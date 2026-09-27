@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState } from "react"
 import { Wallet, X, Loader2, QrCode } from "lucide-react"
 import { cn } from "@/lib/cn"
@@ -255,7 +256,7 @@ export function WalletSelector({ className, variant = "inline" }: WalletSelector
         setWc2PairingState("approved")
       }
     } catch (e) {
-      console.error("[wallet-selector] Connection failed:", e)
+      logger.error("[wallet-selector] Connection failed:", e)
       if (walletId === "walletconnect") {
         setWc2PairingError(address || "Connection failed or was cancelled.")
       }

@@ -2,7 +2,6 @@
 
 import React from "react"
 import { useParams } from "next/navigation"
-import Link from "next/link"
 import { motion } from "framer-motion"
 import {
   ArrowLeft,
@@ -16,7 +15,7 @@ import { useCircle, useCircleRounds } from "@/hooks/use-circles"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatAddress, formatCurrency, formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
@@ -70,11 +69,9 @@ export default function CircleRoundsPage() {
             { label: "Rounds" },
           ]}
           action={
-            <Link href={`/circles/${circleId}`}>
-              <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+            <ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
                 Back
-              </Button>
-            </Link>
+              </ButtonLink>
           }
         />
         {Array.from({ length: 4 }).map((_, i) => (
@@ -95,11 +92,9 @@ export default function CircleRoundsPage() {
             { label: "Rounds" },
           ]}
           action={
-            <Link href={`/circles/${circleId}`}>
-              <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+            <ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
                 Back
-              </Button>
-            </Link>
+              </ButtonLink>
           }
         />
         <EmptyState
@@ -122,11 +117,9 @@ export default function CircleRoundsPage() {
           { label: "Rounds" },
         ]}
         action={
-          <Link href={`/circles/${circleId}`}>
-            <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
+          <ButtonLink href={`/circles/${circleId}`}  variant="ghost" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
               Back to Circle
-            </Button>
-          </Link>
+            </ButtonLink>
         }
       />
 

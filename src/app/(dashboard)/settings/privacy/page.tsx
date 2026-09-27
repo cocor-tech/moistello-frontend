@@ -1,9 +1,10 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { useState, useCallback } from "react"
 import Link from "next/link"
 import { ArrowLeft, Shield, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, ButtonLink } from "@/components/ui/button"
 import { patch } from "@/lib/api-client"
 import { useTranslate } from "@/lib/locale/context"
 
@@ -26,7 +27,7 @@ export default function PrivacySettingsPage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      console.error("[privacy] Failed to save privacy settings:", e)
+      logger.error("[privacy] Failed to save privacy settings:", e)
     } finally {
       setSaving(false)
     }
@@ -41,7 +42,7 @@ export default function PrivacySettingsPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to settings">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
@@ -60,11 +61,14 @@ export default function PrivacySettingsPage() {
           {VISIBILITY_OPTIONS.map((opt) => (
             <label
               key={opt.value}
+              htmlFor={`visibility-${opt.value}`}
+              aria-label={`Visibility option: ${opt.label}`}
               className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
                 profileVisibility === opt.value ? "glass-strong" : "hover:glass-whisper"
               }`}
             >
               <input
+                id={`visibility-${opt.value}`}
                 type="radio"
                 name="visibility"
                 value={opt.value}
@@ -94,6 +98,7 @@ export default function PrivacySettingsPage() {
             type="button"
             role="switch"
             aria-checked={showLeaderboard}
+            aria-label={t("privacy.showLeaderboard")}
             onClick={() => setShowLeaderboard((v) => !v)}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
               showLeaderboard ? "bg-aurora-violet" : "bg-white/10"
@@ -116,6 +121,7 @@ export default function PrivacySettingsPage() {
             type="button"
             role="switch"
             aria-checked={allowFriendRequests}
+            aria-label={t("privacy.allowFriendRequests")}
             onClick={() => setAllowFriendRequests((v) => !v)}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
               allowFriendRequests ? "bg-aurora-violet" : "bg-white/10"
@@ -131,9 +137,7 @@ export default function PrivacySettingsPage() {
       </div>
 
       <div className="flex items-center justify-end gap-3">
-        <Link href="/settings">
-          <Button variant="outline" size="md">{t("common.cancel")}</Button>
-        </Link>
+        <ButtonLink href="/settings"  variant="outline" size="md">{t("common.cancel")}</ButtonLink>
         {saved && (
           <span className="inline-flex items-center gap-1 text-sm text-emerald-400">
             <Check className="h-4 w-4" /> {t("common.saved")}

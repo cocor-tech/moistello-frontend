@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { ticketSchema, zodResolver, type TicketInput } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
+import { getCsrfHeaders } from "@/lib/auth/csrf"
 
 const categories = [
   "Account & Wallet",
@@ -41,7 +42,7 @@ export function TicketForm() {
     try {
       const res = await fetch("/api/support/tickets", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify(values),
       })
       if (!res.ok) {

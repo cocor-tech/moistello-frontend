@@ -218,36 +218,30 @@ describe("POST /api/auth/verification/verify", () => {
   })
 
   it("returns 200 with verified:true for correct code", async () => {
-    // We need to know the code — patch the store's sendCode to expose it
-    // via the console, or test by extracting from the store mock.
-    // Since the store logs the code, we capture it.
-    const originalLog = console.log
-    let capturedCode = ""
-    console.log = (msg: string) => {
-      const match = msg.match(/Code for .+?: (\d{6})/)
-      if (match) capturedCode = match[1]
+    const getRandomValues = vi.spyOn(globalThis.crypto, "getRandomValues")
+    getRandomValues.mockImplementation(((array: Uint8Array) => {
+      array.fill(1)
+      return array
+    }) as typeof globalThis.crypto.getRandomValues)
+
+    try {
+      const email = `verify-correct-${Date.now()}@example.com`
+      const sendRes = await sendPOST(makeRequest({ email }))
+      const { data: { verificationId } } = await sendRes.json()
+      const code = "111111"
+
+      const res = await verifyPOST(makeRequest({ verificationId, code }))
+      expect(res.status).toBe(200)
+      const json = await res.json()
+      expect(json.verified).toBe(true)
+    } finally {
+      getRandomValues.mockRestore()
     }
-
-    const email = `verify-correct-${Date.now()}@example.com`
-    const sendRes = await sendPOST(makeRequest({ email }))
-    console.log = originalLog
-
-    const { data: { verificationId } } = await sendRes.json()
-
-    expect(capturedCode).toHaveLength(6)
-
-    const res = await verifyPOST(makeRequest({ verificationId, code: capturedCode }))
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json.verified).toBe(true)
   })
 
   it("returns 429 after exceeding max verify attempts", async () => {
-    const originalLog = console.log
-    console.log = () => {}
     const email = `verify-attempts-${Date.now()}@example.com`
     const sendRes = await sendPOST(makeRequest({ email }))
-    console.log = originalLog
 
     const { data: { verificationId } } = await sendRes.json()
 

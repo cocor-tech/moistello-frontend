@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 /**
  * WalletConnect v2 adapter for Stellar wallets.
  *
@@ -367,7 +368,30 @@ export function createWalletConnectAdapter(): WalletAdapter & {
     },
 
     async disconnect() {
+<<<<<<< HEAD
       await disconnectWc()
+=======
+      // Cancel any pending connect for this adapter instance.
+      abortConnect()
+
+      try {
+        if (currentSession) {
+          const client = await getOrInitSignClient()
+          await client.disconnect({
+            topic: currentSession.topic,
+            reason: { code: 6000, message: "User disconnected" },
+          })
+        }
+      } catch (e) {
+        logger.warn("[walletconnect] Disconnect cleanup warning:", e)
+      }
+
+      currentPublicKey = null
+      currentSession = null
+
+      // Clear persisted session without nuking all IndexedDB stores.
+      getWC2SessionStore().clear()
+>>>>>>> origin/master
     },
 
     async isConnected() {

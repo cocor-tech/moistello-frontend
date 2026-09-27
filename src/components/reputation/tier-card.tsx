@@ -239,7 +239,7 @@ export function TierCard({ score }: TierCardProps) {
           </span>
           <span className="text-xs font-mono text-muted-foreground">{Math.round(progress)}%</span>
         </div>
-        <Progress value={progress} variant="premium" size="lg" />
+        <Progress aria-label="Reputation tier progress" value={progress} variant="premium" size="lg" />
         <div className="flex items-center justify-between mt-1.5">
           <span className="text-2xs text-muted-foreground/60">{formatNumber(threshold.min)}</span>
           <span className="text-2xs text-muted-foreground/60">{formatNumber(threshold.max)}</span>

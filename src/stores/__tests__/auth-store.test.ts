@@ -72,7 +72,7 @@ describe("useAuthStore", () => {
   beforeEach(() => {
     resetState()
     _setHmacKeyForTest("00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff")
-    vi.stubGlobal("fetch", vi.fn())
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })))
   })
 
   afterEach(() => {
@@ -104,6 +104,17 @@ describe("useAuthStore", () => {
         token: makeToken(),
         refreshToken: "refresh-123",
       })
+    })
+
+    it("does not mark the session authenticated when cookie persistence fails", async () => {
+      const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>
+      fetchMock.mockResolvedValue(new Response("{}", { status: 403 }))
+
+      await expect(useAuthStore.getState().setTokens(makeToken(), "refresh-123")).rejects.toThrow(
+        "Failed to persist session cookies",
+      )
+      expect(useAuthStore.getState().isAuthenticated).toBe(false)
+      expect(useAuthStore.getState().token).toBeNull()
     })
 
     it("persists the user profile with an HMAC signature", async () => {
