@@ -135,15 +135,11 @@ function NotificationItem({
         type="button"
         role="checkbox"
         aria-checked={selected}
-<<<<<<< HEAD
         aria-label={
           selected
             ? t("notifications.deselectNotification", "Deselect notification: {title}").replace("{title}", notification.title)
             : t("notifications.selectNotification", "Select notification: {title}").replace("{title}", notification.title)
         }
-=======
-        aria-label={selectionLabel}
->>>>>>> origin/master
         onClick={(e) => {
           e.stopPropagation();
           onToggleSelect(notification.id);
@@ -232,32 +228,13 @@ export default function NotificationsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
-<<<<<<< HEAD
     const res = filterNotifications(notifications, activeTab as "all" | "unread", typeFilter);
-=======
-    let res = filterNotifications(notifications, "all", typeFilter);
-    if (activeTab === "unread") {
-      res = res.filter((n) => !n.isRead);
-    }
->>>>>>> origin/master
     return res;
   }, [notifications, typeFilter, activeTab]);
 
   const largeList = filtered.length > STAGGER_CHILDREN_LIMIT;
-<<<<<<< HEAD
   const listMotion = useListMotion(filtered.length);
-=======
-  const listMotion = useListMotion(largeList);
-  const allSelected = filtered.length > 0 && filtered.every((n) => selectedIds.includes(n.id));
 
-  useEffect(() => {
-    const visibleIds = new Set(filtered.map((notification) => notification.id));
-    setSelectedIds((previous) => {
-      const next = previous.filter((id) => visibleIds.has(id));
-      return next.length === previous.length ? previous : next;
-    });
-  }, [filtered]);
->>>>>>> origin/master
 
   const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) =>
@@ -335,16 +312,12 @@ export default function NotificationsPage() {
           description={t("notifications.description")}
         />
         <div className="flex items-center gap-3">
-<<<<<<< HEAD
           <LiveIndicator connectionState={wsState.connectionState} />
           <Link href="/notifications/archive">
             <Button variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
-=======
-          <LiveIndicator isLive={wsState.isConnected} label={wsState.status} />
-          <ButtonLink href="/notifications/archive"  variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
->>>>>>> origin/master
               {t("notifications.archive")}
-            </ButtonLink>
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="sm"
@@ -357,21 +330,6 @@ export default function NotificationsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-<<<<<<< HEAD
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">{t("common.all")}</TabsTrigger>
-            <TabsTrigger value="unread">
-              {t("notifications.unread")}
-              {unreadCount > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-aurora-violet text-white rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-=======
         <div className="bg-card/80 border border-white/10 rounded-xl p-1 flex items-center gap-0 holo-border" role="group" aria-label="Notification status">
           <button
             type="button"
@@ -401,7 +359,6 @@ export default function NotificationsPage() {
             )}
           </button>
         </div>
->>>>>>> origin/master
 
         <div className="flex items-center gap-2">
           <select

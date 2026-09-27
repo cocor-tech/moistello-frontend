@@ -113,10 +113,10 @@ function SidebarComponent() {
               Moistello
             </span>
           </Link>
-<<<<<<< HEAD
           <div className="flex items-center gap-1.5">
             <LocaleSwitcher />
             <button
+              type="button"
               onClick={toggleTheme}
               className={cn(
                 "inline-flex h-8 w-8 items-center justify-center rounded-xl",
@@ -131,23 +131,6 @@ function SidebarComponent() {
               )}
             </button>
           </div>
-=======
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-xl",
-              "glass-whisper text-muted-foreground",
-            )}
-            aria-label="Toggle theme"
-          >
-            {isDark ? (
-              <Sun className="h-3.5 w-3.5 text-amber-400" />
-            ) : (
-              <Moon className="h-3.5 w-3.5 text-indigo-400" />
-            )}
-          </button>
->>>>>>> origin/master
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-none" aria-label="Dashboard navigation">

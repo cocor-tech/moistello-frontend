@@ -1,11 +1,7 @@
 "use client"
 
-<<<<<<< HEAD
-import { useState, useEffect, Suspense } from "react"
-import Link from "next/link"
-=======
 import { useState, Suspense } from "react"
->>>>>>> origin/master
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
@@ -82,15 +78,9 @@ function WalletTransferContent() {
       })
       setTxnHash(res?.txnHash || "tx_mock_hash_stellar")
       setStep("success")
-<<<<<<< HEAD
-      addToast({ title: "Transfer completed successfully", type: "success" })
-    } catch (err: any) {
-      setError(err?.message || "Transfer failed. Please try again.")
-=======
       addToast({ type: "success", title: "Transfer completed successfully" })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Transfer failed. Please try again.")
->>>>>>> origin/master
       setStep("form")
     } finally {
       setIsSubmitting(false)

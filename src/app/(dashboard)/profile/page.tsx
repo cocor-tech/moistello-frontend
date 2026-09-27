@@ -161,63 +161,6 @@ export default function ProfilePage() {
           isEditing={isEditing}
           variants={item}
         />
-
-<<<<<<< HEAD
-=======
-          {isEditing ? (
-            <div className="w-full max-w-sm space-y-4">
-              <div>
-                <p className="mb-1.5 block text-xs font-heading tracking-wider uppercase text-muted-foreground">
-                  Display Name
-                </p>
-                <p className="font-heading text-xl font-semibold text-foreground text-center">{user.displayName || "Anonymous"}</p>
-                <p className="text-2xs text-muted-foreground text-center mt-1">Your unique anonymous name. Cannot be changed.</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <h1 className="font-heading text-3xl font-bold gradient-text-extended text-center">
-                {user.displayName ?? "Unnamed User"}
-              </h1>
-
-              <div className="flex items-center gap-3 flex-wrap justify-center">
-                <span className="font-mono text-sm text-muted-foreground">
-                  {formatAddress(user.walletAddress)}
-                </span>
-                <Badge variant="premium" size="sm">
-                  MoiScore {user.moiScore}
-                </Badge>
-              </div>
-
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
-                Joined {formatDate(user.createdAt)}
-              </div>
-            </>
-          )}
-        </motion.div>
-
-        {/* Stats Row */}
-        <motion.div
-          variants={item}
-          className="grid grid-cols-3 gap-3"
-        >
-          {[
-            { label: "Circles Joined", value: "0", icon: CircleDot },
-            { label: "Circles Completed", value: "0", icon: Trophy },
-            { label: "Total Contributed", value: "$0", icon: ArrowUpCircle },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="glass rounded-2xl p-4 flex flex-col items-center gap-1.5 text-center"
-            >
-              <stat.icon className="h-4 w-4 text-aurora-violet" />
-              <span className="font-heading text-xl font-bold gradient-text">
-                {stat.value}
-              </span>
-              <span className="text-2xs text-muted-foreground uppercase tracking-wider">
-                {stat.label}
-              </span>
             </div>
           ))}
         </motion.div>
@@ -348,7 +291,6 @@ export default function ProfilePage() {
         </motion.div>
 
         {/* Edit Mode: Save Button */}
->>>>>>> origin/master
         {isEditing && (
           <motion.div variants={item} className="flex justify-end gap-3">
             <Button

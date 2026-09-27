@@ -23,11 +23,7 @@ import { useUIStore } from "@/stores/ui-store"
 
 export default function ProposalDetailPage() {
   const { id } = useParams<{ id: string }>()
-<<<<<<< HEAD
   const addToast = useUIStore((s) => s.addToast)
-=======
-  const addToast = useUIStore((state) => state.addToast)
->>>>>>> origin/master
 
   const [voteChoice, setVoteChoice] = useState<boolean | "abstain" | null>(null)
   const [voteReason, setVoteReason] = useState("")

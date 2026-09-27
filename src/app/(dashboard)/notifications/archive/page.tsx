@@ -2,11 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-<<<<<<< HEAD
-import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield } from "lucide-react";
-=======
 import { ArrowLeft, BellOff, ArchiveRestore, CheckSquare, Square, Info, ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, CheckCheck, AlertTriangle, Shield, ChevronLeft, ChevronRight } from "lucide-react";
->>>>>>> origin/master
+
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";

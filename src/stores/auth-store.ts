@@ -166,7 +166,6 @@ function setStoredUser(user: User): Promise<void> {
         const hmac = computeHmacSha256Sync(JSON.stringify(user));
         const store: UserStoreWithHmac = { user, hmac };
 
-<<<<<<< HEAD
         // Encrypt user profile with device-specific passphrase
         const passphrase = getUserEncryptionPassphrase();
         await encryptToStorage(USER_DATA_KEY, store, passphrase).catch(() => {
@@ -174,22 +173,11 @@ function setStoredUser(user: User): Promise<void> {
           localStorage.setItem(USER_DATA_KEY, JSON.stringify(store));
         });
       } catch (e) {
-        console.warn("[auth] Failed to persist user data:", e);
+        logger.warn("[auth] Failed to persist user data:", e);
       } finally {
         resolve();
       }
     });
-=======
-      // Encrypt user profile with device-specific passphrase
-      const passphrase = getUserEncryptionPassphrase();
-      await encryptToStorage(USER_DATA_KEY, store, passphrase).catch(() => {
-        // Fallback to unencrypted if encryption fails
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(store));
-      });
-    } catch (e) {
-      logger.warn("[auth] Failed to persist user data:", e);
-    }
->>>>>>> origin/master
   });
 }
 
@@ -377,17 +365,13 @@ const baseStore = (
   setTokens: async (accessToken: string, refreshToken: string, user?: User) => {
     setAccessToken(accessToken);
     const exp = extractTokenExpiry(accessToken);
-<<<<<<< HEAD
-    if (user) await setStoredUser(user);
-=======
     const persisted = await persistSession(accessToken, refreshToken);
     if (!persisted) {
       clearAccessToken();
       throw new Error("Failed to persist session cookies");
     }
->>>>>>> origin/master
 
-    if (user) setStoredUser(user);
+    if (user) await setStoredUser(user);
     set({
       token: accessToken,
       tokenExpiresAt: exp ?? Date.now() + 15 * 60 * 1000,

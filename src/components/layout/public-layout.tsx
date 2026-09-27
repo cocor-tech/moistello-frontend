@@ -20,11 +20,8 @@ import { useUIStore } from "@/stores/ui-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTranslate } from "@/lib/locale/context";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-<<<<<<< HEAD
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
-=======
 import { useFocusTrap } from "@/hooks/use-focus-trap";
->>>>>>> origin/master
 
 interface PublicLayoutProps {
   children: React.ReactNode;

@@ -22,7 +22,6 @@ import { formatDate } from "@/lib/formatters"
 import { Routes } from "@/lib/constants"
 import { copyToClipboard } from "@/lib/clipboard"
 
-<<<<<<< HEAD
 /* Query data contracts are shared by the community hooks. */
 export interface Community {
   id: string
@@ -63,9 +62,6 @@ export interface CommunityCircle {
   requiresInvite?: boolean
 }
 
-
-=======
->>>>>>> origin/master
 interface Announcement {
   id: string
   content: string
