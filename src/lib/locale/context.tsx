@@ -250,7 +250,10 @@ export function LocaleProvider({
         <div
           role="alert"
           data-testid="locale-fallback-banner"
-          className="fixed inset-x-0 bottom-0 z-[100] flex flex-wrap items-center justify-between gap-3 border-t-4 border-t-amber-400 bg-card px-4 py-3 text-sm text-card-foreground shadow-lg"
+          // Full-bleed bar pinned to bottom-0, so the inset is padding rather
+          // than an offset: the amber surface stays glued to the edge while the
+          // text and buttons clear the iOS home indicator.
+          className="fixed inset-x-0 bottom-0 z-[100] flex flex-wrap items-center justify-between gap-3 border-t-4 border-t-amber-400 bg-card px-4 py-3 pb-edge-safe text-sm text-card-foreground shadow-lg"
         >
           <p className="m-0">
             Couldn&apos;t load translations for <span className="font-mono font-semibold">{fallbackLocale}</span>.

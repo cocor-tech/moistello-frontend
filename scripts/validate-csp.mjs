@@ -47,22 +47,78 @@ async function fetchWithRetry(url, attempts = 30) {
   throw new Error(`Could not reach ${url}: ${lastErr?.message ?? "unknown error"}`);
 }
 
+// Extract a policy's directive list into a shared shape so the enforcing and
+// report-only headers are held to exactly the same standard. The policy string
+// is identical in both modes — only the header it travels in differs — so if
+// these ever diverge it is a bug worth failing on.
+function checkPagePolicy(policy, label) {
+  const scriptSrc = extractDirective(policy, "script-src");
+  check(scriptSrc.includes("'nonce-"), `production page script-src lacks a nonce (${label})`);
+  check(scriptSrc.includes("'strict-dynamic'"), `production page script-src lacks 'strict-dynamic' (${label})`);
+  check(scriptSrc.includes("'wasm-unsafe-eval'"), `production page script-src lacks 'wasm-unsafe-eval' (Stellar WASM) (${label})`);
+  check(!scriptSrc.includes("'unsafe-eval'"), `production page script-src must not contain 'unsafe-eval' (${label})`);
+  check(!scriptSrc.includes("'unsafe-inline'"), `production page script-src must not contain 'unsafe-inline' (${label})`);
+  check(extractDirective(policy, "object-src") === "'none'", `page object-src must be 'none' (${label})`);
+  check(extractDirective(policy, "base-uri") === "'self'", `page base-uri must be 'self' (${label})`);
+  check(extractDirective(policy, "frame-ancestors") === "'none'", `page frame-ancestors must be 'none' (${label})`);
+}
+
 async function validatePageCsp() {
   const res = await fetchWithRetry(`${BASE_URL}/`);
-  const header = res.headers.get("content-security-policy");
-  check(!!header, "page response is missing the Content-Security-Policy header");
+  const enforcing = res.headers.get("content-security-policy");
+  const reportOnly = res.headers.get("content-security-policy-report-only");
 
-  for (const policy of parsePolicies(header)) {
-    const scriptSrc = extractDirective(policy, "script-src");
-    check(scriptSrc.includes("'nonce-"), "production page script-src lacks a nonce");
-    check(scriptSrc.includes("'strict-dynamic'"), "production page script-src lacks 'strict-dynamic'");
-    check(scriptSrc.includes("'wasm-unsafe-eval'"), "production page script-src lacks 'wasm-unsafe-eval' (Stellar WASM)");
-    check(!scriptSrc.includes("'unsafe-eval'"), "production page script-src must not contain 'unsafe-eval'");
-    check(!scriptSrc.includes("'unsafe-inline'"), "production page script-src must not contain 'unsafe-inline'");
-    check(extractDirective(policy, "object-src") === "'none'", "page object-src must be 'none'");
-    check(extractDirective(policy, "base-uri") === "'self'", "page base-uri must be 'self'");
-    check(extractDirective(policy, "frame-ancestors") === "'none'", "page frame-ancestors must be 'none'");
+  // A deployment running with CSP_REPORT_ONLY=true serves the policy under the
+  // report-only header and no enforcing header at all. That is a legitimate,
+  // intentional configuration for staging — it is exactly the "validate before
+  // enforcing" mode. Validating it here and passing is correct, but it must be
+  // loud: silently accepting a report-only deployment as if it were enforcing
+  // would let a misconfigured production box pass this gate while protecting
+  // nothing. So the mode is printed, and CSP_STRICT_ENFORCEMENT can make a
+  // report-only deployment a hard failure.
+  const strict = process.env.CSP_STRICT_ENFORCEMENT === "true";
+
+  if (!enforcing) {
+    check(
+      !!reportOnly,
+      "page response carries neither Content-Security-Policy nor Content-Security-Policy-Report-Only",
+    );
+    if (strict) {
+      throw new Error(
+        "CSP validation failed: page policy is report-only, but CSP_STRICT_ENFORCEMENT=true requires enforcement",
+      );
+    }
+    for (const policy of parsePolicies(reportOnly)) {
+      checkPagePolicy(policy, "report-only");
+      check(
+        extractDirective(policy, "report-uri") !== "",
+        "report-only policy is missing a report-uri directive — violations would not be collected",
+      );
+    }
+    process.stdout.write(
+      "⚠ page CSP: REPORT-ONLY (CSP_REPORT_ONLY is on) — policy validated but NOT enforced\n",
+    );
+    return;
   }
+
+  for (const policy of parsePolicies(enforcing)) {
+    checkPagePolicy(policy, "enforced");
+  }
+
+  // When both headers are present the browser enforces AND reports, which is a
+  // legitimate steady state for a policy being rolled out. Verify the reporting
+  // half actually works rather than assuming it.
+  if (reportOnly) {
+    for (const policy of parsePolicies(reportOnly)) {
+      check(
+        extractDirective(policy, "report-uri") !== "",
+        "report-only policy is present but carries no report-uri directive",
+      );
+    }
+    process.stdout.write("✔ page CSP: enforced, with report-only collection enabled\n");
+    return;
+  }
+
   process.stdout.write("✔ page CSP: nonce-based, no unsafe-eval / unsafe-inline\n");
 }
 

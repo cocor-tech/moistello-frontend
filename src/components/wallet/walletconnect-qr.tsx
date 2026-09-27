@@ -6,6 +6,20 @@ import { Copy, Check, LoaderCircle, CircleX, RefreshCw, CircleAlert } from "luci
 import { cn } from "@/lib/cn"
 import { copyToClipboard } from "@/lib/clipboard"
 
+/** On-screen QR edge length, in CSS pixels. The download is rendered at 2x this. */
+const CANVAS_SIZE = 260
+
+/**
+ * Export scale for the downloaded PNG.
+ *
+ * A WalletConnect URI is long, so the QR lands at a high version with small
+ * modules. At 1x the saved file is legible on screen but unreadable once
+ * resized or re-photographed, which defeats the point of downloading it. 2x
+ * gives each module enough pixels to survive a re-scan off a second monitor or
+ * a printout.
+ */
+const DOWNLOAD_SCALE = 2
+
 interface WalletConnectQRProps {
   uri: string | null
   pairingState: string
@@ -25,6 +39,7 @@ export function WalletConnectQR({
 }: WalletConnectQRProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [copied, setCopied] = useState(false)
+  const [downloaded, setDownloaded] = useState(false)
   const [countdown, setCountdown] = useState(120)
 
   const generateQR = useCallback(async (text: string) => {
@@ -32,7 +47,7 @@ export function WalletConnectQR({
     try {
       const QRCode = await import("qrcode")
       await QRCode.toCanvas(canvasRef.current, text, {
-        width: 260,
+        width: CANVAS_SIZE,
         margin: 2,
         color: {
           dark: "#ffffff",
@@ -48,6 +63,8 @@ export function WalletConnectQR({
     if (uri) {
       generateQR(uri)
       setCountdown(120)
+      setCopied(false)
+      setDownloaded(false)
     }
   }, [uri, generateQR])
 
@@ -67,6 +84,10 @@ export function WalletConnectQR({
     return () => clearInterval(interval)
   }, [uri, pairingState])
 
+  // copyToClipboard() prefers navigator.clipboard.writeText and falls back to a
+  // hidden textarea + execCommand("copy"). The fallback is not legacy cruft
+  // here: this modal is reachable over plain http on a LAN dev origin, where
+  // navigator.clipboard is undefined and writeText would simply be a no-op.
   const handleCopy = async () => {
     if (!uri) return
     const success = await copyToClipboard(uri)
@@ -75,6 +96,35 @@ export function WalletConnectQR({
       setTimeout(() => setCopied(false), 2000)
     }
   }
+
+  const handleDownload = useCallback(async () => {
+    if (!uri) return
+    try {
+      const QRCode = await import("qrcode")
+      // Rendered fresh rather than read back off the on-screen canvas: the
+      // canvas is drawn white-on-transparent for a dark UI, and a transparent
+      // background saved to disk is composited to black by most viewers, which
+      // makes the white modules vanish and the code unscannable. The export is
+      // therefore its own black-on-white render.
+      const dataUrl = await QRCode.toDataURL(uri, {
+        width: CANVAS_SIZE * DOWNLOAD_SCALE,
+        margin: 2,
+        color: { dark: "#000000ff", light: "#ffffffff" },
+      })
+
+      const link = document.createElement("a")
+      link.href = dataUrl
+      link.download = "moistello-walletconnect-qr.png"
+      link.click()
+
+      setDownloaded(true)
+      setTimeout(() => setDownloaded(false), 2000)
+    } catch (e) {
+      // Non-fatal: the on-screen canvas is still scannable, so a failed export
+      // must not interrupt pairing or replace the QR with an error state.
+      logger.warn("[wc-qr] QR download failed:", e)
+    }
+  }, [uri])
 
   if (pairingState === "approved") {
     return (
@@ -150,8 +200,8 @@ export function WalletConnectQR({
       <div className="rounded-2xl bg-black/40 p-3 ring-1 ring-white/10">
         <canvas
           ref={canvasRef}
-          width={260}
-          height={260}
+          width={CANVAS_SIZE}
+          height={CANVAS_SIZE}
           className="rounded-xl"
           role="img"
           aria-label="QR code for wallet connection"
@@ -168,7 +218,54 @@ export function WalletConnectQR({
 
       {uri && (
         <div className="w-full max-w-xs">
-          <p className="text-xs text-muted-foreground mb-2 text-center">Or use this link:</p>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">Or use this link:</p>
+            {/*
+              Both affordances live next to the URI itself rather than in the
+              action row below. They are two ways of moving the *same* value off
+              this screen — one for pasting into a wallet that cannot scan, one
+              for moving it to a second device — so they belong together, and a
+              user who can see the URI can see how to take it.
+            */}
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                aria-label="Copy connection URI"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy URI</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                aria-label="Download QR code as PNG"
+              >
+                {downloaded ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-emerald-400">Saved</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download PNG</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
           <code className="block truncate rounded-lg bg-white/5 px-3 py-2 text-xs font-mono text-muted-foreground border border-white/10">
             {uri.slice(0, 40)}...
           </code>
@@ -176,24 +273,6 @@ export function WalletConnectQR({
       )}
 
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
-          aria-label="Copy connection link"
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-              Copied
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              Copy link
-            </>
-          )}
-        </button>
         <button
           type="button"
           onClick={onCancel}

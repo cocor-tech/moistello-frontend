@@ -139,6 +139,34 @@
     background: rgb(var(--aurora-violet) / 0.25);
     color: rgb(var(--foreground));
   }
+
+  /* ── Viewport safe-area insets ──
+     On a notched device the browser only reports these when the viewport
+     carries `viewport-fit=cover` (see the `viewport` export in app/layout.tsx).
+     They are declared as 0px first and re-declared inside @supports, because a
+     browser that predates `env()` drops the whole declaration rather than
+     falling back to a value — so the literal 0px below is what keeps the
+     utilities in this file resolving instead of becoming invalid-at-computed-
+     value-time.
+
+     None of these are theme-scoped: they describe the physical screen, not the
+     light or dark palette, so they live on :root once and are never repeated
+     under `.dark`. */
+  :root {
+    --safe-area-inset-top: 0px;
+    --safe-area-inset-right: 0px;
+    --safe-area-inset-bottom: 0px;
+    --safe-area-inset-left: 0px;
+  }
+
+  @supports (padding: env(safe-area-inset-bottom)) {
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top);
+      --safe-area-inset-right: env(safe-area-inset-right);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom);
+      --safe-area-inset-left: env(safe-area-inset-left);
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -506,6 +534,75 @@
   @media (min-width: 640px) { .container-premium { @apply px-6; } }
   @media (min-width: 1024px) { .container-premium { @apply px-8; max-width: 1280px; } }
   @media (min-width: 1440px) { .container-premium { max-width: 1440px; } }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SAFE-AREA UTILITIES
+   Built on the --safe-area-inset-* tokens declared in @layer base.
+
+   These are deliberately NOT composable with Tailwind's spacing scale through
+   `cn()`: twMerge does not know these class names, so `pb-24 bottom-nav-safe`
+   style combinations would silently emit both declarations and let source order
+   decide the winner. Each utility below therefore carries its own offset inside
+   a calc() so it replaces a hardcoded Tailwind offset outright rather than
+   layering on top of one. Adding the inset to an existing design offset — never
+   replacing it — is the whole point: a 1rem floating gap still reads as 1rem on
+   a notched device, it just moves up out of the home indicator's way.
+
+   Every value degrades to its pre-notch appearance because the tokens are 0px
+   everywhere except a `viewport-fit=cover` notched viewport.
+   ═══════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Floating bottom nav: keeps its 1rem lift off the edge, plus the home
+     indicator. Used together with `.pb-nav-safe` on the scrolling content. */
+  .bottom-nav-safe {
+    bottom: calc(1rem + var(--safe-area-inset-bottom));
+  }
+
+  /* Scrolling content must clear the floating nav (4rem) *and* the home
+     indicator, otherwise the last card is unreachable behind the nav pill. */
+  .pb-nav-safe {
+    padding-bottom: calc(6rem + var(--safe-area-inset-bottom));
+  }
+
+  /* Sticky/fixed top bars sit under a black-translucent status bar on iOS, so
+     the top inset joins their existing offset rather than replacing it. Two
+     variants because the two layouts anchor differently: the dashboard header
+     is `sticky top-3` (offset the box), the public header is `fixed top-0` with
+     `pt-3` (pad the box, because the bar itself must stay glued to the top). */
+  .top-header-safe {
+    top: calc(0.75rem + var(--safe-area-inset-top));
+  }
+  .pt-header-safe {
+    padding-top: calc(0.75rem + var(--safe-area-inset-top));
+  }
+
+  /* Bars pinned flush to an edge (the locale fallback banner at bottom-0, the
+     public header at top-0) take the bare inset as padding, because the surface
+     itself must stay glued to the edge while its content clears the inset. */
+  .pb-edge-safe {
+    padding-bottom: var(--safe-area-inset-bottom);
+  }
+  .pt-edge-safe {
+    padding-top: var(--safe-area-inset-top);
+  }
+
+  /* Full-bleed drawers and sheets also need the horizontal insets so their
+     content is not tucked under the rounded corners in landscape. */
+  .px-edge-safe {
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+  }
+
+  /* The landscape notch sits on one specific edge, so a full-height drawer only
+     ever needs the one side it is anchored to. */
+  .pr-edge-safe {
+    padding-right: var(--safe-area-inset-right);
+  }
+  .pl-edge-safe {
+    padding-left: var(--safe-area-inset-left);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

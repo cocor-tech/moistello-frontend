@@ -27,6 +27,7 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { cn } from "@/lib/cn"
 import { formatAddress, formatDate } from "@/lib/formatters"
+import { AvatarUploader } from "./components/AvatarUploader"
 
 const container = {
   hidden: { opacity: 0 },
@@ -165,9 +166,10 @@ export default function ProfilePage() {
           variants={item}
           className="glass-premium rounded-2xl p-6 flex flex-col items-center gap-4"
         >
-          <div className="flex h-24 w-24 items-center justify-center rounded-full gradient-bg text-white font-mono text-3xl font-bold shrink-0 shadow-lg">
-            {avatarInitial}
-          </div>
+          <AvatarUploader
+            initial={avatarInitial}
+            avatarUrl={(user as unknown as Record<string, string>)?.avatarUrl}
+          />
 
           {isEditing ? (
             <div className="w-full max-w-sm space-y-4">

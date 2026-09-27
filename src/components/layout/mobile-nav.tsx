@@ -33,7 +33,12 @@ function MobileNavComponent() {
     <nav
       aria-label="Mobile dashboard navigation"
       className={cn(
-        "fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md",
+        // `bottom-nav-safe` replaces the former hardcoded `bottom-4`: it keeps
+        // the same 1rem lift but adds env(safe-area-inset-bottom), so the pill
+        // clears the iOS home indicator instead of sitting underneath it. The
+        // token is 0px on every other device, so the desktop/tablet rendering
+        // is byte-for-byte what it was.
+        "fixed bottom-nav-safe left-4 right-4 z-50 mx-auto max-w-md",
         "lg:hidden",
       )}
     >

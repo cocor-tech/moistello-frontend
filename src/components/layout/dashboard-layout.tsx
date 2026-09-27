@@ -50,7 +50,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           id="main-content"
           tabIndex={-1}
           className={cn(
-            "pt-10 pb-24 px-0 lg:pl-72 lg:pr-0 min-h-screen",
+            // `pb-nav-safe` replaces `pb-24`: the 4rem that clears the floating
+            // nav pill plus the home-indicator inset, so the last card on the
+            // page is never trapped under either.
+            "pt-10 pb-nav-safe px-0 lg:pl-72 lg:pr-0 min-h-screen",
           )}
         >
           <div className="container-premium py-2.5">

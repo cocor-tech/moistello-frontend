@@ -32,7 +32,11 @@ function HeaderComponent({ onToggleMobileMenu, isMobileMenuOpen }: HeaderProps) 
     <>
       <header
         className={cn(
-          "lg:hidden sticky top-3 mx-3 z-50 h-14",
+          // `top-header-safe` replaces the former `top-3`: with
+          // statusBarStyle=black-translucent the document starts underneath the
+          // iOS status bar, so the bar's existing 0.75rem offset is added to
+          // env(safe-area-inset-top) rather than standing in for it.
+          "lg:hidden sticky top-header-safe mx-3 z-50 h-14",
           "rounded-2xl",
           "glass-strong backdrop-blur-2xl",
           "border border-white/[0.06] dark:border-white/[0.08]",

@@ -96,6 +96,15 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  // Lets the document extend under the notch, home indicator and rounded
+  // corners on notched devices. Without this the browser letterboxes the
+  // viewport and every `env(safe-area-inset-*)` reads 0, so fixed bottom UI
+  // (the mobile nav) sits underneath the home indicator. Paired with
+  // `appleWebApp.statusBarStyle = "black-translucent"` above, the top inset is
+  // equally real. The matching tokens live in globals.css as
+  // `--safe-area-inset-*`; they collapse to 0px on every other device, so the
+  // utilities built on them are safe to apply unconditionally.
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
