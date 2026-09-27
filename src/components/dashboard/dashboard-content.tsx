@@ -8,6 +8,7 @@ import { SavingsGrowthChart } from '@/components/dashboard/charts/savings-growth
 import { ContributionHistoryChart } from '@/components/dashboard/charts/contribution-history-chart'
 import { PayoutTimelineChart } from '@/components/dashboard/charts/payout-timeline-chart'
 import { UpcomingPayoutsWidget } from '@/components/dashboard/upcoming-payouts-widget'
+import { RecentActivityWidget } from '@/components/dashboard/recent-activity-widget'
 import type { Circle, Contribution, Payout } from '@/types'
 
 export function DashboardContent() {
@@ -76,6 +77,7 @@ export function DashboardContent() {
 
         <div className="space-y-6">
           <PayoutTimelineChart payouts={payouts} />
+          <RecentActivityWidget />
         </div>
       </div>
     </div>
