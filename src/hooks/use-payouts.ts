@@ -58,6 +58,8 @@ export function usePayouts(filters?: PayoutFilters) {
         },
       };
     },
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -91,6 +93,8 @@ export function useCirclePayouts(circleId: string, filters?: Omit<PayoutFilters,
       };
     },
     enabled: !!circleId,
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
   });
 }
 
