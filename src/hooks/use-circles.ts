@@ -55,6 +55,13 @@ interface CreateCirclePayload {
 
 interface JoinCirclePayload {
   userId?: string;
+  /**
+   * Required to join a private circle. This was missing from the type, so
+   * `circles/[id]/page.tsx` had to cast the payload to `Record<string, unknown>`
+   * to send it — which meant nothing checked the field, and nothing could type
+   * it in a test.
+   */
+  inviteCode?: string;
 }
 
 interface ContributePayload {
