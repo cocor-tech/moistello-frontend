@@ -4,13 +4,14 @@ import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { useTranslate } from "@/lib/locale/context"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Settings, Bell, EyeOff, Sun, CreditCard, PiggyBank, Monitor, Globe, Wallet } from "lucide-react"
+import { Settings, Bell, EyeOff, Sun, CreditCard, PiggyBank, Monitor, Globe, Wallet, DatabaseBackup } from "lucide-react"
 import { formatAddress } from "@/lib/formatters"
 
 const SETTINGS_SECTIONS = [
   { titleKey: "settings.account", href: "/settings/account", icon: Settings, descKey: "settings.accountDesc" },
   { titleKey: "settings.notifications", href: "/settings/notifications", icon: Bell, descKey: "settings.notificationsDesc" },
   { titleKey: "settings.privacy", href: "/settings/privacy", icon: EyeOff, descKey: "settings.privacyDesc" },
+  { titleKey: "settings.data", href: "/settings/data", icon: DatabaseBackup, descKey: "settings.dataDesc" },
   { titleKey: "settings.theme", href: "/settings/theme", icon: Sun, descKey: "settings.themeDesc" },
   { titleKey: "settings.language", href: "/settings/language", icon: Globe, descKey: "settings.languageDesc" },
   { titleKey: "settings.payment", href: "/settings/payment", icon: CreditCard, descKey: "settings.paymentDesc" },
