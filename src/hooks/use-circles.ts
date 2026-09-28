@@ -121,6 +121,28 @@ export function useCircle(id: string) {
   });
 }
 
+export function useCircleMembers(circleId: string) {
+  return useQuery({
+    queryKey: queryKeys.circles.members(circleId),
+    queryFn: async () => {
+      const response = await get<ApiResponse<{ members: CircleMember[] }>>(`/circles/${circleId}/members`);
+      return response.data?.members ?? [];
+    },
+    enabled: !!circleId,
+  });
+}
+
+export function useCircleRounds(circleId: string) {
+  return useQuery({
+    queryKey: queryKeys.circles.rounds(circleId),
+    queryFn: async () => {
+      const response = await get<ApiResponse<{ rounds: CircleRound[] }>>(`/circles/${circleId}/rounds`);
+      return response.data?.rounds ?? [];
+    },
+    enabled: !!circleId,
+  });
+}
+
 export function useStartCircle() {
   const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
@@ -138,6 +160,7 @@ export function useStartCircle() {
         type: "error",
         title: "Failed to start circle",
         description: extractErrorMessage(err, "Could not start circle. Please try again."),
+        requestId: (err as any).requestId,
       });
     },
   });
@@ -159,6 +182,7 @@ export function useCreateCircle() {
         type: "error",
         title: "Failed to create circle",
         description: extractErrorMessage(err, "Could not create circle. Please try again."),
+        requestId: (err as any).requestId,
       });
     },
   });
@@ -179,6 +203,7 @@ export function useJoinCircle() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.circles.detail(variables.circleId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.circles.members(variables.circleId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.circles.all });
     },
     onError: (err) => {
       logger.error("[useJoinCircle] Failed to join circle:", err);
@@ -186,6 +211,7 @@ export function useJoinCircle() {
         type: "error",
         title: "Failed to join circle",
         description: extractErrorMessage(err, "Could not join circle. Please try again."),
+        requestId: (err as any).requestId,
       });
     },
   });
@@ -246,6 +272,7 @@ export function useContribute(circleId: string) {
         type: "error",
         title: "Contribution failed",
         description: extractErrorMessage(err, "Could not record contribution. Please try again."),
+        requestId: (err as any).requestId,
       });
     },
   });
