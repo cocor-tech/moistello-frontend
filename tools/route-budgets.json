@@ -1,0 +1,13 @@
+{
+  "defaultRouteBudget": 400000,
+  "totalBudget": 1200000,
+  "routes": {
+    "/": 350000,
+    "/login": 250000,
+    "/register": 250000,
+    "/dashboard": 400000,
+    "/profile": 400000,
+    "/analytics": 450000,
+    "/settings": 350000
+  }
+}
