@@ -50,6 +50,11 @@ describe("useVoteOnProposal", () => {
 
     await result.current.mutateAsync(true)
 
-    expect(mockedPost).toHaveBeenCalledWith("/governance/proposals/p1/votes", { support: true })
+    // `true` is normalised to the three-way "for" / "against" / "abstain" shape
+    // the store and the UI both speak, rather than the mixed
+    // `boolean | "abstain"` union the hook used to forward verbatim.
+    expect(mockedPost).toHaveBeenCalledWith("/governance/proposals/p1/votes", {
+      support: "for",
+    })
   })
 })

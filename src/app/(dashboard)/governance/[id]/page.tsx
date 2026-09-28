@@ -19,16 +19,27 @@ import Link from "next/link"
 import { Button, ButtonLink } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useGovernanceProposal, useVoteOnProposal } from "@/hooks/use-governance"
+import { useGovernanceVotes } from "@/stores/governance-votes-store"
+import type { VoteChoice } from "@/lib/governance-api"
 import { useUIStore } from "@/stores/ui-store"
 
 export default function ProposalDetailPage() {
   const { id } = useParams<{ id: string }>()
   const addToast = useUIStore((state) => state.addToast)
 
-  const [voteChoice, setVoteChoice] = useState<boolean | "abstain" | null>(null)
+  const [voteChoice, setVoteChoice] = useState<boolean | VoteChoice | null>(null)
   const [voteReason, setVoteReason] = useState("")
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [userVoted, setUserVoted] = useState<string | null>(null)
+
+  /*
+   * The user's own vote now comes from a persisted store rather than local
+   * state, so the "You voted FOR" banner survives navigating away and reloading.
+   * As local `useState` it reset on every route change, leaving a voter unable
+   * to tell whether they had already voted — the one piece of state they
+   * actually need. The write happens in the hook's `onSuccess`, so a failed vote
+   * never leaves a marker behind.
+   */
+  const recordedVote = useGovernanceVotes((state) => state.votes[id]?.choice ?? null)
 
   const { data: proposal, isLoading } = useGovernanceProposal(id)
   const voteMutation = useVoteOnProposal(id)
@@ -45,7 +56,7 @@ export default function ProposalDetailPage() {
     return `${hours}h remaining`
   }, [proposal?.timelockEndsAt])
 
-  const openVoteModal = (choice: boolean | "abstain") => {
+  const openVoteModal = (choice: boolean | VoteChoice) => {
     setVoteChoice(choice)
     setShowConfirmModal(true)
   }
@@ -53,8 +64,10 @@ export default function ProposalDetailPage() {
   const handleConfirmVote = async () => {
     if (voteChoice === null) return
     try {
-      await voteMutation.mutateAsync(voteChoice as boolean | "abstain")
-      setUserVoted(voteChoice === true ? "FOR" : voteChoice === false ? "AGAINST" : "ABSTAIN")
+      // The hook records the vote in the persisted store on success, so there
+      // is nothing to set here — doing it in both places would let the banner
+      // claim a vote that the request never confirmed.
+      await voteMutation.mutateAsync(voteChoice as boolean | VoteChoice)
       setShowConfirmModal(false)
       addToast({
         type: "success",
@@ -161,10 +174,12 @@ export default function ProposalDetailPage() {
           </div>
 
           {/* User Voting Status */}
-          {userVoted ? (
+          {recordedVote ? (
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-2">
               <CircleCheckBig className="h-4 w-4 shrink-0" />
-              <span>You voted <strong>{userVoted}</strong> on this proposal.</span>
+              <span>
+                You voted <strong>{recordedVote.toUpperCase()}</strong> on this proposal.
+              </span>
             </div>
           ) : proposal.status === "active" ? (
             <div className="space-y-3 pt-2">
