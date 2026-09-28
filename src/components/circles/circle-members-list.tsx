@@ -105,15 +105,8 @@ export function CircleMembersList({
   currentUserId,
   className,
 }: CircleMembersListProps) {
-  if (members.length === 0) {
-    return (
-      <div className={cn("py-8 text-center text-sm text-gray-500", className)}>
-        No members found.
-      </div>
-    );
-  }
-
   // Memoize the rows to prevent re-renders when parent state changes
+  // Called unconditionally to maintain consistent hook order
   const memberRows = useMemo(
     () =>
       members.map((member) => {
@@ -124,6 +117,14 @@ export function CircleMembersList({
       }),
     [members, currentUserId]
   );
+
+  if (members.length === 0) {
+    return (
+      <div className={cn("py-8 text-center text-sm text-gray-500", className)}>
+        No members found.
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-2", className)}>

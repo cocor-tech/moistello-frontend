@@ -17,11 +17,12 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
 import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatAddress, formatCurrency, formatDate } from "@/lib/formatters"
+import { formatAddress, formatCurrency, formatDateLocalized } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
 import type { ContributionStatus } from "@/types"
 import { calculateRoundTotals } from "./round-totals"
 import type { Contribution } from "@/types"
+import { useIntl } from "@/hooks/use-intl"
 
 const statusStyles: Record<
   ContributionStatus,
@@ -78,6 +79,7 @@ const roundItem = {
 export default function CircleRoundsPage() {
   const params = useParams()
   const circleId = params.id as string
+  const { locale } = useIntl()
 
   const { data: circle } = useCircle(circleId)
   const { data: rounds = [], isLoading, isError } = useCircleRounds(circleId)
@@ -270,8 +272,8 @@ export default function CircleRoundsPage() {
                       <span className="font-mono text-foreground">
                         {formatCurrency(round.payout.feeAmount ?? 0, circle?.currency ?? "USDC")}
                       </span>
-                      <span className="text-muted-foreground">Date</span>
-                      <span className="text-foreground">{formatDate(round.payout.createdAt)}</span>
+<span className="text-muted-foreground">Date</span>
+                       <span className="text-foreground">{formatDateLocalized(round.payout.createdAt, locale)}</span>
                       {round.payout.txnHash && (
                         <>
                           <span className="text-muted-foreground">Transaction</span>

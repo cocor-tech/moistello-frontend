@@ -11,6 +11,7 @@ import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/cn"
 import { formatCurrency, formatDateLocalized } from "@/lib/formatters"
+import { useIntl } from "@/hooks/use-intl"
 import { ScheduleAdjustmentWrapper } from "./components/ScheduleAdjustment"
 
 function getNextDate(frequency: string, from: Date): Date {
@@ -27,6 +28,7 @@ function getNextDate(frequency: string, from: Date): Date {
 export default function SchedulePage() {
   const params = useParams()
   const circleId = params.id as string
+  const { locale } = useIntl()
 
   const { data: circle, isLoading: cLoading } = useCircle(circleId)
   const { data: rounds = [], isLoading: rLoading } = useCircleRounds(circleId)
@@ -87,7 +89,7 @@ export default function SchedulePage() {
             <div>
               <p className="text-2xs text-muted-foreground font-heading tracking-wider uppercase">Next Round</p>
               <p className="text-xl font-bold font-heading gradient-text mt-1">Round {nextRound.round}</p>
-              <p className="text-sm text-muted-foreground mt-1">{formatDateLocalized(nextRound.date, undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</p>
+              <p className="text-sm text-muted-foreground mt-1">{formatDateLocalized(nextRound.date, locale, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold font-heading gradient-text">{formatCurrency(nextRound.amount, circle.currency)}</p>
@@ -120,7 +122,7 @@ export default function SchedulePage() {
                 <p className={cn("text-sm font-heading font-semibold", s.isCurrent ? "text-foreground dark:text-white" : "text-muted-foreground")}>
                   Round {s.round}
                 </p>
-                <p className="text-xs text-muted-foreground">{formatDateLocalized(s.date, undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
+                <p className="text-xs text-muted-foreground">{formatDateLocalized(s.date, locale, { month: "short", day: "numeric", year: "numeric" })}</p>
               </div>
             </div>
             <div className="text-right">

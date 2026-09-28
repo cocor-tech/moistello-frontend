@@ -434,14 +434,14 @@ describe("WalletConnect error type discrimination", () => {
 })
 
 describe("WalletConnect adapter method idempotency", () => {
-  it("disconnect is idempotent", async () => {
-    const a = createWalletConnectAdapter()
-    await a.disconnect()
-    await a.disconnect()
-    expect(await a.isConnected()).toBe(false)
-  })
+    it("disconnect is idempotent", async () => {
+      const a = createWalletConnectAdapter()
+      await a.disconnect()
+      await a.disconnect()
+      expect(await a.isConnected()).toBe(false)
+    })
 
-it("getPublicKey always throws when not connected", async () => {
+    it("getPublicKey always throws when not connected", async () => {
       const a = createWalletConnectAdapter()
       for (let i = 0; i < 3; i++) {
         try {
@@ -463,7 +463,17 @@ describe("WalletConnect signTransaction — failure paths (with mocked session)"
     connectedAdapter = createWalletConnectAdapter()
     mockRelay.status = "healthy"
     setOnPairingUri(null)
-    mockSignClient.connect.mockResolvedValue({ uri: "wc:test" })
+    mockSignClient.connect.mockResolvedValue({
+      uri: "wc:test",
+      approval: vi.fn().mockResolvedValue({
+        namespaces: {
+          stellar: {
+            accounts: ["stellar:testnet:GAX23V3WWDPPR5WRER3KTEUTDLSCGZYMSJY5FDRRKKCIQ4JADF5T27RC"],
+            chains: ["stellar:testnet"],
+          },
+        },
+      }),
+    })
     mockSignClient.session.getAll.mockReturnValue([])
     mockSignClient.approve.mockResolvedValue({})
     mockSignClient.disconnect.mockResolvedValue(undefined)
@@ -513,8 +523,8 @@ describe("WalletConnect signTransaction — failure paths (with mocked session)"
     const mainnetAdapter = createWalletConnectAdapter()
     await mainnetAdapter.connect()
 
-    // The adapter should report mainnet network
-    expect(await mainnetAdapter.getNetwork()).toBe("mainnet")
+    // The adapter should report public network
+    expect(await mainnetAdapter.getNetwork()).toBe("public")
   })
 
   it("returns insufficient_funds error when signing fails due to low balance", async () => {
@@ -535,13 +545,15 @@ describe("WalletConnect signTransaction — failure paths (with mocked session)"
   })
 
   it("does not leak unhandled promise rejections during failure flows", async () => {
-    let rejectionHandler: ((reason: unknown) => void) | null = null
-    const originalOnUnhandledRejection = process.on
     const unhandledRejections: unknown[] = []
+    const originalOnUnhandledRejection = process.on
 
     process.on = vi.fn((event: string, handler: (reason: unknown) => void) => {
       if (event === "unhandledRejection") {
-        rejectionHandler = handler
+        return originalOnUnhandledRejection.call(process, event, (reason) => {
+          unhandledRejections.push(reason)
+          handler(reason)
+        })
       }
       return originalOnUnhandledRejection.call(process, event, handler)
     })

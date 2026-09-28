@@ -11,6 +11,7 @@ import { useUIStore } from "@/stores/ui-store"
 import { formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
 import type { Frequency } from "@/types"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -55,12 +56,24 @@ function addHours(date: Date, hours: number): Date {
   return d
 }
 
+function parseLocalDatetimeLocal(value: string): Date {
+  // datetime-local returns local time without timezone info
+  // Parse as local time to avoid UTC conversion issues
+  const [datePart, timePart] = value.split("T")
+  const [year, month, day] = datePart.split("-").map(Number)
+  const [hours, minutes] = timePart.split(":").map(Number)
+  const d = new Date()
+  d.setFullYear(year, month - 1, day)
+  d.setHours(hours, minutes, 0, 0)
+  return d
+}
+
 export function ScheduleAdjustment({
   circleId,
   initialSchedule,
   onScheduleChange,
 }: ScheduleAdjustmentProps) {
-  const params = useParams()
+  const { user } = useAuth()
   const { data: circle } = useCircle(circleId)
   const { data: rounds = [] } = useCircleRounds(circleId)
   const queryClient = useQueryClient()
@@ -68,6 +81,12 @@ export function ScheduleAdjustment({
   const [isEditing, setIsEditing] = useState(false)
   const [editedSchedule, setEditedSchedule] = useState<RoundScheduleItem[]>(initialSchedule)
   const [errors, setErrors] = useState<Record<number, string>>({})
+
+  const isOrganizer = user && circle && circle.organizerId === user.id
+
+  if (!isOrganizer) {
+    return null
+  }
 
   const adjustScheduleMutation = useMutation({
     mutationFn: async (schedule: RoundScheduleItem[]) => {
@@ -140,7 +159,8 @@ export function ScheduleAdjustment({
     return newErrors
   }, [circle, rounds])
 
-  const handleDateChange = (round: number, date: Date) => {
+  const handleDateChange = (round: number, value: string) => {
+    const date = parseLocalDatetimeLocal(value)
     setEditedSchedule((prev) =>
       prev.map((item) => (item.round === round ? { ...item, date } : item))
     )
@@ -151,10 +171,6 @@ export function ScheduleAdjustment({
   }
 
   const hasErrors = Object.keys(errors).length > 0
-
-  if (!circle || circle.organizerId !== circle.organizerId) {
-    return null
-  }
 
   return (
     <Card className="border-l-4 border-l-aurora-violet">
@@ -193,7 +209,7 @@ export function ScheduleAdjustment({
                     <Input
                       type="datetime-local"
                       value={item.date.toISOString().slice(0, 16)}
-                      onChange={(e) => handleDateChange(item.round, new Date(e.target.value))}
+                      onChange={(e) => handleDateChange(item.round, e.target.value)}
                       disabled={isDisabled}
                       className="w-48"
                       aria-label={`Round ${item.round} date`}
@@ -264,8 +280,13 @@ function getMinGapForFrequency(frequency: Frequency): number {
 export function ScheduleAdjustmentWrapper({ circleId }: { circleId: string }) {
   const { data: circle } = useCircle(circleId)
   const { data: rounds = [] } = useCircleRounds(circleId)
+  const { user } = useAuth()
 
   if (!circle) return null
+
+  const isOrganizer = user && circle.organizerId === user.id
+
+  if (!isOrganizer) return null
 
   const initialSchedule: RoundScheduleItem[] = (() => {
     const startDate = circle.startDate ? new Date(circle.startDate) : new Date()

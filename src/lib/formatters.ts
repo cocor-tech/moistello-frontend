@@ -1,4 +1,50 @@
 import { formatDistanceToNow } from "date-fns"
+import {
+  enUS,
+  fr,
+  de,
+  es,
+  it,
+  ptBR,
+  ja,
+  ko,
+  zhCN,
+  zhTW,
+  ru,
+  ar,
+  hi,
+  nl,
+  pl,
+  tr,
+  vi,
+  th,
+  id,
+  ms,
+  sv,
+  da,
+  fi,
+  no,
+  cs,
+  hu,
+  ro,
+  sk,
+  bg,
+  hr,
+  sr,
+  sl,
+  et,
+  lv,
+  lt,
+  uk,
+  be,
+  ka,
+  hy,
+  az,
+  kk,
+  ky,
+  uz,
+  mn,
+} from "date-fns/locale"
 import type { Locale } from "date-fns"
 
 /**
@@ -11,6 +57,60 @@ export const DEFAULT_LOCALE = "en-US"
 const isInvalidDate = (d: Date) => Number.isNaN(d.getTime())
 
 /**
+ * Map BCP-47 locale codes to date-fns Locale objects.
+ * Falls back to enUS for unsupported locales.
+ */
+function localeCodeToDateFnsLocale(localeCode: string): Locale {
+  const code = localeCode.toLowerCase().split("-")[0]
+  const localeMap: Record<string, Locale> = {
+    en: enUS,
+    fr,
+    de,
+    es,
+    it,
+    pt: ptBR,
+    ja,
+    ko,
+    zh: zhCN,
+    ru,
+    ar,
+    hi,
+    nl,
+    pl,
+    tr,
+    vi,
+    th,
+    id,
+    ms,
+    sv,
+    da,
+    fi,
+    no,
+    cs,
+    hu,
+    ro,
+    sk,
+    bg,
+    hr,
+    sr,
+    sl,
+    et,
+    lv,
+    lt,
+    uk,
+    be,
+    ka,
+    hy,
+    az,
+    kk,
+    ky,
+    uz,
+    mn,
+  }
+  return localeMap[code] ?? enUS
+}
+
+/**
  * Format a numeric amount for a given locale. `locale` is threaded to
  * `Intl` so grouping separators, currency placement and decimal separators
  * follow the active language rather than being pinned to `en-US`. Falls back
@@ -21,9 +121,6 @@ export function formatCurrency(
   currency: string,
   locale: string = DEFAULT_LOCALE
 ): string {
-  // XLM (and anything without a real fiat quote) renders as "0.1234 XLM".
-  // Everything else renders as a localized currency amount. The currency code
-  // is still passed so parity-sensitive callers can rely on the shape.
   if (currency === "XLM") {
     return `${amount.toLocaleString(locale, { maximumFractionDigits: 4 })} XLM`
   }
@@ -93,9 +190,8 @@ export function formatRelativeTime(
 
 /**
  * Relative time with BCP-47 locale code.
- * Accepts a locale code (e.g. "fr", "en-US") and loads the corresponding
- * date-fns Locale internally. If the locale is not available, falls back to
- * the default date-fns locale (en-US).
+ * Accepts a locale code (e.g. "fr", "en-US") and maps it to a date-fns Locale.
+ * If the locale is not available, falls back to the default date-fns locale (en-US).
  */
 export function formatRelativeTimeLocalized(
   date: string | Date,
@@ -104,14 +200,12 @@ export function formatRelativeTimeLocalized(
   const d = typeof date === "string" ? new Date(date) : date
   if (isInvalidDate(d)) return ""
 
-  // For now, we pass the locale code as-is to formatDistanceToNow
-  // In the future, this could map to a date-fns Locale object
+  const locale = localeCode ? localeCodeToDateFnsLocale(localeCode) : undefined
+
   try {
-    // date-fns doesn't directly support BCP-47 codes, so we use the default
-    // locale for relative time formatting. The localeCode could be used
-    // with a mapping function if needed.
     return formatDistanceToNow(d, {
       addSuffix: true,
+      ...(locale ? { locale } : {}),
     })
   } catch {
     return formatDateLocalized(d, localeCode)
