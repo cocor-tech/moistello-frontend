@@ -4,7 +4,7 @@ const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`
 const API_CACHE = `api-${CACHE_VERSION}`
 // Set self.__DEBUG = true in development to see SW logs.
 const DEBUG = false
-function swLog(message: string, ...context: unknown[]) {
+function swLog(message, ...context) {
   if (DEBUG) {
     self.dispatchEvent(new CustomEvent('moistello:sw-log', {
       detail: { level: 'debug', message, context },
