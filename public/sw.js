@@ -16,6 +16,7 @@ function swLog(message: string, ...context: unknown[]) {
 const STATIC_ASSETS = [
   '/',
   '/favicon.ico',
+  '/offline',
 ]
 
 self.addEventListener('install', (event) => {
@@ -42,9 +43,10 @@ self.addEventListener('activate', (event) => {
           }
         })
       )
+    }).then(() => {
+      return self.clients.claim()
     })
   )
-  self.clients.claim()
 })
 
 self.addEventListener('fetch', (event) => {
@@ -122,7 +124,8 @@ async function networkFirst(request) {
     if (cached) {
       return cached
     }
-    return new Response('Offline - content not available', {
+    // Serve offline fallback page for navigation requests
+    return caches.match('/offline') || new Response('Offline - content not available', {
       status: 503,
       statusText: 'Service Unavailable',
       headers: new Headers({
