@@ -9,6 +9,18 @@ import type { Locale } from "date-fns"
 export const DEFAULT_LOCALE = "en-US"
 
 /**
+ * `Intl` only accepts three-letter ISO 4217 codes and throws a `RangeError` for
+ * anything else. `USDC` is four letters and is the default value of the app's
+ * own `Currency` type, so `formatCurrency(x, "USDC")` used to throw — taking
+ * down every screen that renders a USDC amount. Anything non-ISO therefore
+ * falls back to a plain localized number with the code appended.
+ *
+ * The check is case-insensitive because `Intl` is: `"usd"` is a valid code and
+ * must keep going through `Intl` rather than being treated as unknown.
+ */
+const ISO_CURRENCY_CODE = /^[A-Za-z]{3}$/
+
+/**
  * Format a numeric amount for a given locale. `locale` is threaded to
  * `Intl` so grouping separators, currency placement and decimal separators
  * follow the active language rather than being pinned to `en-US`. Falls back
@@ -24,6 +36,10 @@ export function formatCurrency(
   // is still passed so parity-sensitive callers can rely on the shape.
   if (currency === "XLM") {
     return `${amount.toLocaleString(locale, { maximumFractionDigits: 4 })} XLM`
+  }
+
+  if (!ISO_CURRENCY_CODE.test(currency)) {
+    return `${amount.toLocaleString(locale, { maximumFractionDigits: 2 })} ${currency}`
   }
 
   return new Intl.NumberFormat(locale, {
