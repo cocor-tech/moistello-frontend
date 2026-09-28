@@ -288,7 +288,7 @@ export default function ProposalDetailPage() {
               value={voteReason}
               onChange={(e) => setVoteReason(e.target.value)}
               placeholder="Provide context for your vote..."
-              className="w-full min-h-20 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-foreground focus:border-aurora-violet focus:outline-none"
+              className="w-full min-h-20 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-foreground focus:border-foreground focus:outline-none"
             />
           </div>
 

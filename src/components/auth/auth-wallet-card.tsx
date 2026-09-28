@@ -36,7 +36,7 @@ export function AuthWalletCard({
       disabled={disabled || isConnecting || wallet.status !== "detected"}
       className={cn(
         "relative flex flex-col items-center justify-center gap-2 glass rounded-2xl p-4 min-h-[100px] transition-all border",
-        "hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-aurora-violet/50",
+        "hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-foreground",
         wallet.status !== "detected" && "opacity-40 pointer-events-none border-white/10",
         wallet.status === "detected" && "border-white/10 hover:border-aurora-violet/40",
         wallet.isRecommended && "border-aurora-violet/20 hover:border-aurora-violet/40",

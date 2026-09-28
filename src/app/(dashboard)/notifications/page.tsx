@@ -140,7 +140,7 @@ function NotificationItem({
           e.stopPropagation();
           onToggleSelect(notification.id);
         }}
-        className="mt-2 shrink-0 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50"
+        className="mt-2 shrink-0 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
       >
         {selected ? (
           <SquareCheck className="h-4 w-4 text-aurora-violet" />
@@ -370,7 +370,7 @@ export default function NotificationsPage() {
             aria-label="ListFilter notifications by type"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
           >
             <option value="all">{t("common.allTypes")}</option>
             {TYPE_FILTERS.map((f) => (
@@ -384,7 +384,7 @@ export default function NotificationsPage() {
             aria-label="Group notifications"
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value as "none" | "type" | "day")}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-aurora-violet"
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
           >
             <option value="none">{t("notifications.noGrouping")}</option>
             <option value="type">{t("notifications.groupByType")}</option>
