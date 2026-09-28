@@ -132,6 +132,12 @@ apiClient.interceptors.response.use(
       logger.error("API request failed", { status: error.response.status })
     }
 
+    // Attach request ID from response headers to error for display in toasts
+    const requestId = error.response?.headers?.['x-request-id'] as string | undefined
+    if (requestId) {
+      ;(error as any).requestId = requestId
+    }
+
     return Promise.reject(error)
   }
 )

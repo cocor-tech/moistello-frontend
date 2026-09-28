@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, CircleCheck, CircleAlert, TriangleAlert, Info } from "lucide-react";
+import { X, CircleCheck, CircleAlert, TriangleAlert, Info, Copy } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/cn";
 
@@ -84,6 +84,23 @@ export function ToastProvider({ children }: ToastProviderProps) {
                     <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
                       {t.description}
                     </p>
+                  )}
+                  {t.requestId && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                        ID: {t.requestId}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(t.requestId!);
+                        }}
+                        className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label="Copy request ID"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <button

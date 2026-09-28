@@ -17,6 +17,7 @@ export interface Toast {
   title: string;
   description?: string;
   duration?: number;
+  requestId?: string;
 }
 
 interface UIState {
