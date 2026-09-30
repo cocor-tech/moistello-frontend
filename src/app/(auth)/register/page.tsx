@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { registerSchema, zodResolver, type RegisterInput } from "@/lib/validation"
 import { AuthLayout } from "@/components/auth/auth-layout"
+import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/stores/auth-store"
@@ -21,11 +22,14 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     mode: "onTouched",
   })
+
+  const passwordValue = watch("password") || ""
 
   const onSubmit = useCallback(
     async (values: RegisterInput) => {
@@ -71,19 +75,23 @@ export default function RegisterPage() {
             error={errors.email?.message}
             {...register("email")}
           />
-          <Input
-            id="password"
-            type="password"
-            label="Password"
-            placeholder="••••••••"
-            autoComplete="new-password"
-            error={errors.password?.message}
-            {...register("password")}
-          />
+          <div>
+            <Input
+              id="password"
+              type="password"
+              label="Password"
+              placeholder="••••••••"
+              autoComplete="new-password"
+              error={errors.password?.message}
+              {...register("password")}
+            />
+            <PasswordStrengthMeter password={passwordValue} />
+          </div>
           <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={loading}>
             Continue to Passkey Setup
           </Button>
         </form>
+
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
