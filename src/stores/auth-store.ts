@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger"
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { ApiResponse, User } from "@/types";
-import { post } from "@/lib/api-client";
+import { post, clearApiClientState } from "@/lib/api-client";
 import { getCsrfHeaders } from "@/lib/auth/csrf";
 import {
   clearAccessToken,
@@ -358,6 +358,7 @@ const baseStore = (
   },
 
   setTokens: async (accessToken: string, refreshToken: string, user?: User) => {
+    clearApiClientState();
     setAccessToken(accessToken);
     const exp = extractTokenExpiry(accessToken);
     const persisted = await persistSession(accessToken, refreshToken);
@@ -381,10 +382,10 @@ const baseStore = (
   },
 
   clearTokens: async () => {
-    clearAccessToken();
+    clearApiClientState();
     removeStoredUser();
     purgeLegacyTokenStorage();
-    set({ token: null, tokenExpiresAt: null });
+    set({ token: null, tokenExpiresAt: null, isAuthenticated: false, user: null });
     await clearSession();
   },
 });
