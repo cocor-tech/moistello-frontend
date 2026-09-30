@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Calendar, ChevronDown, Check } from "lucide-react"
+import { DatePicker } from "@/components/ui/date-picker"
 import { cn } from "@/lib/cn"
 
 export type DatePreset = "7d" | "30d" | "90d" | "all"
@@ -128,22 +129,22 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
           <div className="border-t border-white/10 pt-3">
             <p className="text-2xs font-heading text-muted-foreground uppercase tracking-wider mb-2">Custom range</p>
             <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={customFrom}
-                onChange={(e) => { setCustomFrom(e.target.value); setValidationError(null) }}
+              <DatePicker
+                value={customFrom || null}
+                onChange={(val) => { setCustomFrom(val); setValidationError(null) }}
                 max={customTo || undefined}
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-white/30"
+                placeholder="Start"
                 aria-label="Start date"
+                className="flex-1"
               />
               <span className="text-xs text-muted-foreground">–</span>
-              <input
-                type="date"
-                value={customTo}
-                onChange={(e) => { setCustomTo(e.target.value); setValidationError(null) }}
+              <DatePicker
+                value={customTo || null}
+                onChange={(val) => { setCustomTo(val); setValidationError(null) }}
                 min={customFrom || undefined}
-                className="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-white/30"
+                placeholder="End"
                 aria-label="End date"
+                className="flex-1"
               />
             </div>
             {validationError && (

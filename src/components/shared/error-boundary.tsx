@@ -2,6 +2,7 @@
 
 import { logger } from "@/lib/logger"
 import React, { Component } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { TriangleAlert, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,9 +39,6 @@ export class ErrorBoundary extends Component<
   handleRetry = () => {
     this.setState({ hasError: false, error: null });
     this.props.onRetry?.();
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
   };
 
   render() {
@@ -83,15 +81,23 @@ export class ErrorBoundary extends Component<
             </p>
 
             {/* Retry button */}
-            <Button
-              variant="premium"
-              size="md"
-              leftIcon={<RefreshCw className="h-4 w-4" />}
-              onClick={this.handleRetry}
-              className="rounded-xl font-heading"
-            >
-              Try Again
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                variant="premium"
+                size="md"
+                leftIcon={<RefreshCw className="h-4 w-4" />}
+                onClick={this.handleRetry}
+                className="rounded-xl font-heading"
+              >
+                Try Again
+              </Button>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-heading font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                Go to Dashboard
+              </Link>
+            </div>
           </motion.div>
         </div>
       );

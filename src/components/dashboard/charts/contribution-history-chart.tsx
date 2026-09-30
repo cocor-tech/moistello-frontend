@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { TrendingUp, ChartColumn } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
+import { useResizeObserver } from '@/hooks/use-resize-observer'
 import type { Contribution } from '@/types'
 
 interface ContributionHistoryChartProps {
@@ -19,8 +20,9 @@ export function ContributionHistoryChart({
   period = 'month',
 }: ContributionHistoryChartProps) {
   const [isClient, setIsClient] = useState(false)
-  const [containerWidth, setContainerWidth] = useState(0)
+  const { ref: containerRef, width: containerWidth } = useResizeObserver<HTMLDivElement>({ debounceMs: 100 })
   useEffect(() => { setIsClient(true) }, [])
+
 
   const chartData = useMemo(() => {
     const map = new Map<string, { amount: number; count: number }>()
@@ -100,9 +102,10 @@ export function ContributionHistoryChart({
 
   return (
     <div 
+      ref={containerRef}
       className="glass rounded-2xl p-5 holo-border min-w-0"
-      onResize={(e) => setContainerWidth((e.target as HTMLDivElement).clientWidth)}
     >
+
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="h-4 w-4 text-aurora-violet" />
         <h3 className="font-heading text-sm font-semibold text-foreground">Contribution History</h3>
