@@ -37,6 +37,14 @@ function isSameOriginApiRequest(config: InternalAxiosRequestConfig): boolean {
 let refreshInFlight: Promise<string> | null = null
 
 /**
+ * Resets in-memory client auth state and clears any in-flight refresh promise.
+ */
+export function clearApiClientState(): void {
+  refreshInFlight = null
+  clearAccessToken()
+}
+
+/**
  * Mints a new access token.
  *
  * The refresh token is held in an `HttpOnly` cookie that only this app's own
@@ -49,6 +57,8 @@ async function refreshAccessToken(): Promise<string> {
     return refreshInFlight
   }
 
+  const initialToken = getAccessToken()
+
   refreshInFlight = (async () => {
     try {
       const response = await axios.post("/api/auth/refresh", undefined, {
@@ -60,7 +70,9 @@ async function refreshAccessToken(): Promise<string> {
         throw new Error("No token in refresh response")
       }
 
-      setAccessToken(newToken)
+      if (getAccessToken() === initialToken || getAccessToken() === null) {
+        setAccessToken(newToken)
+      }
       return newToken
     } finally {
       refreshInFlight = null
@@ -69,6 +81,7 @@ async function refreshAccessToken(): Promise<string> {
 
   return refreshInFlight
 }
+
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {

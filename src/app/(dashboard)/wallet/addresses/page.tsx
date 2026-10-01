@@ -3,7 +3,8 @@
 import { logger } from "@/lib/logger"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Copy, Check, Plus, Trash2, Wallet as WalletIcon, Star, ExternalLink, Send } from "lucide-react"
+import { ArrowLeft, Copy, Check, Plus, Trash2, Wallet as WalletIcon, Star, ExternalLink, Send, Download, Upload } from "lucide-react"
+import { exportAddressBookToCSV, importAddressBookFromCSV, mergeAddressBook } from "@/lib/wallet/address-book-csv"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,6 +80,51 @@ export default function AddressesPage() {
     }
   }
 
+  const handleExportCSV = () => {
+    if (savedAddresses.length === 0) {
+      addToast({ type: "warning", title: "No addresses to export" })
+      return
+    }
+    const csvContent = exportAddressBookToCSV(savedAddresses)
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "address-book.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+    addToast({ type: "success", title: "Exported", description: "Address book CSV downloaded." })
+  }
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string
+      if (!text) return
+      const result = importAddressBookFromCSV(text)
+      if (result.validAddresses.length > 0) {
+        const merged = mergeAddressBook(savedAddresses, result.validAddresses, "overwrite")
+        saveAddresses(merged)
+        const invalidInfo = result.invalidRows.length > 0 ? ` (${result.invalidRows.length} bad rows skipped)` : ""
+        addToast({
+          type: "success",
+          title: "Import Complete",
+          description: `Imported ${result.validAddresses.length} address(es)${invalidInfo}.`,
+        })
+      } else {
+        addToast({
+          type: "error",
+          title: "Import Failed",
+          description: result.invalidRows.length > 0 ? `${result.invalidRows.length} bad rows found. No valid addresses imported.` : "No addresses found in file.",
+        })
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ""
+  }
+
   const autoWallet = wallets.find((w) => w.walletType === "auto" || w.walletType === "passkey")
 
   return (
@@ -118,9 +164,18 @@ export default function AddressesPage() {
 
           {/* Saved addresses */}
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="font-heading text-sm font-semibold text-foreground">Saved Addresses</h3>
-              <Button variant="outline" size="sm" onClick={() => setShowForm(true)} leftIcon={<Plus className="h-3.5 w-3.5" />}>Add Address</Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportCSV} leftIcon={<Download className="h-3.5 w-3.5" />}>Export CSV</Button>
+                <label className="cursor-pointer inline-flex">
+                  <span className="inline-flex items-center justify-center gap-1.5 font-medium text-xs rounded-lg px-3 py-1.5 bg-white/10 text-foreground hover:bg-white/20 transition-colors">
+                    <Upload className="h-3.5 w-3.5" /> Import CSV
+                  </span>
+                  <input type="file" accept=".csv,text/csv" onChange={handleImportCSV} className="hidden" />
+                </label>
+                <Button variant="primary" size="sm" onClick={() => setShowForm(true)} leftIcon={<Plus className="h-3.5 w-3.5" />}>Add Address</Button>
+              </div>
             </div>
 
             {savedAddresses.length === 0 && !showForm ? (
