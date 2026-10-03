@@ -2,18 +2,14 @@
 
 import { useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import {
-  ArrowLeft,
-  CircleCheckBig,
-  CircleAlert,
-  ArrowRight,
-} from "lucide-react"
+import { ArrowLeft, CircleAlert, ArrowRight } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button, ButtonLink } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUIStore } from "@/stores/ui-store"
 import { post } from "@/lib/api-client"
 import { formatAddress } from "@/lib/formatters"
+import { TransferConfirmation } from "./components/TransferConfirmation"
 
 function WalletTransferContent() {
   const searchParams = useSearchParams()
@@ -210,19 +206,18 @@ function WalletTransferContent() {
         </div>
       )}
 
-      {step === "success" && (
-        <div className="glass-card p-8 rounded-3xl text-center space-y-6">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-            <CircleCheckBig className="w-8 h-8" />
-          </div>
-          <h3 className="text-2xl font-heading font-semibold">Transfer Successful!</h3>
-          <p className="text-muted-foreground text-sm">
-            Your transaction has been submitted to the Stellar network.
-          </p>
-          <div className="p-3 bg-muted/30 rounded-xl font-mono text-xs break-all">
-            Txn Hash: {txnHash}
-          </div>
-          <ButtonLink href="/wallet" className="w-full mt-4">Return to Wallet</ButtonLink>
+      {step === "success" && txnHash && (
+        <div
+          data-testid="transfer-success-step"
+          className="overflow-hidden rounded-3xl border border-border/50 bg-card"
+        >
+          <TransferConfirmation
+            txnHash={txnHash}
+            amount={amount}
+            currency={currency}
+            recipient={recipient}
+            networkFee={networkFee}
+          />
         </div>
       )}
     </div>
