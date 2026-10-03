@@ -19,18 +19,8 @@ import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatAddress, formatCurrency, formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
-import type { ContributionStatus } from "@/types"
 import { calculateRoundTotals } from "./round-totals"
-
-const statusStyles: Record<
-  ContributionStatus,
-  { variant: "success" | "warning" | "destructive" | "default" }
-> = {
-  confirmed: { variant: "success" },
-  pending: { variant: "warning" },
-  failed: { variant: "destructive" },
-  late: { variant: "destructive" },
-}
+import { RoundContributionsTable } from "./round-contributions-table"
 
 const container = {
   hidden: { opacity: 0 },
@@ -258,58 +248,11 @@ export default function CircleRoundsPage() {
                 </div>
               )}
 
-              {round.contributions.length > 0 && (
-                <div className="overflow-hidden rounded-xl border border-border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="glass-strong">
-                        <th className="px-4 py-2.5 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground">
-                          Contributor
-                        </th>
-                        <th className="px-4 py-2.5 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground">
-                          Amount
-                        </th>
-                        <th className="px-4 py-2.5 text-right text-2xs font-heading tracking-wider uppercase text-muted-foreground">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {round.contributions.map((c) => {
-                        const st = statusStyles[c.status] || statusStyles.pending
-                        const label = c.onTime && c.status === "confirmed" ? "On Time" : c.status
-                        return (
-                          <tr
-                            key={c.id}
-                            className="hover:glass-whisper transition-colors"
-                          >
-                            <td className="px-4 py-2.5 font-mono text-xs text-foreground dark:text-white">
-                              {c.userId.slice(0, 8)}...
-                            </td>
-                            <td className="px-4 py-2.5 text-sm gradient-text font-bold font-heading">
-                              {formatCurrency(c.amount, circle?.currency ?? "USDC")}
-                            </td>
-                            <td className="px-4 py-2.5 text-right">
-                              <Badge
-                                variant={c.onTime && c.status === "confirmed" ? "success" : st.variant}
-                                size="sm"
-                              >
-                                {label}
-                              </Badge>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {round.contributions.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4">
-                  No contributions recorded for this round yet.
-                </p>
-              )}
+              <RoundContributionsTable
+                roundNumber={round.roundNumber}
+                contributions={round.contributions}
+                currency={circle?.currency ?? "USDC"}
+              />
                   </>
                 )
               })()}
