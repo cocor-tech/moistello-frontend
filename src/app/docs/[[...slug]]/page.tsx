@@ -4,16 +4,19 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { sanitizeHtml, escapeHtml } from "@/lib/security/html-sanitizer";
+import { buildRouteMetadata } from "@/lib/seo/route-metadata";
+import { absoluteUrl } from "@/lib/seo/site";
 
 const DOCS_DIR = path.join(process.cwd(), "content/docs");
 
 function parseFrontmatter(file: string): {
   title: string;
+  description: string;
   order: number;
   content: string;
 } {
   const parts = file.split("---\n");
-  if (parts.length < 3) return { title: "", order: 999, content: file };
+  if (parts.length < 3) return { title: "", description: "", order: 999, content: file };
   const meta: Record<string, string> = {};
   parts[1].split("\n").forEach((line) => {
     const [key, ...rest] = line.split(":");
@@ -21,6 +24,7 @@ function parseFrontmatter(file: string): {
   });
   return {
     title: meta.title || "",
+    description: meta.description || "",
     order: parseInt(meta.order || "999"),
     content: parts.slice(2).join("---\n").trim(),
   };
@@ -36,44 +40,41 @@ export async function generateMetadata({
   const filePath = path.join(DOCS_DIR, `${slug}.md`);
 
   if (!fs.existsSync(filePath)) {
-    return { title: "Doc Not Found — Moistello" };
+    return {
+      title: "Doc Not Found — Moistello",
+      description: "That documentation page does not exist.",
+      robots: { index: false, follow: false },
+    };
   }
 
   const raw = fs.readFileSync(filePath, "utf-8");
-  const { title } = parseFrontmatter(raw);
+  const { title, description } = parseFrontmatter(raw);
+  const pageTitle = title || "Documentation";
+  const canonical = `/docs/${slug === "index" ? "" : slug}`;
+
+  // Built on the docs base entry so every doc inherits the full OG/Twitter
+  // block, then overridden with per-page copy. The base guarantees a scraper
+  // always finds a description even when a markdown file omits frontmatter.
+  const base = buildRouteMetadata("/docs");
 
   return {
-    title: title ? `${title} — Moistello` : `Documentation — Moistello`,
+    ...base,
+    title: `${pageTitle} — Moistello`,
     description:
-      "Moistello documentation. Learn about Stellar savings circles, USDC contributions, MoiScore reputation, and smart contracts.",
-    keywords:
-      "moistello, documentation, stellar, savings circles, USDC, MoiScore, smart contracts, soroban, ROSCA",
-    authors: [{ name: "Nekwachukwu Ucheokoye" }],
-    creator: "Moistello",
-    publisher: "Moistello",
-    alternates: { canonical: `/docs/${slug === "index" ? "" : slug}` },
-    robots: { index: true, follow: true },
+      description ||
+      `Moistello docs: ${pageTitle.toLowerCase()} — passkey authentication, auto-provisioned Stellar wallets, USDC savings circles and Soroban contracts.`,
+    alternates: { canonical },
     openGraph: {
+      ...base.openGraph,
       type: "article",
-      locale: "en_US",
-      url: `https://moistello.com/docs/${slug === "index" ? "" : slug}`,
-      siteName: "Moistello",
-      title: title || "Documentation",
-      description: "Moistello documentation for Stellar savings circles.",
-      images: [
-        {
-          url: "/logo.jpg",
-          width: 1200,
-          height: 630,
-          alt: "Moistello Documentation",
-        },
-      ],
+      url: absoluteUrl(canonical),
+      title: `${pageTitle} — Moistello`,
+      description: description || `${pageTitle} in the Moistello developer and user documentation.`,
     },
     twitter: {
-      card: "summary_large_image",
-      title: title || "Documentation",
-      description: "Moistello docs for Stellar savings circles.",
-      images: ["/logo.jpg"],
+      ...base.twitter,
+      title: `${pageTitle} — Moistello`,
+      description: description || `${pageTitle} in the Moistello documentation.`,
     },
   };
 }

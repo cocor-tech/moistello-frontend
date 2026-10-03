@@ -8,6 +8,7 @@
     "analyze": "node -e \"process.env.ANALYZE='true'; require('child_process').execSync('next build', {stdio: 'inherit'})\"",
     "start": "next start -H 127.0.0.1 -p 1110",
     "lint": "next lint",
+    "audit:seo": "node scripts/audit-seo-routes.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:critical": "playwright test tests/e2e/registration.spec.ts tests/e2e/passkey-login.spec.ts tests/e2e/circle-creation.spec.ts tests/e2e/contributions.spec.ts tests/e2e/payout-claim.spec.ts tests/e2e/dispute-resolution.spec.ts",

@@ -1,5 +1,9 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { WifiOff, House, RefreshCw } from "lucide-react"
+import { buildRouteMetadata } from "@/lib/seo/route-metadata"
+
+export const metadata: Metadata = buildRouteMetadata("/offline")
 
 export default function OfflinePage() {
   return (

@@ -5,6 +5,7 @@ import { PublicProfileView } from "@/components/profile/PublicProfileView";
 import { getPublicProfile } from "@/lib/profile/public-profile-source";
 import { isValidHandle } from "@/lib/profile/public-profile";
 import { APP_NAME } from "@/lib/constants";
+import { OG_IMAGE, TWITTER_SITE, absoluteUrl } from "@/lib/seo/site";
 
 /**
  * Unauthenticated public profile.
@@ -21,15 +22,41 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const profile = await getPublicProfile(params.handle);
-  if (!profile) return { title: `Profile not found — ${APP_NAME}` };
+  if (!profile) {
+    return {
+      title: `Profile not found — ${APP_NAME}`,
+      description: `No public ${APP_NAME} profile exists for @${params.handle}.`,
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const canonical = `/u/${params.handle}`;
+  // A profile is a person, not a page: say so in the preview so a shared link
+  // reads as "Ada joined Moistello" rather than as generic site marketing.
+  const description =
+    profile.bio ||
+    `${profile.displayName} saves in ${APP_NAME} savings circles on Stellar.`;
 
   return {
-    title: `${profile.displayName} — ${APP_NAME}`,
-    description: profile.bio || `${profile.displayName}'s public savings-circle profile.`,
+    title: `${profile.displayName} (${params.handle}) — ${APP_NAME}`,
+    description,
+    alternates: { canonical },
+    robots: { index: true, follow: true },
     openGraph: {
-      title: profile.displayName,
-      description: profile.bio || `Public profile on ${APP_NAME}.`,
       type: "profile",
+      locale: "en_US",
+      url: absoluteUrl(canonical),
+      siteName: APP_NAME,
+      title: `${profile.displayName} on ${APP_NAME}`,
+      description,
+      images: [OG_IMAGE],
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: TWITTER_SITE,
+      title: `${profile.displayName} on ${APP_NAME}`,
+      description,
+      images: [OG_IMAGE.url],
     },
   };
 }
