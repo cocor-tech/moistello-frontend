@@ -32,7 +32,7 @@ export function AvatarUploader({ initial, avatarUrl }: AvatarUploaderProps) {
         )}
         <label
           htmlFor="avatar-file"
-          className="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-background border border-aurora-violet/60 text-aurora-violet hover:bg-aurora-violet/10 focus-within:ring-2 focus-within:ring-aurora-violet/50"
+          className="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-background border border-aurora-violet/60 text-aurora-violet hover:bg-aurora-violet/10 focus-within:ring-2 focus-within:ring-foreground"
         >
           {processing ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

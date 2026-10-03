@@ -60,7 +60,7 @@ export const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(function OTP
             className={cn(
               "flex h-12 w-10 items-center justify-center rounded-xl border bg-white/5 font-heading text-xl font-bold text-foreground transition-all sm:h-14 sm:w-12",
               code[index] ? "border-aurora-violet/50" : "border-white/10",
-              focused && index === Math.min(code.length, length - 1) && "border-aurora-violet ring-1 ring-aurora-violet/30",
+              focused && index === Math.min(code.length, length - 1) && "border-foreground ring-1 ring-foreground",
               error && "border-red-500/70",
               disabled && "opacity-40",
             )}

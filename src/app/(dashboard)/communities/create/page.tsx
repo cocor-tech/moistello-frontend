@@ -115,7 +115,7 @@ export default function CreateCommunityPage() {
             placeholder="What is this community about?"
             rows={3}
             maxLength={2000}
-            className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-none"
+            className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-foreground resize-none"
           />
         </div>
 

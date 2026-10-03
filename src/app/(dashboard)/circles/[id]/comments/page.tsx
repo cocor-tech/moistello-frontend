@@ -78,7 +78,7 @@ function CommentThread({ comment, onLike, onReply }: { comment: Comment; onLike:
                 onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmitReply()}
                 placeholder="Write a reply..."
-                className="flex-1 bg-white/5 border border-border rounded-lg px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                className="flex-1 bg-white/5 border border-border rounded-lg px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground"
               />
               <Button type="button" variant="primary" size="xs" aria-label="Send reply" onClick={handleSubmitReply} disabled={!replyText.trim()}><Send className="h-3.5 w-3.5" aria-hidden="true" /></Button>
             </div>
@@ -171,7 +171,7 @@ export default function CommentsPage() {
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Share a thought about this circle..."
             rows={2}
-            className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
+            className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground resize-none"
           />
           <div className="flex justify-end mt-2">
             <Button variant="primary" size="sm" onClick={handlePost} isLoading={loading} disabled={!newComment.trim()} leftIcon={<Send className="h-3.5 w-3.5" />}>Post</Button>
