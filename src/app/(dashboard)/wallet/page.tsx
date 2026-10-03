@@ -177,7 +177,21 @@ export default function WalletPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-2">
-                <CopyButton text={walletId} label={formatAddress(walletId)} />
+                <CopyButton
+                  text={walletId}
+                  label={formatAddress(walletId)}
+                  // The visible label is the truncated form, so the full
+                  // address is surfaced via the tooltip, the accessible name,
+                  // and the manual-copy fallback.
+                  fullText={walletId}
+                  onCopied={() => addToast({ type: "info", title: "Address copied" })}
+                  onError={() =>
+                    addToast({
+                      type: "error",
+                      title: "Clipboard unavailable",
+                      description: "Select the address and copy it manually.",
+                    })}
+                />
               </div>
               <p className="text-xs text-muted-foreground mt-1.5">
                 {t("auth.register.securityNote")}
