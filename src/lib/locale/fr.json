@@ -569,5 +569,7 @@
   "tierCard.scoreOf": "MoiScore : {score} / 1 000",
   "tierCard.tierLadder": "Échelle de progression",
   "tierCard.unlocked": "Déverrouillé",
-  "tierCard.yourBenefits": "Vos avantages {tier}"
+  "tierCard.yourBenefits": "Vos avantages {tier}",
+  "settings.data": "Vos données",
+  "settings.dataDesc": "Téléchargez une copie de vos données"
 }
