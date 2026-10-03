@@ -636,3 +636,240 @@
   @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--aurora-violet))]
     focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--background))];
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT
+   Organizers print circle summaries to run offline meetings, so
+   the printed sheet has to be a document, not a screenshot of the
+   app. Everything below targets that one medium.
+   ═══════════════════════════════════════════════════════════ */
+
+@media print {
+  /* Paper, not screen. Most browsers do not print backgrounds anyway,
+     which is exactly why the dark theme was unreadable on paper:
+     `text-white`/`text-muted-foreground` resolved to light greys that
+     vanished against white. Pin the tokens to ink-on-paper first, then
+     the utility classes below inherit a sane palette for free. */
+  :root,
+  .dark {
+    --background: 255 255 255;
+    --foreground: 0 0 0;
+    --card: 255 255 255;
+    --card-border: 203 203 203;
+    --border: 203 203 203;
+    --muted: 245 245 245;
+    --muted-foreground: 68 68 68;
+    --primary: 0 0 0;
+    --primary-foreground: 255 255 255;
+    --secondary-foreground: 0 0 0;
+    --glass-blur: 0;
+    --glass-saturation: 100%;
+    --depth-shadow: none;
+    --depth-shadow-hover: none;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Real page margins instead of the browser's guess. `size: auto` keeps
+     the reader's chosen paper size; only the margin is fixed. */
+  @page {
+    size: auto;
+    margin: 14mm 12mm;
+  }
+
+  /* Chrome. Everything here is navigation or affordance, never data.
+     The sidebar and header are the app's own layout components, so they
+     carry `data-print-hide` (see components/layout/*) — but the role and
+     tag selectors below are the safety net for anything that renders a
+     button or nav without opting in. */
+  [data-print-hide='true'],
+  nav,
+  aside,
+  header,
+  footer,
+  [role='navigation'],
+  [role='dialog'],
+  [role='alertdialog'],
+  [role='menu'],
+  [role='toolbar'],
+  [aria-hidden='true'] {
+    display: none !important;
+  }
+
+  /* Interactive controls have no meaning on paper and their focus rings
+     would print as stray boxes. */
+  button,
+  [role='button'],
+  input,
+  select,
+  textarea,
+  label[for] {
+    display: none !important;
+  }
+
+  /* Glass tiers, blurs and decorative pseudo-elements all resolve to
+     nothing useful on paper and cost ink. Replace with a hairline. */
+  .glass,
+  .glass-premium,
+  .glass-strong,
+  .glass-flagship,
+  .glass-whisper {
+    background: #fff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1px solid #d0d0d0 !important;
+    overflow: visible !important;
+  }
+
+  .glass-premium::after,
+  .glass-flagship::after,
+  .holo-border::before,
+  .holo-border::after {
+    content: none !important;
+  }
+
+  /* Fixed/sticky positioning is what pins the sidebar and mobile nav to
+     the viewport, and it repeats on every printed page. Release it. */
+  .fixed,
+  .sticky,
+  [data-print-static] {
+    position: static !important;
+    inset: auto !important;
+  }
+
+  /* The dashboard reserves a 72rem left gutter for the sidebar and a
+     bottom band for the mobile nav. On paper that gutter is blank space
+     on every page, so reclaim it. */
+  #main-content,
+  [data-print-content] {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+  }
+
+  /* ── Tables ──────────────────────────────────────────────────────────
+     The acceptance criteria for a printed summary are that a table stays
+     readable and no row is ever split across two sheets. */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    /* Horizontal scroll containers would clip a wide table to the
+       viewport width on paper. Let it use the full page. */
+    overflow: visible !important;
+  }
+
+  /* Repeats the header on every page a long table spans. Requires
+     `display: table-header-group`; without it a continued table has no
+     column labels. */
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  tr,
+  img,
+  svg,
+  figure,
+  blockquote,
+  pre {
+    /* A row split across a page boundary loses its borders and reads as
+       one broken record. `page-break-inside` is the legacy spelling and
+       is what Safari honours; `break-inside` covers everything modern. */
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #b8b8b8 !important;
+    padding: 4pt 6pt !important;
+    text-align: left !important;
+    vertical-align: top !important;
+  }
+
+  thead th {
+    background: #f0f0f0 !important;
+    /* `break-after: avoid` keeps a header glued to the first data row
+       beneath it, so a page never opens with a column of values and no
+       labels. */
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    font-weight: 700 !important;
+  }
+
+  /* A section heading stranded alone at the foot of a page reads as a
+     missing section on the next one. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Gradients and text-clips print as grey mush or as nothing. */
+  .gradient-text,
+  .gradient-text-extended,
+  .holo-text,
+  .gradient-bg,
+  .auroral-mesh {
+    background: none !important;
+    -webkit-text-fill-color: #000 !important;
+    color: #000 !important;
+    background-clip: initial !important;
+  }
+
+  a {
+    color: #000 !important;
+    /* The href is useful reference, but only for content links — a printed
+       member address is already visible, so nav links stay clean. */
+    text-decoration: underline;
+  }
+
+  /* Keep print colours only when the user asked for them; browsers strip
+     them by default and this opts back in for a table that relies on a
+     status tint. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT UTILITIES
+   Tailwind's `print:` variant covers most cases; these are for the
+   handful of rules that need real CSS (page-break behaviour on table
+   rows) rather than a single declaration.
+   ═══════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /* Applied to <thead>/<caption> wrappers in the print summary so column
+     labels repeat on every sheet. */
+  .print-repeat-header {
+    display: table-header-group;
+  }
+
+  /* Applied to a table row, card or paragraph that must stay whole. */
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Applied to a block that should start on a fresh sheet — each major
+     section of a circle summary. */
+  .print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+}
