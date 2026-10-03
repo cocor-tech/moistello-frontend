@@ -280,7 +280,7 @@ export default function ProfilePage() {
                 "placeholder:text-muted-foreground/50",
                 "border-b-2 border-border",
                 "transition-all duration-300 rounded-none",
-                "focus:outline-none focus:border-b-aurora-violet focus:shadow-[0_0_12px_rgb(var(--aurora-violet)/0.1)]",
+                "focus:outline-none focus:border-b-foreground focus:shadow-[0_0_12px_rgb(var(--foreground)/0.1)]",
                 "resize-none",
               )}
             />

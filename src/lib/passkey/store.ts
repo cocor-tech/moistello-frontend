@@ -7,6 +7,8 @@ export type CredentialRecord = {
   counter: number
   transports?: string[]
   userId?: string
+  deviceLabel?: string
+  createdAt?: string
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1100"
@@ -79,6 +81,8 @@ export async function storeCredential(credentialId: string, record: Omit<Credent
     counter: record.counter ?? 0,
     transports: record.transports ?? [],
     userId: record.userId,
+    deviceLabel: record.deviceLabel,
+    createdAt: record.createdAt || new Date().toISOString(),
   }
 
   credentialStore.set(credentialId, normalized)
@@ -89,6 +93,8 @@ export async function storeCredential(credentialId: string, record: Omit<Credent
     counter: normalized.counter,
     transports: normalized.transports ?? [],
     userId: normalized.userId ?? null,
+    deviceLabel: normalized.deviceLabel ?? null,
+    createdAt: normalized.createdAt ?? null,
   }
 
   try {
@@ -142,6 +148,38 @@ export async function updateCredentialCounter(credentialId: string, counter: num
     })
   } catch {
     // Fall back to local in-memory storage in environments without the backend.
+  }
+}
+
+export async function listCredentials(userId: string): Promise<CredentialRecord[]> {
+  const local = Array.from(credentialStore.values()).filter(c => c.userId === userId)
+  try {
+    const res = await fetch(`${API_BASE}/passkey/credentials?userId=${encodeURIComponent(userId)}`)
+    if (!res.ok) return local
+    const data = await res.json()
+    if (!data?.data || !Array.isArray(data.data)) return local
+    return data.data.map((c: any) => ({
+      credentialId: c.credentialId,
+      publicKey: Uint8Array.from(atob(c.publicKey), (x) => x.charCodeAt(0)),
+      counter: c.counter ?? 0,
+      transports: c.transports,
+      userId: c.userId,
+      deviceLabel: c.deviceLabel,
+      createdAt: c.createdAt,
+    }))
+  } catch {
+    return local
+  }
+}
+
+export async function deleteCredential(credentialId: string): Promise<void> {
+  credentialStore.delete(credentialId)
+  try {
+    await fetch(`${API_BASE}/passkey/credentials/${encodeURIComponent(credentialId)}`, {
+      method: "DELETE"
+    })
+  } catch {
+    // local fallback
   }
 }
 

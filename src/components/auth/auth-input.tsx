@@ -35,7 +35,7 @@ export const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
           spellCheck={autoCompleteType === "name" ? false : undefined}
           className={cn(
             "w-full rounded-xl border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors",
-            "focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 focus:border-transparent",
+            "focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent",
             "autofill:bg-background autofill:text-foreground",
             error
               ? "border-red-500/50 focus:ring-red-500/50"

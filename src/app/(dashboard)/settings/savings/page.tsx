@@ -177,7 +177,7 @@ export default function SavingsSettingsPage() {
               min={1}
               value={localSettings.defaultTargetAmount}
               onChange={(e) => setLocalSettings((s) => ({ ...s, defaultTargetAmount: Number(e.target.value) }))}
-              className="w-32 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm text-foreground focus:border-aurora-violet/50 focus:outline-none transition-colors"
+              className="w-32 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none transition-colors"
             />
             <span className="text-sm text-muted-foreground">USD</span>
           </div>

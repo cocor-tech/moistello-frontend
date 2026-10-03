@@ -633,6 +633,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 .focus-ring {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--aurora-violet))]
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--foreground))]
     focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--background))];
 }

@@ -37,7 +37,7 @@ export function CircleJoinCodeModal({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           placeholder="Paste invite code here..."
-          className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 font-mono text-center text-lg tracking-widest"
+          className="w-full bg-white/5 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground font-mono text-center text-lg tracking-widest"
         />
         {error && <p role="alert" className="text-sm text-red-400 text-center">{error}</p>}
         <Button

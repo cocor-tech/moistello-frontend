@@ -529,7 +529,7 @@ function CreateAnnouncementForm({ communityId, onCreated }: { communityId: strin
         onChange={(e) => setContent(e.target.value)}
         placeholder="Post an announcement..."
         rows={2}
-        className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 border-b border-white/10 focus:outline-none focus:border-aurora-violet/50 resize-none py-2"
+        className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 border-b border-white/10 focus:outline-none focus:border-foreground resize-none py-2"
       />
       <div className="flex justify-end">
         <Button variant="primary" size="sm" onClick={handlePost} isLoading={createAnnouncement.isPending} disabled={!content.trim()}>
