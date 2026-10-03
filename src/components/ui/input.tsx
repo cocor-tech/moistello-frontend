@@ -76,7 +76,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               "border-b-2 border-border",
               "transition-all duration-300 rounded-none",
               "focus:outline-none",
-              isFocused && !error && "border-b-aurora-violet shadow-[0_0_12px_rgb(var(--aurora-violet)/0.1)]",
+              isFocused && !error && "border-b-foreground shadow-[0_0_12px_rgb(var(--foreground)/0.1)]",
               "disabled:cursor-not-allowed disabled:opacity-40",
               leftIcon && "pl-10",
               rightIcon && "pr-10",

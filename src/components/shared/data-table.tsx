@@ -70,7 +70,7 @@ export function DataTable<T>({ data, columns, getRowId, caption, isLoading, empt
               {columns.map((column) => (
                 <th key={column.id} scope="col" className={cn("px-4 py-3 text-xs font-heading uppercase tracking-wider text-muted-foreground", column.className)}>
                   {column.sortable ? (
-                    <button type="button" className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-aurora-violet" onClick={() => changeSort(column)} aria-label={`Sort by ${String(column.header)}`}>
+                    <button type="button" className="inline-flex items-center gap-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-foreground" onClick={() => changeSort(column)} aria-label={`Sort by ${String(column.header)}`}>
                       {column.header}
                       {sort?.id === column.id ? (sort.direction === "asc" ? <ArrowUp className="h-3 w-3" aria-hidden="true" /> : <ArrowDown className="h-3 w-3" aria-hidden="true" />) : <ArrowUpDown className="h-3 w-3" aria-hidden="true" />}
                     </button>

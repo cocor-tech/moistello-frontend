@@ -125,7 +125,7 @@ export function TabsTrigger({
       className={cn(
         "relative inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-heading font-medium transition-colors duration-300",
         "h-10 min-h-[44px] md:min-h-0",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground",
         isActive
           ? "text-white"
           : "text-muted-foreground hover:text-foreground",
