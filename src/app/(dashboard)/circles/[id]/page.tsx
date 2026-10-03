@@ -122,10 +122,7 @@ export default function CircleDetailPage() {
     try {
       await joinCircle.mutateAsync({
         circleId,
-        payload: { inviteCode: joinCodeValue.trim() } as Record<
-          string,
-          unknown
-        >,
+        payload: { inviteCode: joinCodeValue.trim() },
       });
       setShowJoinCodeModal(false);
       setJoinCodeValue("");
