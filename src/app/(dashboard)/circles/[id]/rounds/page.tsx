@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { memo, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { motion } from "framer-motion"
 import {
@@ -17,10 +17,12 @@ import { EmptyState } from "@/components/shared/empty-state"
 import { Badge } from "@/components/ui/badge"
 import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatAddress, formatCurrency, formatDate } from "@/lib/formatters"
+import { formatAddress, formatCurrency, formatDateLocalized } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
 import type { ContributionStatus } from "@/types"
 import { calculateRoundTotals } from "./round-totals"
+import type { Contribution } from "@/types"
+import { useIntl } from "@/hooks/use-intl"
 
 const statusStyles: Record<
   ContributionStatus,
@@ -30,7 +32,39 @@ const statusStyles: Record<
   pending: { variant: "warning" },
   failed: { variant: "destructive" },
   late: { variant: "destructive" },
+};
+
+interface ContributionRowProps {
+  contribution: Contribution;
+  currency: string;
 }
+
+const ContributionRow = memo(function ContributionRow({
+  contribution,
+  currency,
+}: ContributionRowProps) {
+  const st = statusStyles[contribution.status] || statusStyles.pending
+  const label = contribution.onTime && contribution.status === "confirmed" ? "On Time" : contribution.status
+
+  return (
+    <tr className="hover:glass-whisper transition-colors">
+      <td className="px-4 py-2.5 font-mono text-xs text-foreground dark:text-white">
+        {contribution.userId.slice(0, 8)}...
+      </td>
+      <td className="px-4 py-2.5 text-sm gradient-text font-bold font-heading">
+        {formatCurrency(contribution.amount, currency)}
+      </td>
+      <td className="px-4 py-2.5 text-right">
+        <Badge
+          variant={contribution.onTime && contribution.status === "confirmed" ? "success" : st.variant}
+          size="sm"
+        >
+          {label}
+        </Badge>
+      </td>
+    </tr>
+  );
+});
 
 const container = {
   hidden: { opacity: 0 },
@@ -45,6 +79,7 @@ const roundItem = {
 export default function CircleRoundsPage() {
   const params = useParams()
   const circleId = params.id as string
+  const { locale } = useIntl()
 
   const { data: circle } = useCircle(circleId)
   const { data: rounds = [], isLoading, isError } = useCircleRounds(circleId)
@@ -237,8 +272,8 @@ export default function CircleRoundsPage() {
                       <span className="font-mono text-foreground">
                         {formatCurrency(round.payout.feeAmount ?? 0, circle?.currency ?? "USDC")}
                       </span>
-                      <span className="text-muted-foreground">Date</span>
-                      <span className="text-foreground">{formatDate(round.payout.createdAt)}</span>
+<span className="text-muted-foreground">Date</span>
+                       <span className="text-foreground">{formatDateLocalized(round.payout.createdAt, locale)}</span>
                       {round.payout.txnHash && (
                         <>
                           <span className="text-muted-foreground">Transaction</span>
@@ -275,31 +310,13 @@ export default function CircleRoundsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {round.contributions.map((c) => {
-                        const st = statusStyles[c.status] || statusStyles.pending
-                        const label = c.onTime && c.status === "confirmed" ? "On Time" : c.status
-                        return (
-                          <tr
-                            key={c.id}
-                            className="hover:glass-whisper transition-colors"
-                          >
-                            <td className="px-4 py-2.5 font-mono text-xs text-foreground dark:text-white">
-                              {c.userId.slice(0, 8)}...
-                            </td>
-                            <td className="px-4 py-2.5 text-sm gradient-text font-bold font-heading">
-                              {formatCurrency(c.amount, circle?.currency ?? "USDC")}
-                            </td>
-                            <td className="px-4 py-2.5 text-right">
-                              <Badge
-                                variant={c.onTime && c.status === "confirmed" ? "success" : st.variant}
-                                size="sm"
-                              >
-                                {label}
-                              </Badge>
-                            </td>
-                          </tr>
-                        )
-                      })}
+                      {round.contributions.map((c) => (
+                        <ContributionRow
+                          key={c.id}
+                          contribution={c}
+                          currency={circle?.currency ?? "USDC"}
+                        />
+                      ))}
                     </tbody>
                   </table>
                 </div>
