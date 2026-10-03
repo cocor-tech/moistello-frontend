@@ -46,7 +46,7 @@ describe("upload staging", () => {
   })
 
   it("generates its own uploadId rather than trusting the caller", () => {
-    const meta = stageUpload(Buffer.from("# hi"), {
+    const { meta } = stageUpload(Buffer.from("# hi"), {
       originalName: "about.md",
       slug: "about",
       extension: ".md",
