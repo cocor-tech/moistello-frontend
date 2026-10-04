@@ -53,7 +53,7 @@ export default function ProposalDetailPage() {
   const handleConfirmVote = async () => {
     if (voteChoice === null) return
     try {
-      await voteMutation.mutateAsync(voteChoice as boolean | "abstain")
+      await voteMutation.mutateAsync(voteChoice)
       setUserVoted(voteChoice === true ? "FOR" : voteChoice === false ? "AGAINST" : "ABSTAIN")
       setShowConfirmModal(false)
       addToast({

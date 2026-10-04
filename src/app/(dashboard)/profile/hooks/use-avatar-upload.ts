@@ -66,7 +66,7 @@ export function useAvatarUpload() {
       const res = await post<AvatarUploadResponse>("/users/me/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
-      if (user && res?.avatarUrl) updateUser({ ...user, avatarUrl: res.avatarUrl })
+      if (user && res?.avatarUrl) updateUser({ ...user, avatarIpfsHash: res.avatarUrl })
       addToast({ type: "success", title: "Avatar updated" })
       setPreview(null)
     } catch (err) {

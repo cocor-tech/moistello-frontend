@@ -62,6 +62,18 @@ interface ContributePayload {
   roundNumber?: number;
 }
 
+/**
+ * Row this hook appends to the rounds cache while a contribution is in flight.
+ *
+ * The rounds endpoint serves `CircleRound`s, but the pending row is the
+ * contribution itself (that is what the server echoes back on success), and it
+ * is stamped with `submittedAt` rather than `createdAt` — hence the cache is
+ * read and written as the union of the two.
+ */
+type OptimisticRoundRow = Omit<Contribution, "createdAt"> & {
+  submittedAt: string;
+};
+
 function normalizeCircle(c: Record<string, unknown>): Circle {
   const out: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(c)) {
@@ -246,8 +258,9 @@ export function useContribute(circleId: string) {
         });
       }
 
-      const currentRounds = qc.getQueryData<CircleRound[]>(roundsKey) ?? [];
-      const newRound: CircleRound = {
+      const currentRounds =
+        qc.getQueryData<Array<CircleRound | OptimisticRoundRow>>(roundsKey) ?? [];
+      const newRound: OptimisticRoundRow = {
         id: tempId,
         circleId,
         userId: OPTIMISTIC_PENDING_USER_ID,
@@ -257,7 +270,10 @@ export function useContribute(circleId: string) {
         onTime: true,
         submittedAt: new Date().toISOString(),
       };
-      qc.setQueryData<CircleRound[]>(roundsKey, [...currentRounds, newRound]);
+      qc.setQueryData<Array<CircleRound | OptimisticRoundRow>>(roundsKey, [
+        ...currentRounds,
+        newRound,
+      ]);
     },
     onSuccess: () => {
       addToast({

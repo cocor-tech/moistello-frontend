@@ -51,7 +51,12 @@ export function CircleRoundTimeline({
     };
 
     let observer: ResizeObserver | null = null;
-    if (typeof window !== "undefined" && "ResizeObserver" in window) {
+    // Hoisted into a boolean: testing `"ResizeObserver" in window` inline would
+    // narrow `window` to `never` in the fallback branch, even though the
+    // runtime object there is the very same window.
+    const hasResizeObserver =
+      typeof window !== "undefined" && "ResizeObserver" in window;
+    if (hasResizeObserver) {
       observer = new ResizeObserver(debouncedCheckScroll);
       observer.observe(el);
     } else {

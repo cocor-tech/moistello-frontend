@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   House,
   PiggyBank,
@@ -35,6 +35,7 @@ interface MobileMenuProps {
 
 function MobileMenuComponent({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
   const unreadCount = useUnreadCount();

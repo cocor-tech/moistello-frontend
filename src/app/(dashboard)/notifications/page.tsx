@@ -232,7 +232,7 @@ export default function NotificationsPage() {
   }, [notifications, typeFilter, activeTab]);
 
   const largeList = filtered.length > STAGGER_CHILDREN_LIMIT;
-  const listMotion = useListMotion(largeList);
+  const listMotion = useListMotion(filtered.length);
   const allSelected = filtered.length > 0 && filtered.every((n) => selectedIds.includes(n.id));
 
   useEffect(() => {
@@ -319,7 +319,7 @@ export default function NotificationsPage() {
           description={t("notifications.description")}
         />
         <div className="flex items-center gap-3">
-          <LiveIndicator isLive={wsState.isConnected} label={wsState.status} />
+          <LiveIndicator connectionState={wsState.connectionState} />
           <ButtonLink href="/notifications/archive"  variant="outline" size="sm" leftIcon={<Archive className="h-4 w-4" />}>
               {t("notifications.archive")}
             </ButtonLink>

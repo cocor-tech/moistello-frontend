@@ -1,7 +1,7 @@
 import React from "react"
 import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
-import type { Payout, Circle } from "@types"
+import type { Payout, Circle } from "@/types"
 import { UpcomingPayoutsWidget } from "../upcoming-payouts-widget"
 
 const circle = { id: "circle-1", name: "Ethereum Builders", currency: "USDC" } as unknown as Circle

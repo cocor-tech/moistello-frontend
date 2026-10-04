@@ -8,6 +8,7 @@ import { loginSchema, zodResolver, type LoginInput } from "@/lib/validation"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { post } from "@/lib/api-client"
+import type { User } from "@/types"
 import dynamic from "next/dynamic"
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { Button } from "@/components/ui/button"
@@ -20,7 +21,7 @@ const WalletSelector = dynamic(
 
 export default function LoginPage() {
   const router = useRouter()
-  const login = useAuthStore((s) => s.login)
+  const setTokens = useAuthStore((s) => s.setTokens)
   const toast = useToast()
   const [loading, setLoading] = useState(false)
 
@@ -37,9 +38,11 @@ export default function LoginPage() {
     async (values: LoginInput) => {
       setLoading(true)
       try {
-        const res = await post<{ token?: string; user?: any }>("/auth/login", values)
+        const res = await post<{ token?: string; refreshToken?: string; user?: User }>("/auth/login", values)
         if (res?.token) {
-          login(res.token, res.user)
+          // setTokens persists the HttpOnly session cookie the middleware gates
+          // on, so navigation must wait for it to resolve.
+          await setTokens(res.token, res.refreshToken ?? res.token, res.user)
           toast.success("Welcome back!")
           router.replace("/")
         } else {
@@ -52,7 +55,7 @@ export default function LoginPage() {
         setLoading(false)
       }
     },
-    [login, toast, router],
+    [setTokens, toast, router],
   )
 
   return (

@@ -40,7 +40,7 @@ export function useCreateProposal() {
 export function useVoteOnProposal(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (support: boolean) => voteOnProposal(id, support),
+    mutationFn: (support: boolean | "abstain") => voteOnProposal(id, support),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.governance.detail(id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.governance.all })

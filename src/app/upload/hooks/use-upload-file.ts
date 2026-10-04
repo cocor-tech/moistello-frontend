@@ -87,7 +87,7 @@ export function useUploadFile(): UseUploadFileReturn {
 
   const clearFile = useCallback(() => {
     setFile(null)
-    setProgress(0)
+    setProgress(IDLE_PROGRESS)
     if (fileRef.current) fileRef.current.value = ""
   }, [])
 

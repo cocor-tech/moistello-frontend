@@ -11,7 +11,9 @@ type PayoutsOptions = Parameters<typeof usePayouts>[0];
  *
  * - When connected: data is refreshed in real-time by WsProvider's cache
  *   invalidation on `payout.executed` events.
- * - When disconnected: react-query polls every 30 seconds as a fallback.
+ * - When disconnected: `usePayouts` only takes filters, so the fallback is
+ *   react-query's own refetch triggers (window focus, reconnect) until the
+ *   socket is live again.
  *
  * Returns all fields from `usePayouts` plus:
  * - `isLive`          — true when the WebSocket is connected
@@ -20,11 +22,7 @@ type PayoutsOptions = Parameters<typeof usePayouts>[0];
 export function useLivePayouts(options?: PayoutsOptions) {
   const { isConnected, connectionState } = useWsState();
 
-  const payoutsQuery = usePayouts({
-    ...options,
-    // Fall back to polling react-query every 30 s when the WebSocket is not live
-    refetchInterval: isConnected ? false : 30000,
-  });
+  const payoutsQuery = usePayouts({ ...options });
 
   return {
     ...payoutsQuery,

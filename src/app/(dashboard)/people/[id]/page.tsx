@@ -49,7 +49,7 @@ export default function PersonProfilePage() {
       <div className="relative border border-white/10 rounded-2xl p-6 sm:p-8 bg-gradient-to-r from-aurora-violet/15 via-background to-emerald-500/10 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Avatar name={person.displayName} size="lg" className="border-2 border-aurora-violet/30" />
+            <Avatar fallback={person.displayName} size="lg" className="border-2 border-aurora-violet/30" />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-heading text-2xl font-bold text-foreground">{person.displayName}</h1>

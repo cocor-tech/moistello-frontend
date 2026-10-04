@@ -11,13 +11,16 @@
  * No `fs`, no `path`, no flat-file imports — this module is safe to ship.
  */
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-function notFound() {
+type NotFoundHandler = (req: NextRequest) => NextResponse;
+
+function notFound(): NextResponse {
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
-export const GET = notFound;
-export const POST = notFound;
-export const PUT = notFound;
-export const PATCH = notFound;
-export const DELETE = notFound;
+export const GET: NotFoundHandler = notFound;
+export const POST: NotFoundHandler = notFound;
+export const PUT: NotFoundHandler = notFound;
+export const PATCH: NotFoundHandler = notFound;
+export const DELETE: NotFoundHandler = notFound;

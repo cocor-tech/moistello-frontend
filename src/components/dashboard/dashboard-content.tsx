@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { get } from '@/lib/api-client'
 import dynamic from 'next/dynamic'
 import { PageHeader } from '@/components/shared/page-header'
-import type { Circle, Contribution, Payout } from '@/types'
+import type { ApiResponse, Circle, Contribution, Payout } from '@/types'
 
 const ChartSkeleton = () => (
   <div className="rounded-2xl border border-white/5 bg-card/40 p-6 animate-pulse min-h-[260px] flex items-center justify-center">
@@ -36,7 +36,7 @@ export function DashboardContent() {
   const circlesQuery = useQuery({
     queryKey: ['dashboard', 'circles'],
     queryFn: async () => {
-      const res = await get<{ circles: Circle[] }>('/api/circles')
+      const res = await get<ApiResponse<{ circles: Circle[] }>>('/api/circles')
       return res.data?.circles || []
     },
   })
@@ -44,7 +44,7 @@ export function DashboardContent() {
   const contributionsQuery = useQuery({
     queryKey: ['dashboard', 'contributions'],
     queryFn: async () => {
-      const res = await get<{ contributions: Contribution[] }>('/api/contributions')
+      const res = await get<ApiResponse<{ contributions: Contribution[] }>>('/api/contributions')
       return res.data?.contributions || []
     },
   })
@@ -52,7 +52,7 @@ export function DashboardContent() {
   const payoutsQuery = useQuery({
     queryKey: ['dashboard', 'payouts'],
     queryFn: async () => {
-      const res = await get<{ payouts: Payout[] }>('/api/payouts')
+      const res = await get<ApiResponse<{ payouts: Payout[] }>>('/api/payouts')
       return res.data?.payouts || []
     },
   })

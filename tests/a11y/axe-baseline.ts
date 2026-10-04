@@ -112,7 +112,7 @@ export async function expectNoBlockingViolations(
   route: string,
   testInfo: TestInfo,
 ): Promise<AxeResults> {
-  const results = await scannerFor(page).analyze()
+  const results: AxeResults = await scannerFor(page).analyze()
 
   await testInfo.attach("axe-results", {
     body: JSON.stringify(results, null, 2),

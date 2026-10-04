@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
     const filteredContribs = filterByDateRange(
       allContribs,
       dateRange,
-      (c) => c.createdAt ?? c.paidAt,
+      (c) => c.createdAt,
     )
     const totalContributions = filteredContribs.reduce((s, c) => s + c.amount, 0)
     const completedRounds = Array.from(new Set(filteredContribs.filter((c) => c.status === "confirmed" || c.onTime).map((c) => c.roundNumber))).length

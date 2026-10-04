@@ -297,7 +297,7 @@ export default function PeopleDirectoryPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <Avatar name={person.displayName} size="md" className="border border-white/10" />
+                  <Avatar fallback={person.displayName} size="md" className="border border-white/10" />
                   <div>
                     <h3 className="font-heading text-base font-semibold text-foreground group-hover:text-aurora-violet transition-colors">
                       {person.displayName}

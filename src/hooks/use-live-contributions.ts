@@ -11,7 +11,9 @@ type ContributionsOptions = Parameters<typeof useContributions>[0];
  *
  * - When connected: data is refreshed in real-time by WsProvider's cache
  *   invalidation on `contribution.recorded` events.
- * - When disconnected: react-query polls every 30 seconds as a fallback.
+ * - When disconnected: `useContributions` only takes filters, so the fallback
+ *   is react-query's own refetch triggers (window focus, reconnect) until the
+ *   socket is live again.
  *
  * Returns all fields from `useContributions` plus:
  * - `isLive`          — true when the WebSocket is connected
@@ -20,11 +22,7 @@ type ContributionsOptions = Parameters<typeof useContributions>[0];
 export function useLiveContributions(options?: ContributionsOptions) {
   const { isConnected, connectionState } = useWsState();
 
-  const contributionsQuery = useContributions({
-    ...options,
-    // Fall back to polling react-query every 30 s when the WebSocket is not live
-    refetchInterval: isConnected ? false : 30000,
-  });
+  const contributionsQuery = useContributions({ ...options });
 
   return {
     ...contributionsQuery,

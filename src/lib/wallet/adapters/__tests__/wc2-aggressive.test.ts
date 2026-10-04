@@ -20,21 +20,25 @@ describe("WalletConnect Aggressive Tests", () => {
     })
   })
 
-  describe("resetWcState and disconnectWc exports", () => {
+  describe("resetWcState and adapter disconnect", () => {
     it("resetWcState is exported as function", async () => {
       const mod = await import("../walletconnect")
       expect(typeof mod.resetWcState).toBe("function")
     })
 
-    it("disconnectWc is exported as function", async () => {
+    it("the adapter exposes a disconnect method", async () => {
       const mod = await import("../walletconnect")
-      expect(typeof mod.disconnectWc).toBe("function")
+      const adapter = mod.createWalletConnectAdapter()
+      expect(typeof adapter.disconnect).toBe("function")
     })
 
-    it("disconnectWc clears state without error when no session", async () => {
-      const { resetWcState, disconnectWc } = await import("../walletconnect")
+    it("disconnect resolves without error when no session", async () => {
+      const { createWalletConnectAdapter, resetWcState } = await import(
+        "../walletconnect"
+      )
+      const adapter = createWalletConnectAdapter()
       resetWcState()
-      await expect(disconnectWc()).resolves.toBeUndefined()
+      await expect(adapter.disconnect()).resolves.toBeUndefined()
     })
   })
 

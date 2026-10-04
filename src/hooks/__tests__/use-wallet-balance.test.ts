@@ -72,7 +72,7 @@ describe("useWalletBalance", () => {
   it("resets balance/error/lastUpdatedAt when address becomes null", async () => {
     const { result, rerender } = renderHook(
       ({ addr }: { addr: string | null }) => useWalletBalance(addr),
-      { initialProps: { addr: MOCK_ADDRESS } },
+      { initialProps: { addr: MOCK_ADDRESS as string | null } },
     )
     await waitFor(() => expect(result.current.balance).toEqual(MOCK_BALANCE))
 

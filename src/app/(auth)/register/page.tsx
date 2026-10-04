@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 import { post } from "@/lib/api-client"
+import type { User } from "@/types"
 
 export default function RegisterPage() {
   const router = useRouter()
-  const login = useAuthStore((s) => s.login)
+  const setTokens = useAuthStore((s) => s.setTokens)
   const toast = useToast()
   const [loading, setLoading] = useState(false)
 
@@ -35,9 +36,11 @@ export default function RegisterPage() {
     async (values: RegisterInput) => {
       setLoading(true)
       try {
-        const res = await post<{ token?: string; user?: any }>("/auth/register", values)
+        const res = await post<{ token?: string; refreshToken?: string; user?: User }>("/auth/register", values)
         if (res?.token) {
-          login(res.token, res.user)
+          // setTokens persists the HttpOnly session cookie the middleware gates
+          // on, so navigation must wait for it to resolve.
+          await setTokens(res.token, res.refreshToken ?? res.token, res.user)
           toast.success("Account created successfully!")
           router.replace("/passkey-setup")
         } else {
@@ -50,7 +53,7 @@ export default function RegisterPage() {
         setLoading(false)
       }
     },
-    [login, toast, router],
+    [setTokens, toast, router],
   )
 
   return (

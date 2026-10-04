@@ -35,7 +35,6 @@ describe("ChooseWalletStep", () => {
       ],
       isScanning: false,
       connectingWalletId: null,
-      wc2QrExpiresAt: null,
     })
     useWalletConnectStore.getState().reset()
   })

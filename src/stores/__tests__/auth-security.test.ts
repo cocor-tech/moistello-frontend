@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { User } from "@/types";
 import { useAuthFlowStore } from "../auth-flow-store";
 import { useAuthStore } from "../auth-store";
 
@@ -80,8 +81,6 @@ describe("Auth Security - Token Storage", () => {
 
   describe("AuthStore", () => {
     it("should not persist access token to localStorage", () => {
-      const store = useAuthStore.getState();
-
       // Check all localStorage keys
       const allKeys = Object.keys(localStorage);
       const tokenKeys = allKeys.filter(
@@ -114,11 +113,14 @@ describe("Auth Security - Token Storage", () => {
     it("should only persist user profile (non-sensitive)", async () => {
       const store = useAuthStore.getState();
 
-      const mockUser = {
+      const mockUser: User = {
         id: "user-123",
         walletAddress: "GACCOUNT123",
         displayName: "Test User",
         email: "test@example.com",
+        preferredLanguage: "en",
+        moiScore: 250,
+        createdAt: "2026-01-01T00:00:00.000Z",
       };
 
       await store.setTokens("access-token", "refresh-token", mockUser);
@@ -152,10 +154,13 @@ describe("Auth Security - Token Storage", () => {
     it("should not expose tokens via localStorage enumeration", async () => {
       const authStore = useAuthStore.getState();
 
-      const mockUser = {
+      const mockUser: User = {
         id: "user-123",
         walletAddress: "GACCOUNT123",
         displayName: "Victim",
+        preferredLanguage: "en",
+        moiScore: 250,
+        createdAt: "2026-01-01T00:00:00.000Z",
       };
 
       await authStore.setTokens(

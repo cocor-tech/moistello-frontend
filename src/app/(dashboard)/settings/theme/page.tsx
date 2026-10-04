@@ -9,11 +9,16 @@ import { cn } from "@/lib/cn"
 
 type ThemeOption = "light" | "dark" | "system"
 
-function getThemeOptions(t: (key: string, fallback?: string) => string) {
+function translateWithFallback(t: (key: string) => string, key: string, fallback: string): string {
+  const value = t(key)
+  return value === key ? fallback : value
+}
+
+function getThemeOptions(t: (key: string) => string) {
   return [
-    { value: "light" as ThemeOption, icon: <Sun className="h-5 w-5" />, label: t("theme.light", "Light"), desc: t("theme.lightDesc", "Light mode") },
-    { value: "dark" as ThemeOption, icon: <Moon className="h-5 w-5" />, label: t("theme.dark", "Dark"), desc: t("theme.darkDesc", "Dark mode") },
-    { value: "system" as ThemeOption, icon: <Monitor className="h-5 w-5" />, label: t("theme.system", "System"), desc: t("theme.systemDesc", "Follow your device setting") },
+    { value: "light" as ThemeOption, icon: <Sun className="h-5 w-5" />, label: translateWithFallback(t, "theme.light", "Light"), desc: translateWithFallback(t, "theme.lightDesc", "Light mode") },
+    { value: "dark" as ThemeOption, icon: <Moon className="h-5 w-5" />, label: translateWithFallback(t, "theme.dark", "Dark"), desc: translateWithFallback(t, "theme.darkDesc", "Dark mode") },
+    { value: "system" as ThemeOption, icon: <Monitor className="h-5 w-5" />, label: translateWithFallback(t, "theme.system", "System"), desc: translateWithFallback(t, "theme.systemDesc", "Follow your device setting") },
   ]
 }
 
@@ -67,7 +72,7 @@ export default function ThemeSettingsPage() {
                 <p className="text-2xs text-muted-foreground mt-0.5">{opt.desc}</p>
                 {opt.value === "system" && (
                   <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] bg-white/[0.08] text-muted-foreground font-mono">
-                    {t("theme.detected", "Detected")}: {systemTheme === "dark" ? t("theme.dark", "Dark") : t("theme.light", "Light")}
+                    {translateWithFallback(t, "theme.detected", "Detected")}: {systemTheme === "dark" ? translateWithFallback(t, "theme.dark", "Dark") : translateWithFallback(t, "theme.light", "Light")}
                   </span>
                 )}
               </div>

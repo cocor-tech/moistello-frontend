@@ -51,6 +51,14 @@ function escapeCSV(value: unknown): string {
   return `"${str.replace(/"/g, '""')}"`
 }
 
+/**
+ * Export columns are chosen at runtime by key, so rows are read dynamically.
+ * Every row is a plain domain object — the narrowing lives here, once.
+ */
+function pickField(row: object, key: string): unknown {
+  return (row as Record<string, unknown>)[key]
+}
+
 export interface BuildCSVOptions {
   scope: ExportScope
   contributionColumns: string[]
@@ -81,10 +89,7 @@ export function buildContributionsCSV(
   const rows = contributions
     .filter((c) => inDateRange(c.createdAt, dateFrom, dateTo))
     .map((c) => {
-      const row = cols.map((col) => {
-        const val = (c as Record<string, unknown>)[col.key]
-        return escapeCSV(val)
-      })
+      const row = cols.map((col) => escapeCSV(pickField(c, col.key)))
       return row.join(",")
     })
 
@@ -104,10 +109,7 @@ export function buildPayoutsCSV(
   const rows = payouts
     .filter((p) => inDateRange(p.createdAt, dateFrom, dateTo))
     .map((p) => {
-      const row = cols.map((col) => {
-        const val = (p as Record<string, unknown>)[col.key]
-        return escapeCSV(val)
-      })
+      const row = cols.map((col) => escapeCSV(pickField(p, col.key)))
       return row.join(",")
     })
 
@@ -123,10 +125,7 @@ export function buildMembersCSV(
 
   const header = cols.map((c) => escapeCSV(c.label)).join(",")
   const rows = members.map((m) => {
-    const row = cols.map((col) => {
-      const val = (m as Record<string, unknown>)[col.key]
-      return escapeCSV(val)
-    })
+    const row = cols.map((col) => escapeCSV(pickField(m, col.key)))
     return row.join(",")
   })
 

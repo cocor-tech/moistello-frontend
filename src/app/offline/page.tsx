@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { WifiOff, House, RefreshCw } from "lucide-react"
 

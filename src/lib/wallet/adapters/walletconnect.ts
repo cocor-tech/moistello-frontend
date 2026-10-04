@@ -28,7 +28,7 @@ import { logger } from "@/lib/logger"
  * destructive to unrelated sessions.
  */
 
-import { WalletAdapter, WalletAdapterMeta, ConnectOptions } from "../types"
+import { WalletAdapter, WalletMeta, NetworkType } from "../types"
 import { getRelayMonitor } from "../wc2-relay"
 import { getWC2SessionStore } from "../wc2-session-store"
 import { validateStellarAddress } from "@/lib/stellar/validate-address"
@@ -81,6 +81,17 @@ export interface PairingContext {
   error: string | null
   /** AbortController so callers can cancel an in-flight connect. */
   abortController: AbortController
+}
+
+/**
+ * Options accepted by the WalletConnect adapter's `connect()`.
+ *
+ * `network` picks the chain requested in `requiredNamespaces` and `onUri`
+ * receives the pairing URI as soon as the relay issues it.
+ */
+export interface WalletConnectConnectOptions {
+  network?: NetworkType
+  onUri?: (uri: string) => void
 }
 
 /**
@@ -182,11 +193,12 @@ export function createWalletConnectAdapter(): WalletAdapter & {
   let currentPublicKey: string | null = null
   let currentSession: any = null
 
-  const meta: WalletAdapterMeta = {
+  const meta: WalletMeta = {
     id: "walletconnect",
     name: "WalletConnect",
     category: "mobile",
     priority: 0,
+    installUrl: "",
     description:
       "Connect with Lobstr, xBull, and 200+ mobile Stellar wallets",
     icon: "/icons/walletconnect.svg",
@@ -201,7 +213,16 @@ export function createWalletConnectAdapter(): WalletAdapter & {
     getPairingState: () => _currentContext?.state ?? "idle",
     getPairingError: () => _currentContext?.error ?? null,
 
-    async connect(options?: ConnectOptions) {
+    /**
+     * `WalletAdapter.connect` is declared as `connect(email?: string)`, so the
+     * string form is accepted to satisfy that contract and ignored here —
+     * WalletConnect pairing is anonymous and keyed off {@link WalletConnectConnectOptions}.
+     */
+    async connect(
+      emailOrOptions?: string | WalletConnectConnectOptions
+    ): Promise<{ publicKey: string; network: NetworkType }> {
+      const options =
+        typeof emailOrOptions === "string" ? undefined : emailOrOptions
       const relay = getRelayMonitor()
       if (relay.isDownForConnect) {
         const err = new Error(
@@ -220,6 +241,8 @@ export function createWalletConnectAdapter(): WalletAdapter & {
       _currentContext = ctx
       ctx.state = "pairing"
       notifyContextChange()
+
+      const connectStartedAt = Date.now()
 
       try {
         const client = await getOrInitSignClient()
@@ -242,10 +265,10 @@ export function createWalletConnectAdapter(): WalletAdapter & {
               ctx.state = "approved"
               _currentContext = null
               notifyContextChange()
-              relay.recordOutcome("connect", true)
+              relay.recordOutcome(true, Date.now() - connectStartedAt)
               return {
                 publicKey: address,
-                network: network === "stellar:testnet" ? "testnet" : "public",
+                network: network === "testnet" ? "testnet" : "mainnet",
               }
             }
           }
@@ -260,8 +283,8 @@ export function createWalletConnectAdapter(): WalletAdapter & {
                 "stellar_signMessage",
               ],
               chains: [
-                options?.network === "public"
-                  ? "stellar:public"
+                options?.network === "mainnet"
+                  ? "stellar:pubnet"
                   : "stellar:testnet",
               ],
               events: ["session_event", "session_delete"],
@@ -323,11 +346,11 @@ export function createWalletConnectAdapter(): WalletAdapter & {
 
         const store = getWC2SessionStore()
         store.saveSession(session)
-        relay.recordOutcome("connect", true)
+        relay.recordOutcome(true, Date.now() - connectStartedAt)
 
         return {
           publicKey: address,
-          network: network === "stellar:testnet" ? "testnet" : "public",
+          network: network === "testnet" ? "testnet" : "mainnet",
         }
       } catch (err: any) {
         // Only update ctx if it is still the active one (another connect may
@@ -339,7 +362,7 @@ export function createWalletConnectAdapter(): WalletAdapter & {
           _currentContext = null
           notifyContextChange()
         }
-        relay.recordOutcome("connect", false)
+        relay.recordOutcome(false, Date.now() - connectStartedAt)
         throw {
           code: err?.code ?? "user_rejected",
           message: err?.message || "Connection rejected",
@@ -399,6 +422,8 @@ export function createWalletConnectAdapter(): WalletAdapter & {
         }
       }
 
+      const signStartedAt = Date.now()
+
       try {
         const client = await getOrInitSignClient()
         const chainId =
@@ -411,10 +436,10 @@ export function createWalletConnectAdapter(): WalletAdapter & {
             params: { xdr, accountId: currentPublicKey },
           },
         })
-        relay.recordOutcome("sign", true)
+        relay.recordOutcome(true, Date.now() - signStartedAt)
         return (result as any)?.signedXdr || (result as string)
       } catch (err: any) {
-        relay.recordOutcome("sign", false)
+        relay.recordOutcome(false, Date.now() - signStartedAt)
         throw {
           code: "user_rejected",
           message: err?.message || "Signing rejected",
@@ -464,11 +489,13 @@ export function createWalletConnectAdapter(): WalletAdapter & {
       return currentPublicKey
     },
 
-    async getNetwork() {
+    async getNetwork(): Promise<NetworkType> {
       if (!currentSession) return "testnet"
       const chainId =
         currentSession.namespaces?.stellar?.chains?.[0] || ""
-      return chainId.includes("public") ? "public" : "testnet"
+      return chainId.includes("pubnet") || chainId.includes("public")
+        ? "mainnet"
+        : "testnet"
     },
   }
 }

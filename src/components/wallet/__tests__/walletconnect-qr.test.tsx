@@ -1,5 +1,5 @@
 import React from "react"
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest"
 import { inflateSync } from "node:zlib"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import { WalletConnectQR } from "../walletconnect-qr"
@@ -389,7 +389,7 @@ describe("WalletConnectQR – copy and download affordances", () => {
   }
 
   const originalClipboard = navigator.clipboard
-  let clickSpy: ReturnType<typeof vi.fn>
+  let clickSpy: Mock<() => void>
   /** The exact string the component assigned to anchor.href, before jsdom normalises it. */
   let assignedHref: string
   let assignedDownload: string | undefined
@@ -398,10 +398,10 @@ describe("WalletConnectQR – copy and download affordances", () => {
     vi.clearAllMocks()
     assignedHref = ""
     assignedDownload = undefined
-    clickSpy = vi.fn()
+    clickSpy = vi.fn<() => void>()
     // The component triggers the download by clicking a detached anchor, so the
     // click is the only observable navigation effect.
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(clickSpy)
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => { clickSpy() })
     // Read the href off the setter rather than the getter: jsdom parses it as a
     // URL and re-serialises it, percent-encoding the base64 payload, which
     // would corrupt the bytes every assertion below decodes.

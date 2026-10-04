@@ -15,7 +15,7 @@ import { formatAddress } from "@/lib/formatters"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-interface TxItem {
+export interface TxItem {
   id: string
   type: "sent" | "received"
   amount: number
@@ -24,6 +24,75 @@ interface TxItem {
   txnHash?: string
   source: "contribution" | "payout"
   status?: "completed" | "pending" | "failed"
+}
+
+export type TxTypeFilter = "all" | "sent" | "received"
+export type TxSourceFilter = "all" | "contribution" | "payout"
+export type TxStatusFilter = "all" | "completed" | "pending" | "failed"
+export type TxDateRange = "all" | "7d" | "30d" | "90d"
+
+export interface TransactionFilters {
+  type: TxTypeFilter
+  source: TxSourceFilter
+  status?: TxStatusFilter
+  dateRange: TxDateRange
+  minAmount: string
+  maxAmount: string
+  search: string
+}
+
+const DATE_RANGE_DAYS: Record<Exclude<TxDateRange, "all">, number> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24
+
+function parseAmountBound(value: string): number | null {
+  if (value === "" || isNaN(Number(value))) return null
+  return Number(value)
+}
+
+export function filterTransactions(
+  items: TxItem[],
+  filters: TransactionFilters,
+  now: Date | number = Date.now(),
+): TxItem[] {
+  const nowMs = now instanceof Date ? now.getTime() : now
+  const query = filters.search.trim().toLowerCase()
+  const minAmount = parseAmountBound(filters.minAmount)
+  const maxAmount = parseAmountBound(filters.maxAmount)
+
+  return items
+    .filter((tx) => {
+      if (filters.type !== "all" && tx.type !== filters.type) return false
+
+      if (filters.source !== "all" && tx.source !== filters.source) return false
+
+      if (filters.status !== undefined && filters.status !== "all" && (tx.status ?? "completed") !== filters.status) {
+        return false
+      }
+
+      if (query) {
+        const matchesId = tx.id.toLowerCase().includes(query)
+        const matchesDesc = tx.description.toLowerCase().includes(query)
+        const matchesHash = tx.txnHash?.toLowerCase().includes(query) ?? false
+        if (!matchesId && !matchesDesc && !matchesHash) return false
+      }
+
+      if (minAmount !== null && tx.amount < minAmount) return false
+      if (maxAmount !== null && tx.amount > maxAmount) return false
+
+      if (filters.dateRange !== "all") {
+        const txTime = new Date(tx.createdAt).getTime()
+        const diffDays = (nowMs - txTime) / MS_PER_DAY
+        if (diffDays > DATE_RANGE_DAYS[filters.dateRange]) return false
+      }
+
+      return true
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
 const PAGE_SIZE = 15
@@ -250,9 +319,9 @@ export default function TransactionsPage() {
 
   // Initialize state from URL params
   const [search, setSearch] = useState(searchParams.get("search") ?? "")
-  const [typeFilter, setTypeFilter] = useState((searchParams.get("type") as "all" | "sent" | "received") ?? "all")
-  const [statusFilter, setStatusFilter] = useState((searchParams.get("status") as "all" | "completed" | "pending" | "failed") ?? "all")
-  const [dateFilter, setDateFilter] = useState((searchParams.get("date") as "all" | "7d" | "30d" | "90d") ?? "all")
+  const [typeFilter, setTypeFilter] = useState<TxTypeFilter>((searchParams.get("type") as TxTypeFilter) ?? "all")
+  const [statusFilter, setStatusFilter] = useState<TxStatusFilter>((searchParams.get("status") as TxStatusFilter) ?? "all")
+  const [dateFilter, setDateFilter] = useState<TxDateRange>((searchParams.get("date") as TxDateRange) ?? "all")
   const [minAmount, setMinAmount] = useState(searchParams.get("minAmount") ?? "")
   const [maxAmount, setMaxAmount] = useState(searchParams.get("maxAmount") ?? "")
   const [currentPage, setCurrentPage] = useState(() => Number(searchParams.get("page")) || 1)
@@ -315,37 +384,14 @@ export default function TransactionsPage() {
   })
 
   const filteredTxns = useMemo(() => {
-    return txns.filter((tx) => {
-      // Search query
-      if (search.trim()) {
-        const q = search.toLowerCase()
-        const matchesId = tx.id.toLowerCase().includes(q)
-        const matchesDesc = tx.description.toLowerCase().includes(q)
-        const matchesHash = tx.txnHash?.toLowerCase().includes(q) ?? false
-        if (!matchesId && !matchesDesc && !matchesHash) return false
-      }
-
-      // Type filter
-      if (typeFilter !== "all" && tx.type !== typeFilter) return false
-
-      // Status filter
-      if (statusFilter !== "all" && (tx.status ?? "completed") !== statusFilter) return false
-
-      // Amount filters
-      if (minAmount !== "" && !isNaN(Number(minAmount)) && tx.amount < Number(minAmount)) return false
-      if (maxAmount !== "" && !isNaN(Number(maxAmount)) && tx.amount > Number(maxAmount)) return false
-
-      // Date filters
-      if (dateFilter !== "all") {
-        const txDate = new Date(tx.createdAt).getTime()
-        const now = Date.now()
-        const diffDays = (now - txDate) / (1000 * 60 * 60 * 24)
-        if (dateFilter === "7d" && diffDays > 7) return false
-        if (dateFilter === "30d" && diffDays > 30) return false
-        if (dateFilter === "90d" && diffDays > 90) return false
-      }
-
-      return true
+    return filterTransactions(txns, {
+      type: typeFilter,
+      source: "all",
+      status: statusFilter,
+      dateRange: dateFilter,
+      minAmount,
+      maxAmount,
+      search,
     })
   }, [txns, search, typeFilter, statusFilter, dateFilter, minAmount, maxAmount])
 
@@ -443,7 +489,7 @@ export default function TransactionsPage() {
 
   const columns: DataTableColumn<TxItem>[] = [
     {
-      key: "type",
+      id: "type",
       header: "Type",
       cell: (tx) => (
         <div className="flex items-center gap-2">
@@ -457,17 +503,17 @@ export default function TransactionsPage() {
       ),
     },
     {
-      key: "description",
+      id: "description",
       header: "Description",
       cell: (tx) => (
         <div>
           <p className="font-medium text-foreground">{tx.description}</p>
-          {tx.txnHash && <p className="text-xs text-muted-foreground font-mono">{formatAddress(tx.txnHash, 6, 4)}</p>}
+          {tx.txnHash && <p className="text-xs text-muted-foreground font-mono">{formatAddress(tx.txnHash)}</p>}
         </div>
       ),
     },
     {
-      key: "amount",
+      id: "amount",
       header: "Amount",
       cell: (tx) => (
         <span className={cn("font-semibold", tx.type === "sent" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400")}>
@@ -476,7 +522,7 @@ export default function TransactionsPage() {
       ),
     },
     {
-      key: "status",
+      id: "status",
       header: "Status",
       cell: (tx) => {
         const st = tx.status ?? "completed"
@@ -488,7 +534,7 @@ export default function TransactionsPage() {
       },
     },
     {
-      key: "createdAt",
+      id: "createdAt",
       header: "Date",
       cell: (tx) => (
         <span className="text-sm text-muted-foreground">
@@ -497,7 +543,7 @@ export default function TransactionsPage() {
       ),
     },
     {
-      key: "actions",
+      id: "actions",
       header: "",
       cell: (tx) => (
         <Link
@@ -511,7 +557,7 @@ export default function TransactionsPage() {
   ]
 
   if (isLoading) return <PageLoading />
-  if (isError) return <PageError message="Failed to load transactions" onRetry={() => refetch()} />
+  if (isError) return <PageError title="Failed to load transactions" onRetry={() => { void refetch() }} />
 
   return (
     <div className="space-y-6" data-testid="wallet-transactions-page">
@@ -596,7 +642,7 @@ export default function TransactionsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <DataTable columns={columns} data={paginatedTxns} />
+          <DataTable columns={columns} data={paginatedTxns} getRowId={(tx) => tx.id} />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2">
