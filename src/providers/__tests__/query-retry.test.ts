@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   createRateLimitAwareRetry,
+  createRetryDelayResolver,
+  createRetryPredicate,
   getStatusCode,
   parseRetryAfterMs,
   resolveRetryDelayMs,
@@ -146,9 +148,15 @@ describe("createRateLimitAwareRetry", () => {
 
   it("backs off further on each successive 429", () => {
     const retry = createRateLimitAwareRetry({ jitterRatio: 0 });
-    const delays = [0, 1, 2, 3, 4].map((failureCount) =>
-      retry(failureCount, rateLimitError()),
-    );
+    const delays: number[] = [0, 1, 2, 3, 4].map((failureCount) => {
+      const resolved = retry(failureCount, rateLimitError());
+      if (typeof resolved !== "number") {
+        throw new Error(
+          `expected a delay on attempt ${failureCount}, got ${String(resolved)}`,
+        );
+      }
+      return resolved;
+    });
     expect(delays).toEqual([1_000, 2_000, 4_000, 8_000, 16_000]);
     // Strictly increasing => total wait grows, it does not hammer the API.
     for (let i = 1; i < delays.length; i++) {
@@ -186,6 +194,58 @@ describe("getStatusCode", () => {
     expect(getStatusCode({ status: 429 })).toBe(429);
     expect(getStatusCode(new Error("boom"))).toBeUndefined();
     expect(getStatusCode(null)).toBeUndefined();
+  });
+});
+
+describe("TanStack Query v5 adapters", () => {
+  it("retry predicate answers boolean and matches the combined policy", () => {
+    const retry = createRateLimitAwareRetry({ jitterRatio: 0 });
+    const shouldRetry = createRetryPredicate({ jitterRatio: 0 });
+    const error = rateLimitError();
+    for (let failureCount = 0; failureCount <= RATE_LIMIT_MAX_RETRIES; failureCount++) {
+      expect(shouldRetry(failureCount, error)).toBe(retry(failureCount, error) !== false);
+      expect(typeof shouldRetry(failureCount, error)).toBe("boolean");
+    }
+    expect(shouldRetry(RATE_LIMIT_MAX_RETRIES + 1, error)).toBe(false);
+  });
+
+  it("retry delay answers number and matches the combined policy", () => {
+    const retry = createRateLimitAwareRetry({ jitterRatio: 0 });
+    const retryDelay = createRetryDelayResolver({ jitterRatio: 0 });
+    const error = rateLimitError();
+    for (let failureCount = 0; failureCount <= RATE_LIMIT_MAX_RETRIES; failureCount++) {
+      expect(retryDelay(failureCount, error)).toBe(retry(failureCount, error));
+    }
+  });
+
+  it("honours Retry-After through the v5 retryDelay channel", () => {
+    const retryDelay = createRetryDelayResolver();
+    expect(retryDelay(0, rateLimitError("30"))).toBe(30_000);
+  });
+
+  it("backs off exponentially through the v5 retryDelay channel", () => {
+    const retryDelay = createRetryDelayResolver({ jitterRatio: 0 });
+    const delays = [0, 1, 2, 3].map((failureCount) =>
+      retryDelay(failureCount, rateLimitError()),
+    );
+    expect(delays).toEqual([1_000, 2_000, 4_000, 8_000]);
+  });
+
+  it("never reports an immediate retry through the v5 retryDelay channel", () => {
+    const retryDelay = createRetryDelayResolver({ jitterRatio: 0 });
+    // Even once the budget is spent and no delay is ever consumed, the value
+    // must not be 0 — that would be an instant re-fire of a throttled request.
+    expect(retryDelay(RATE_LIMIT_MAX_RETRIES + 1, rateLimitError())).toBe(
+      RETRY_MIN_DELAY_MS,
+    );
+  });
+
+  it("keeps the single retry for non-429 errors through both v5 channels", () => {
+    const shouldRetry = createRetryPredicate();
+    const retryDelay = createRetryDelayResolver({ jitterRatio: 0 });
+    expect(shouldRetry(0, otherError(500))).toBe(true);
+    expect(shouldRetry(1, otherError(500))).toBe(false);
+    expect(retryDelay(0, otherError(500))).toBe(RETRY_MIN_DELAY_MS);
   });
 });
 

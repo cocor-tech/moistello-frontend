@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import ProposalDetailPage from "../page"
+import ProposalDetailPage from "../[id]/page"
 import { getProposal, QUORUM_THRESHOLD_VOTES, type GovernanceProposal } from "@/lib/governance-api"
 
 vi.mock("next/navigation", () => ({

@@ -179,13 +179,25 @@ export function resolveRetryDelayMs(
 }
 
 /**
+ * The answer `createRateLimitAwareRetry` gives about the next attempt.
+ *
+ * - `false` — do not retry; surface the error.
+ * - `true` — retry, leaving the delay to TanStack Query's own default backoff.
+ *   Used for non-429 transient errors so the pre-existing `retry: 1` behaviour
+ *   is preserved untouched.
+ * - `number` — retry after exactly this many milliseconds.
+ */
+export type RetryDecision = number | boolean;
+
+/**
  * Builds the `retry` callback for QueryClient.
  *
- * Returning `false` stops retrying; returning a number schedules the next
- * attempt that many milliseconds later.
+ * A single policy that answers both "should we retry?" and "after how long?",
+ * so the two can never disagree. Split into the separate v5 `retry` /
+ * `retryDelay` options by `createRetryPredicate` and `createRetryDelayResolver`.
  */
 export function createRateLimitAwareRetry(options: BackoffOptions = {}) {
-  return function retry(failureCount: number, error: unknown): number | false {
+  return function retry(failureCount: number, error: unknown): RetryDecision {
     const opts = normalize(options)
 
     // Already failed once more than we allow for a rate-limited query.
@@ -200,4 +212,41 @@ export function createRateLimitAwareRetry(options: BackoffOptions = {}) {
 
     return delay
   }
+}
+
+/**
+ * TanStack Query v5 adapter for the `retry` option.
+ *
+ * v5 split what a single v4 `retry` callback returned: the decision to retry is
+ * now `boolean`, and the wait before the next attempt moved to `retryDelay`.
+ * This is a thin projection of the policy's answer onto the boolean channel.
+ */
+export function createRetryPredicate(options: BackoffOptions = {}) {
+  const retry = createRateLimitAwareRetry(options);
+
+  return function shouldRetry(failureCount: number, error: unknown): boolean {
+    return retry(failureCount, error) !== false;
+  };
+}
+
+/**
+ * TanStack Query v5 adapter for the `retryDelay` option.
+ *
+ * `retry` and `retryDelay` are handed the same 0-based `failureCount` and the
+ * same error by the retryer, so delegating to the identical computation keeps
+ * the two channels consistent — the delay reported here is always the one the
+ * predicate acted on.
+ *
+ * `true` means the policy deferred to TanStack Query's default backoff, which
+ * starts at the same floor used here, and `false` means the query has exhausted
+ * its budget and no delay is ever consumed; both fall back to that floor rather
+ * than 0 so a direct call never reports an immediate re-fire.
+ */
+export function createRetryDelayResolver(options: BackoffOptions = {}) {
+  const retry = createRateLimitAwareRetry(options);
+
+  return function retryDelay(failureCount: number, error: unknown): number {
+    const resolved = retry(failureCount, error);
+    return typeof resolved === "number" ? resolved : RETRY_MIN_DELAY_MS;
+  };
 }

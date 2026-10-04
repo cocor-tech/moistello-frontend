@@ -32,6 +32,12 @@ export function ContributionForm() {
     resolver: zodResolver(contributorSchema),
     mode: "onTouched",
     defaultValues: { name: "", github: "", contribution: "", bio: "" },
+    // react-hook-form focuses the first invalid field after a failed submit by
+    // default, which runs *after* the invalid callback and so overrode the error
+    // summary's focus. Two things grabbing focus means the screen reader lands
+    // mid-form instead of on the alert that explains the failure, so the summary
+    // owns focus and RHF is told to keep its hands off.
+    shouldFocusError: false,
   })
   const [formState, setFormState] = useState<FormState>("idle")
   const [formError, setFormError] = useState<string | null>(null)

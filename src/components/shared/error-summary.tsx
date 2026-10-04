@@ -82,7 +82,10 @@ export function ErrorSummary({
                 const field = document.getElementById(entry.fieldId)
                 if (!field) return
                 field.focus()
-                field.scrollIntoView({ block: "center" })
+                // Not implemented in jsdom, and absent on some older engines, so
+                // a missing method must not abort the handler after focus() and
+                // surface as an unhandled error.
+                field.scrollIntoView?.({ block: "center" })
               }}
             >
               <span className="font-medium">{entry.label}:</span> {entry.message}

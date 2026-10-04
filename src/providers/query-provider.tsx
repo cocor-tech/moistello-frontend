@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { queryKeys } from "@/lib/query-keys";
-import { createRateLimitAwareRetry } from "./query-retry";
+import { createRetryDelayResolver, createRetryPredicate } from "./query-retry";
 
 interface QueryProviderProps {
   children: ReactNode;
@@ -12,7 +12,8 @@ interface QueryProviderProps {
 
 // Bound once at module scope: the policy is stateless, so every QueryClient
 // created by this provider shares the same backoff behaviour.
-const rateLimitAwareRetry = createRateLimitAwareRetry();
+const rateLimitAwareRetry = createRetryPredicate();
+const rateLimitAwareRetryDelay = createRetryDelayResolver();
 
 export function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(
@@ -25,6 +26,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
             // with a cap instead of retrying immediately and worsening the
             // throttling. See ./query-retry.
             retry: rateLimitAwareRetry,
+            retryDelay: rateLimitAwareRetryDelay,
             refetchOnWindowFocus: true,
           },
         },
