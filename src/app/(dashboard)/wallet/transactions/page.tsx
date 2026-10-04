@@ -381,6 +381,8 @@ export default function TransactionsPage() {
       }
       return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     },
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
   })
 
   const filteredTxns = useMemo(() => {
