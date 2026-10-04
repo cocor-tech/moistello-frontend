@@ -1,10 +1,17 @@
 import Link from "next/link"
-import { ArrowLeft, House, Search } from "lucide-react"
-import { notFound } from "next/navigation"
+import { House, Search } from "lucide-react"
+import { GoBackButton } from "@/components/shared/go-back-button"
 
+/**
+ * Root 404 boundary.
+ *
+ * This component previously called `notFound()` inside its own body. `notFound()`
+ * *throws* `NEXT_HTTP_ERROR_FALLBACK;404`, and the nearest not-found boundary to
+ * that throw is this very component — so it re-threw into itself and the entire
+ * UI below was unreachable. A not-found boundary must render; something upstream
+ * is what calls `notFound()`.
+ */
 export default function NotFound() {
-  notFound()
-
   return (
     <main className="relative min-h-screen overflow-hidden bg-background">
       <div
@@ -41,14 +48,7 @@ export default function NotFound() {
               <Search className="h-4 w-4" />
               <span className="border-b border-transparent group-hover:border-foreground">Browse docs</span>
             </Link>
-            <button
-              type="button"
-              onClick={() => history.back()}
-              className="group inline-flex items-center gap-2 font-heading text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="border-b border-transparent group-hover:border-foreground">Go back</span>
-            </button>
+            <GoBackButton />
           </nav>
         </div>
       </section>
