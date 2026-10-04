@@ -453,7 +453,6 @@ describe("WalletConnect adapter method idempotency", () => {
       }
     })
   })
-})
 
 describe("WalletConnect signTransaction — failure paths (with mocked session)", () => {
   let connectedAdapter: ReturnType<typeof createWalletConnectAdapter>
@@ -463,18 +462,23 @@ describe("WalletConnect signTransaction — failure paths (with mocked session)"
     connectedAdapter = createWalletConnectAdapter()
     mockRelay.status = "healthy"
     setOnPairingUri(null)
+    // A real WalletConnect session carries a `topic`, and `session.getAll()`
+    // returns the live sessions keyed by that same topic. `isConnected()`
+    // matches on the topic, so the mock has to mirror that shape.
+    const mockSession = {
+      topic: "test-topic",
+      namespaces: {
+        stellar: {
+          accounts: ["stellar:testnet:GAX23V3WWDPPR5WRER3KTEUTDLSCGZYMSJY5FDRRKKCIQ4JADF5T27RC"],
+          chains: ["stellar:testnet"],
+        },
+      },
+    }
     mockSignClient.connect.mockResolvedValue({
       uri: "wc:test",
-      approval: vi.fn().mockResolvedValue({
-        namespaces: {
-          stellar: {
-            accounts: ["stellar:testnet:GAX23V3WWDPPR5WRER3KTEUTDLSCGZYMSJY5FDRRKKCIQ4JADF5T27RC"],
-            chains: ["stellar:testnet"],
-          },
-        },
-      }),
+      approval: vi.fn().mockResolvedValue(mockSession),
     })
-    mockSignClient.session.getAll.mockReturnValue([])
+    mockSignClient.session.getAll.mockReturnValue([mockSession])
     mockSignClient.approve.mockResolvedValue({})
     mockSignClient.disconnect.mockResolvedValue(undefined)
     mockSignClient.request.mockResolvedValue({ signedXdr: "mockxdr" })
@@ -523,8 +527,8 @@ describe("WalletConnect signTransaction — failure paths (with mocked session)"
     const mainnetAdapter = createWalletConnectAdapter()
     await mainnetAdapter.connect()
 
-    // The adapter should report public network
-    expect(await mainnetAdapter.getNetwork()).toBe("public")
+    // The adapter should report mainnet
+    expect(await mainnetAdapter.getNetwork()).toBe("mainnet")
   })
 
   it("returns insufficient_funds error when signing fails due to low balance", async () => {

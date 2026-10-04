@@ -23,7 +23,7 @@ import {
   sv,
   da,
   fi,
-  no,
+  nb,
   cs,
   hu,
   ro,
@@ -41,7 +41,6 @@ import {
   hy,
   az,
   kk,
-  ky,
   uz,
   mn,
 } from "date-fns/locale"
@@ -85,7 +84,7 @@ function localeCodeToDateFnsLocale(localeCode: string): Locale {
     sv,
     da,
     fi,
-    no,
+    nb,
     cs,
     hu,
     ro,
@@ -103,7 +102,6 @@ function localeCodeToDateFnsLocale(localeCode: string): Locale {
     hy,
     az,
     kk,
-    ky,
     uz,
     mn,
   }

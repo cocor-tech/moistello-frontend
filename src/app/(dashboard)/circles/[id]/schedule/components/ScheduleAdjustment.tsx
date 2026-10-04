@@ -10,11 +10,10 @@ import { queryKeys } from "@/lib/query-keys"
 import { useUIStore } from "@/stores/ui-store"
 import { formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
-import type { Frequency } from "@/types"
+import type { ApiResponse, Frequency } from "@/types"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface RoundScheduleItem {
@@ -90,7 +89,7 @@ export function ScheduleAdjustment({
 
   const adjustScheduleMutation = useMutation({
     mutationFn: async (schedule: RoundScheduleItem[]) => {
-      const response = await post(`/circles/${circleId}/schedule/adjust`, {
+      const response = await post<ApiResponse<unknown>>(`/circles/${circleId}/schedule/adjust`, {
         schedule: schedule.map((s) => ({
           round: s.round,
           date: s.date.toISOString(),
@@ -215,7 +214,7 @@ export function ScheduleAdjustment({
                       aria-label={`Round ${item.round} date`}
                     />
                     {isDisabled && (
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" title={hasContributions ? "Has confirmed contributions" : "Current or past round"} />
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" aria-label={hasContributions ? "Has confirmed contributions" : "Current or past round"} />
                     )}
                   </div>
                   {errors[item.round] && (
