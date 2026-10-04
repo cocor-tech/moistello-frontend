@@ -203,7 +203,7 @@ function AmountRangeFilter({
             placeholder="Min"
             value={minAmount}
             onChange={(e) => onMinChange(e.target.value)}
-            className="w-28 pl-7 pr-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-28 pl-7 pr-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground"
             aria-label="Minimum amount"
           />
         </div>
@@ -215,7 +215,7 @@ function AmountRangeFilter({
             placeholder="Max"
             value={maxAmount}
             onChange={(e) => onMaxChange(e.target.value)}
-            className="w-28 pl-7 pr-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-28 pl-7 pr-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground"
             aria-label="Maximum amount"
           />
         </div>
@@ -252,7 +252,7 @@ function SearchInput({
         placeholder="Search by ID, hash, or description..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-9 pr-10 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+        className="w-full pl-9 pr-10 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground"
         aria-label="Search transactions"
       />
       {hasValue && (

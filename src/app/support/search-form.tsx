@@ -79,7 +79,7 @@ export function SearchForm() {
                 if (!event.target.value) setState({ status: "idle" })
               },
             })}
-            className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 focus:border-aurora-violet/40 text-base transition-all"
+            className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white/5 border border-white/10 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-foreground focus:border-foreground text-base transition-all"
           />
         </div>
         {errors.query && (
