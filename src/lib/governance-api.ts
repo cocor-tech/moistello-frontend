@@ -2,6 +2,14 @@ import { get } from "@/lib/api-client"
 
 export type ProposalStatus = "active" | "passed" | "defeated" | "draft" | "all"
 
+/**
+ * Minimum total votes (For + Against + Abstain) for a proposal to reach quorum.
+ *
+ * Sourced from the on-chain governance contract; surfaced in the UI so voters
+ * can see how close a proposal is to being valid for consideration.
+ */
+export const QUORUM_THRESHOLD_VOTES = 1_000
+
 export interface GovernanceProposal {
   id: string
   title: string
