@@ -11,9 +11,11 @@ export const DEFAULT_LOCALE = "en-US"
 /**
  * `Intl` only accepts three-letter ISO 4217 codes and throws a `RangeError` for
  * anything else. `USDC` is four letters and is the default value of the app's
- * own `Currency` type, so `formatCurrency(x, "USDC")` used to throw — taking
- * down every screen that renders a USDC amount. Anything non-ISO therefore
- * falls back to a plain localized number with the code appended.
+* own `Currency` type, so `formatCurrency(x, "USDC")` used to throw — taking
+ * down every screen that renders a USDC amount, including
+ * `circles/[id]/page.tsx`, which renders the contribution amount with
+ * `circle.currency`. Anything non-ISO therefore falls back to a plain
+ * localized number with the code appended.
  *
  * The check is case-insensitive because `Intl` is: `"usd"` is a valid code and
  * must keep going through `Intl` rather than being treated as unknown.
