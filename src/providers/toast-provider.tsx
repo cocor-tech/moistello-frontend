@@ -103,38 +103,6 @@ export function ToastHost() {
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                   ID: {t.requestId}
                 </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-                    {t.title}
-                  </p>
-                  {t.description && (
-                    <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
-                      {t.description}
-                    </p>
-                  )}
-                  {t.requestId && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        ID: {t.requestId}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(t.requestId!);
-                        }}
-                        className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-foreground"
-                        aria-label="Copy request ID"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeToast(t.id)}
-                  className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-foreground"
-                  aria-label="Dismiss notification"
                 <button
                   type="button"
                   onClick={() => {
