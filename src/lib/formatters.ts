@@ -137,6 +137,12 @@ export function formatCurrency(
     return `${amount.toLocaleString(locale, { maximumFractionDigits: 4 })} XLM`
   }
 
+  // Non-ISO codes (Stellar assets such as XLM or USDC) cannot go through
+  // `Intl` with style: "currency" — it throws a RangeError on anything it
+  // cannot resolve, which is an uncaught exception rather than a formatting nit,
+  // and circles can legitimately be denominated in those assets. Render them as
+  // a plain number plus the code, because a token has no fiat quote and a
+  // currency symbol would imply one.
   if (!ISO_CURRENCY_CODE.test(currency)) {
     return `${amount.toLocaleString(locale, { maximumFractionDigits: 2 })} ${currency}`
   }

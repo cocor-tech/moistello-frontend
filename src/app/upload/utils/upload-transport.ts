@@ -9,7 +9,13 @@
  *
  * Both phases are cancellable and time-bound; neither leaves the UI in a state
  * it cannot leave.
+ *
+ * The transfer phase also carries the client's idempotency key, so a retry is
+ * the same request as far as the server is concerned and resolves to the one
+ * record the first attempt created.
  */
+
+import { IDEMPOTENCY_KEY_HEADER } from "./upload-idempotency"
 
 export class UploadError extends Error {
   readonly kind: "network" | "timeout" | "conflict" | "server" | "validation"
@@ -29,10 +35,24 @@ export interface TransferResult {
   uploadId: string
   slug: string
   bytes: number
+  /** Where the page lives, when the server reports the record as published. */
+  url: string
+  /**
+   * True when this key had already been staged: the server replayed the record
+   * the previous attempt created instead of creating a second one.
+   */
+  replayed: boolean
+  /** True when the record behind this key is already a live page. */
+  alreadyPublished: boolean
 }
 
 export interface TransferOptions {
   file: File
+  /**
+   * Names the upload this attempt belongs to. Retries reuse it so the server
+   * collapses them onto one record; a genuinely new upload gets a new one.
+   */
+  idempotencyKey: string
   overwrite?: boolean
   timeoutMs: number
   csrfHeaders: Record<string, string>
@@ -43,6 +63,7 @@ export interface TransferOptions {
 /** POST the file body while reporting `upload.onprogress`. */
 export function transferFile({
   file,
+  idempotencyKey,
   overwrite,
   timeoutMs,
   csrfHeaders,
@@ -60,6 +81,7 @@ export function transferFile({
     const query = overwrite ? "?overwrite=true" : ""
     xhr.open("POST", `/api/upload${query}`)
 
+    xhr.setRequestHeader(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
     for (const [key, value] of Object.entries(csrfHeaders)) {
       xhr.setRequestHeader(key, value)
     }
@@ -117,6 +139,9 @@ export function transferFile({
           uploadId: payload.uploadId,
           slug: typeof payload.slug === "string" ? payload.slug : "",
           bytes: typeof payload.bytes === "number" ? payload.bytes : 0,
+          url: typeof payload.url === "string" ? payload.url : "",
+          replayed: payload.replayed === true,
+          alreadyPublished: payload.alreadyPublished === true,
         })
         return
       }

@@ -5,7 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { get, put } from "@/lib/api-client"
 import { logger } from "@/lib/logger"
 
-export type NotificationFrequency = "instant" | "daily" | "off"
+export type NotificationFrequency = "instant" | "daily" | "weekly" | "off"
+
+/** IANA timezone this browser is in, e.g. "America/New_York". */
+function detectTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return "UTC"
+  }
+}
 
 export interface NotificationPreferences {
   /** Per-event-type toggles */
@@ -22,6 +31,10 @@ export interface NotificationPreferences {
   }
   /** Digest / batching frequency */
   frequency: NotificationFrequency
+  /** 24h "HH:mm" the daily/weekly digest is sent at, in `timezone` below. */
+  sendTime: string
+  /** IANA timezone the digest schedule is interpreted in (issue #492). */
+  timezone: string
 }
 
 const QUERY_KEY = ["notification-preferences"] as const
@@ -39,6 +52,10 @@ const DEFAULT_PREFS: NotificationPreferences = {
     marketing: false,
   },
   frequency: "instant",
+  sendTime: "09:00",
+  // A static, SSR-safe default — parsePreferences() below fills in the
+  // browser's actual zone once it runs (client-side, after the real fetch).
+  timezone: "UTC",
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -46,7 +63,9 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 function parsePreferences(raw: unknown): NotificationPreferences {
-  if (!isRecord(raw)) return DEFAULT_PREFS
+  if (!isRecord(raw)) {
+    return { ...DEFAULT_PREFS, timezone: detectTimezone() }
+  }
 
   const data = isRecord(raw.data) ? raw.data : raw
   const cats = isRecord(data.categories) ? data.categories : {}
@@ -65,6 +84,10 @@ function parsePreferences(raw: unknown): NotificationPreferences {
       marketing: (cats.marketing as boolean) ?? DEFAULT_PREFS.categories.marketing,
     },
     frequency: freq,
+    sendTime: (data.sendTime as string) ?? DEFAULT_PREFS.sendTime,
+    // The user's browser zone is the sensible default the first time they
+    // ever load this — not UTC — so a saved schedule matches what they see.
+    timezone: (data.timezone as string) ?? detectTimezone(),
   }
 }
 
@@ -78,7 +101,7 @@ export function useNotificationPreferences() {
         return parsePreferences(raw)
       } catch (error) {
         logger.warn("[notification-prefs] Failed to load preferences, using defaults", { error })
-        return DEFAULT_PREFS
+        return { ...DEFAULT_PREFS, timezone: detectTimezone() }
       }
     },
     // Never consider preferences "stale" mid-session — only invalidate after a
@@ -99,6 +122,8 @@ export function useSaveNotificationPreferences() {
       put("/notifications/preferences", {
         categories: prefs.categories,
         frequency: prefs.frequency,
+        sendTime: prefs.sendTime,
+        timezone: prefs.timezone,
       }),
 
     onMutate: async (prefs) => {
@@ -152,6 +177,16 @@ export function useNotificationPreferencesForm() {
     [queryClient],
   )
 
+  const setSendTime = useCallback(
+    (sendTime: string) => {
+      queryClient.setQueryData<NotificationPreferences>(QUERY_KEY, (old = DEFAULT_PREFS) => ({
+        ...old,
+        sendTime,
+      }))
+    },
+    [queryClient],
+  )
+
   const save = useCallback(async () => {
     const current = queryClient.getQueryData<NotificationPreferences>(QUERY_KEY) ?? DEFAULT_PREFS
     await saveMutation.mutateAsync(current)
@@ -164,6 +199,7 @@ export function useNotificationPreferencesForm() {
     isSaved: saveMutation.isSuccess,
     toggleCategory,
     setFrequency,
+    setSendTime,
     save,
   }
 }

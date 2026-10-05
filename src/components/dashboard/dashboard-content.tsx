@@ -33,6 +33,10 @@ const UpcomingPayoutsWidget = dynamic(
   () => import('@/components/dashboard/upcoming-payouts-widget').then(m => m.UpcomingPayoutsWidget),
   { ssr: false, loading: ChartSkeleton }
 )
+const RecentActivityWidget = dynamic(
+  () => import('@/components/dashboard/recent-activity-widget').then(m => m.RecentActivityWidget),
+  { ssr: false, loading: ChartSkeleton }
+)
 
 export function DashboardContent() {
   const [contributionPeriod, setContributionPeriod] = useState<'week' | 'month' | 'all'>('month')
@@ -107,6 +111,7 @@ export function DashboardContent() {
 
         <div className="space-y-6">
           <PayoutTimelineChart payouts={payouts} />
+          <RecentActivityWidget />
         </div>
       </div>
     </div>

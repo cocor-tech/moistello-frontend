@@ -1,30 +1,21 @@
 import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { blockInProduction } from "@/lib/security/dev-only-route";
+// Pure helpers shared with the client — the `/p/<slug>` shape and the shape of
+// an idempotency key, so the two can never disagree about either.
+import { getUploadPath } from "@/app/upload/utils/upload";
+import {
+  IDEMPOTENCY_KEY_HEADER,
+  isValidIdempotencyKey,
+} from "@/app/upload/utils/upload-idempotency";
+import { isAuthorized } from "./auth";
 import { isSlugTaken, validateUpload } from "./publish";
-import { purgeUpload, stageUpload, sweepStaging } from "./staging";
-
-const SESSIONS_FILE = path.join(process.cwd(), "content", "sessions.json");
-
-// Session-based auth (checks httpOnly cookie set by /api/auth/login)
-function isAuthorized(request: NextRequest): boolean {
-  const cookie = request.cookies.get("moistello_session");
-  if (!cookie) return false;
-  if (!fs.existsSync(SESSIONS_FILE)) return false;
-
-  try {
-    const sessions = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf-8"));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const session = sessions.find((s: any) => s.token === cookie.value);
-    if (!session) return false;
-    return Date.now() - session.createdAt < 7 * 24 * 60 * 60 * 1000;
-  } catch (e) {
-    logger.error("[api:upload] Session check failed:", e);
-    return false;
-  }
-}
+import {
+  findUploadByIdempotencyKey,
+  purgeUpload,
+  stageUpload,
+  sweepStaging,
+} from "./staging";
 
 /**
  * Phase 1 of the two-phase upload: accept the bytes and stage them.
@@ -34,6 +25,14 @@ function isAuthorized(request: NextRequest): boolean {
  * can drive phase 2 (`POST /api/upload/finalize`) as a separate, retryable
  * step. Reserving the slug here means the collision check happens once, before
  * the user waits on the publish call.
+ *
+ * Every request carries a client-generated idempotency key naming the upload
+ * it belongs to. The key is what makes this phase safe to retry: a repeat
+ * request carrying a key that was already staged replays the existing record
+ * instead of creating a second one, and a key whose record already published
+ * reports that the page is live. Retrying is therefore never what produces
+ * duplicates — a genuinely new upload gets a new key, and that one does get
+ * its own record.
  */
 export async function POST(request: NextRequest) {
   // Local-development scaffolding — writes files via fs and authenticates
@@ -47,6 +46,33 @@ export async function POST(request: NextRequest) {
 
   // Opportunistic cleanup of uploads that were staged but never finalized.
   sweepStaging();
+
+  // Required, and validated before the body is touched: a request that cannot
+  // be correlated to an upload could not be de-duplicated, and buffering a
+  // file only to throw it away is exactly the duplicate we are preventing.
+  const idempotencyKey = request.headers.get(IDEMPOTENCY_KEY_HEADER);
+  if (!isValidIdempotencyKey(idempotencyKey)) {
+    return NextResponse.json(
+      { error: `A valid ${IDEMPOTENCY_KEY_HEADER} header is required` },
+      { status: 400 },
+    );
+  }
+
+  // A retry of an upload this key already covers. Nothing is read from the
+  // body or written to disk: the record the first attempt produced is the
+  // answer, whether it is still staged or already published.
+  const known = findUploadByIdempotencyKey(idempotencyKey);
+  if (known) {
+    return NextResponse.json({
+      staged: !known.published,
+      replayed: true,
+      alreadyPublished: known.published,
+      uploadId: known.uploadId,
+      slug: known.slug,
+      url: getUploadPath(known.slug),
+      bytes: known.bytes,
+    });
+  }
 
   let formData: FormData;
   try {
@@ -88,6 +114,7 @@ export async function POST(request: NextRequest) {
       originalName: file.name,
       slug: validation.slug,
       extension: validation.extension,
+      idempotencyKey,
     });
   } catch (error) {
     logger.error("[api:upload] Failed to stage upload:", error);
@@ -96,9 +123,12 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     staged: true,
-    uploadId: staged.uploadId,
-    slug: staged.slug,
-    bytes: staged.bytes,
+    // `stageUpload` re-checks the key itself, so a request that raced another
+    // one for the same key still reports the replay rather than a fresh record.
+    replayed: staged.replayed,
+    uploadId: staged.meta.uploadId,
+    slug: staged.meta.slug,
+    bytes: staged.meta.bytes,
   });
 }
 

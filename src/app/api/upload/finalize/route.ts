@@ -120,12 +120,14 @@ export async function POST(request: NextRequest) {
   }
 
   // The bytes have served their purpose; only the receipt survives, so a late
-  // retry still resolves instead of looking like a lost upload.
+  // retry still resolves instead of looking like a lost upload. The key rides
+  // along with the receipt so a retried *phase 1* resolves to this upload too.
   discardStagedBytes(uploadId);
   writeReceipt(uploadId, {
     slug: meta.slug,
     url: getUploadPath(meta.slug),
     publishedAt: Date.now(),
+    idempotencyKey: meta.idempotencyKey,
   });
 
   return NextResponse.json({

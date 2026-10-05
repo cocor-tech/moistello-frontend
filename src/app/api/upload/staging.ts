@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { isValidIdempotencyKey } from "@/app/upload/utils/upload-idempotency";
 
 /**
  * Staging area for the two-phase page upload.
@@ -11,6 +12,11 @@ import { randomUUID } from "crypto";
  * the client can report honest progress: bytes-in-flight is a different state
  * from "the server has published it", and a stalled finalize is retryable
  * without re-sending the file.
+ *
+ * Every staged record carries the client-generated idempotency key for the
+ * upload it belongs to, which is what makes a retry idempotent: the same key
+ * resolves to the same record instead of staging a second copy of the same
+ * bytes. See `stageUpload` and `findUploadByIdempotencyKey`.
  *
  * The directory deliberately lives outside `public/` so nothing staged is ever
  * reachable over HTTP.
@@ -34,12 +40,19 @@ export interface StagedFileMeta {
   extension: string;
   bytes: number;
   stagedAt: number;
+  /** Client-generated key for the upload this record belongs to. */
+  idempotencyKey?: string;
 }
 
 export interface PublishReceipt {
   slug: string;
   url: string;
   publishedAt: number;
+  /**
+   * Carried over from the staged meta so a key keeps resolving to the same
+   * upload after the bytes are gone and only the receipt survives.
+   */
+  idempotencyKey?: string;
 }
 
 export function isValidUploadId(uploadId: unknown): uploadId is string {
@@ -66,11 +79,115 @@ function readJson<T>(filePath: string): T | null {
   }
 }
 
-/** Persist the bytes plus a sidecar describing how to publish them. */
+/** What `stageUpload` did with the bytes it was handed. */
+export interface StageOutcome {
+  meta: StagedFileMeta;
+  /**
+   * True when this key had already been staged, so the existing record was
+   * returned and nothing new was written.
+   */
+  replayed: boolean;
+}
+
+/** An upload the client has already started, found again by its key. */
+export interface UploadRecord {
+  uploadId: string;
+  slug: string;
+  bytes: number;
+  /** When the record was staged, replayed verbatim onto the meta. */
+  stagedAt: number;
+  /** True once the record's receipt exists, i.e. the page is already live. */
+  published: boolean;
+}
+
+/** Suffixes that carry a record, in the order a lookup should prefer them. */
+const RECORD_SUFFIXES = [".meta.json", ".receipt.json"] as const;
+
+interface RecordCarrier {
+  idempotencyKey?: unknown;
+  slug?: unknown;
+  bytes?: unknown;
+  stagedAt?: unknown;
+  publishedAt?: number;
+}
+
+/**
+ * Locate the record a key already produced, if there is one.
+ *
+ * Prefers a staged record over a receipt for the same key; the receipt only
+ * exists after the staged bytes were consumed, so both matching at once means
+ * the earlier attempt is still the one the client is working on. Records older
+ * than the TTL are ignored — they have been swept, and treating them as a
+ * replay would point the client at an `uploadId` the server has forgotten.
+ */
+export function findUploadByIdempotencyKey(key: unknown): UploadRecord | null {
+  if (!isValidIdempotencyKey(key)) return null;
+  if (!fs.existsSync(STAGING_DIR)) return null;
+
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(STAGING_DIR);
+  } catch {
+    return null;
+  }
+
+  const isFresh = (value: unknown): boolean =>
+    typeof value === "number" && Date.now() - value <= STAGING_TTL_MS;
+
+  for (const suffix of RECORD_SUFFIXES) {
+    for (const entry of entries) {
+      if (!entry.endsWith(suffix)) continue;
+      const uploadId = entry.slice(0, -suffix.length);
+      if (!isValidUploadId(uploadId)) continue;
+
+      const record = readJson<RecordCarrier>(path.join(STAGING_DIR, entry));
+      if (!record || record.idempotencyKey !== key) continue;
+      const stagedAt = suffix === ".meta.json" ? record.stagedAt : record.publishedAt;
+      if (!isFresh(stagedAt)) continue;
+
+      return {
+        uploadId,
+        slug: typeof record.slug === "string" ? record.slug : "",
+        bytes: typeof record.bytes === "number" ? record.bytes : 0,
+        stagedAt: stagedAt as number,
+        published: suffix === ".receipt.json",
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Persist the bytes plus a sidecar describing how to publish them.
+ *
+ * Idempotent by client-supplied key: a retry of the same upload returns the
+ * record that already exists instead of writing a second one. The lookup and
+ * the write happen in the same synchronous call, so two racing requests for one
+ * key cannot both create a record.
+ */
 export function stageUpload(
   buffer: Buffer,
   meta: Omit<StagedFileMeta, "uploadId" | "bytes" | "stagedAt">,
-): StagedFileMeta {
+): StageOutcome {
+  if (meta.idempotencyKey) {
+    const existing = findUploadByIdempotencyKey(meta.idempotencyKey);
+    if (existing) {
+      return {
+        meta: {
+          uploadId: existing.uploadId,
+          originalName: meta.originalName,
+          slug: existing.slug || meta.slug,
+          extension: meta.extension,
+          bytes: existing.bytes,
+          stagedAt: existing.stagedAt,
+          idempotencyKey: meta.idempotencyKey,
+        },
+        replayed: true,
+      };
+    }
+  }
+
   ensureStagingDir();
   const uploadId = randomUUID();
   const full: StagedFileMeta = {
@@ -87,7 +204,7 @@ export function stageUpload(
     { encoding: "utf-8", mode: 0o600 },
   );
 
-  return full;
+  return { meta: full, replayed: false };
 }
 
 export function readStagedMeta(uploadId: string): StagedFileMeta | null {

@@ -20,6 +20,7 @@ import { Button, ButtonLink } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useGovernanceProposal, useVoteOnProposal } from "@/hooks/use-governance"
 import { QUORUM_THRESHOLD_VOTES, type VoteChoice } from "@/lib/governance-api"
+import { calculateQuorum, QUORUM_THRESHOLD } from "@/lib/quorum"
 import { useGovernanceVotes } from "@/stores/governance-votes-store"
 import { cn } from "@/lib/cn"
 import { useUIStore } from "@/stores/ui-store"
@@ -49,18 +50,15 @@ export default function ProposalDetailPage() {
   const forPercent = totalVotes ? Math.round(((proposal?.votesFor ?? 0) / totalVotes) * 100) : 0
   const againstPercent = totalVotes ? Math.round(((proposal?.votesAgainst ?? 0) / totalVotes) * 100) : 0
   const abstainPercent = totalVotes ? Math.round(((proposal?.votesAbstain ?? 0) / totalVotes) * 100) : 0
+  // Quorum is yes+no only — the contract excludes abstentions (issue #491).
+  const { quorumVotes, quorumPercent, quorumReached } = calculateQuorum({
+    votesFor: proposal?.votesFor ?? 0,
+    votesAgainst: proposal?.votesAgainst ?? 0,
+  })
 
-  // Quorum progress: how much of the required participation has been reached.
-  // Every vote counts toward quorum, so totalVotes is the numerator.
-  //
-  // Capped at 100 so the bar never overflows once quorum is comfortably passed,
-  // and floored so a proposal one vote short of quorum does not round up to a
-  // full bar that contradicts the "not reached" status next to it.
-  const quorumReached = totalVotes >= QUORUM_THRESHOLD_VOTES
-  const quorumPercent = quorumReached
-    ? 100
-    : Math.floor((totalVotes / QUORUM_THRESHOLD_VOTES) * 100)
-  const votesToQuorum = Math.max(0, QUORUM_THRESHOLD_VOTES - totalVotes)
+  // How many qualifying votes are still outstanding. The numerator is For +
+  // Against, matching calculateQuorum above: abstentions never move quorum.
+  const votesToQuorum = Math.max(0, QUORUM_THRESHOLD - quorumVotes)
 
   const countdown = useMemo(() => {
     if (!proposal?.timelockEndsAt) return "No timelock active"
@@ -322,9 +320,23 @@ export default function ProposalDetailPage() {
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                 Min MoiScore: 100
               </li>
-              <li className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                Quorum threshold: {QUORUM_THRESHOLD_VOTES.toLocaleString()} votes
+              <li className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>
+                    Quorum: {quorumVotes.toLocaleString()} / {QUORUM_THRESHOLD.toLocaleString()} votes
+                    {quorumReached && <span className="text-emerald-400"> (reached)</span>}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden" data-testid="quorum-bar">
+                  <div
+                    className="h-full bg-emerald-400 transition-all duration-300"
+                    style={{ width: `${quorumPercent}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground/70">
+                  Counts For + Against only — abstentions don&apos;t count toward quorum.
+                </p>
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />

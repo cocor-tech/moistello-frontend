@@ -95,13 +95,15 @@ const CATEGORY_META: {
 const FREQUENCIES: { value: NotificationFrequency; labelKey: string; fallback: string }[] = [
   { value: "instant", labelKey: "notif.instant", fallback: "Instant" },
   { value: "daily", labelKey: "notif.daily", fallback: "Daily digest" },
+  { value: "weekly", labelKey: "notif.weekly", fallback: "Weekly digest" },
   { value: "off", labelKey: "notif.off", fallback: "Off" },
 ]
 
 export default function NotificationsSettingsPage() {
   const { t } = useTranslate()
-  const { prefs, isLoading, isSaving, isSaved, toggleCategory, setFrequency, save } =
+  const { prefs, isLoading, isSaving, isSaved, toggleCategory, setFrequency, setSendTime, save } =
     useNotificationPreferencesForm()
+  const isDigest = prefs.frequency === "daily" || prefs.frequency === "weekly"
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
@@ -218,6 +220,26 @@ export default function NotificationsSettingsPage() {
             </label>
           ))}
         </div>
+
+        {isDigest && (
+          <div className="pt-2 border-t border-white/[0.08] space-y-2">
+            <label htmlFor="digest-send-time" className="text-sm text-foreground block">
+              {t("notif.sendTime") || "Send time"}
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="digest-send-time"
+                type="time"
+                value={prefs.sendTime}
+                onChange={(e) => setSendTime(e.target.value)}
+                className="bg-transparent border border-white/[0.15] rounded-lg px-3 py-1.5 text-sm text-foreground"
+              />
+              <span className="text-xs text-muted-foreground">
+                {t("notif.timezone") || "Timezone"}: {prefs.timezone}
+              </span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── Actions ── */}

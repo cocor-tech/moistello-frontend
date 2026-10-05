@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { getCsrfHeaders } from "@/lib/auth/csrf"
 import { logger } from "@/lib/logger"
 import {
+  createIdempotencyKey,
+  getUploadIntentSignature,
+} from "../utils/upload-idempotency"
+import {
   FINALIZE_TIMEOUT_MS,
   IDLE_PROGRESS,
   TRANSFER_TIMEOUT_MS,
@@ -39,6 +43,15 @@ export interface UseUploadFileReturn {
 }
 
 /**
+ * One upload the user is trying to make: a file, and the idempotency key that
+ * names it to the server.
+ */
+interface UploadIntent {
+  key: string
+  signature: string
+}
+
+/**
  * Drives the two-phase upload.
  *
  * Phase 1 streams the file and reports byte progress. Phase 2 asks the server
@@ -46,6 +59,11 @@ export interface UseUploadFileReturn {
  * confirms, so the progress UI can never show 100% for work the server has not
  * finished. A phase-2 timeout leaves the staged bytes intact, which is what
  * makes `retry` safe to expose.
+ *
+ * Retries reuse the intent's idempotency key, so the server answers them from
+ * the record the first attempt created rather than staging the same bytes
+ * twice. The key is replaced only when the upload is genuinely new — a
+ * different file, a fresh one after a completed or abandoned upload.
  */
 export function useUploadFile(): UseUploadFileReturn {
   const [file, setFile] = useState<File | null>(null)
@@ -58,6 +76,7 @@ export function useUploadFile(): UseUploadFileReturn {
 
   /** Survives a `clearFile()` so `retry` still has bytes to finalize. */
   const stagedRef = useRef<{ uploadId: string; file: File } | null>(null)
+  const intentRef = useRef<UploadIntent | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
 
@@ -67,6 +86,21 @@ export function useUploadFile(): UseUploadFileReturn {
       mountedRef.current = false
       abortRef.current?.abort()
     }
+  }, [])
+
+  /**
+   * The key for this file's upload. The same file keeps its key for as long as
+   * the attempt is unresolved, so retries and re-picks collapse server-side;
+   * anything else is a new upload and gets a new key.
+   */
+  const resolveIdempotencyKey = useCallback((target: File): string => {
+    const signature = getUploadIntentSignature(target)
+    const current = intentRef.current
+    if (current && current.signature === signature) return current.key
+
+    const intent: UploadIntent = { key: createIdempotencyKey(), signature }
+    intentRef.current = intent
+    return intent.key
   }, [])
 
   const selectFile = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +128,7 @@ export function useUploadFile(): UseUploadFileReturn {
   const resetUpload = useCallback(() => {
     abortRef.current?.abort()
     stagedRef.current = null
+    intentRef.current = null
     setFile(null)
     setStatus("idle")
     setMessage("")
@@ -107,11 +142,30 @@ export function useUploadFile(): UseUploadFileReturn {
     abortRef.current?.abort()
     const staged = stagedRef.current
     stagedRef.current = null
+    // The upload was abandoned, so whatever the user starts next is a new one
+    // and must not replay a key the server may still remember.
+    intentRef.current = null
     if (staged) void cancelStagedUpload(staged.uploadId, getCsrfHeaders())
     setStatus("idle")
     setMessage("")
     setErrorKind(null)
     setProgress(IDLE_PROGRESS)
+  }, [])
+
+  /** Terminal success: the page is live, so this upload is resolved. */
+  const markPublished = useCallback((slug: string, url: string) => {
+    const location = url || getUploadPath(slug)
+    setStatus("success")
+    setProgress({ transfer: 100, finalize: 100 })
+    setErrorKind(null)
+    setMessage(`Published as ${location}`)
+    setUploadedUrl(location)
+    setFile(null)
+    if (fileRef.current) fileRef.current.value = ""
+    stagedRef.current = null
+    // A further upload of the same file is a new intent, not a retry of this
+    // one — so the next key must be a new one.
+    intentRef.current = null
   }, [])
 
   /** Phase 2 on its own, so a timed-out finalize can be retried cheaply. */
@@ -131,15 +185,7 @@ export function useUploadFile(): UseUploadFileReturn {
         })
 
         if (!mountedRef.current) return
-        const slug = result.slug || stagedRef.current?.uploadId || ""
-        setStatus("success")
-        setProgress({ transfer: 100, finalize: 100 })
-        setErrorKind(null)
-        setMessage(`Published as ${result.url || getUploadPath(slug)}`)
-        setUploadedUrl(result.url || getUploadPath(slug))
-        setFile(null)
-        if (fileRef.current) fileRef.current.value = ""
-        stagedRef.current = null
+        markPublished(result.slug || stagedRef.current?.uploadId || "", result.url)
       } catch (error) {
         if (!mountedRef.current) return
         const uploadError =
@@ -152,7 +198,7 @@ export function useUploadFile(): UseUploadFileReturn {
         setMessage(uploadError.message)
       }
     },
-    [],
+    [markPublished],
   )
 
   const upload = useCallback(async () => {
@@ -171,6 +217,7 @@ export function useUploadFile(): UseUploadFileReturn {
     try {
       const staged = await transferFile({
         file,
+        idempotencyKey: resolveIdempotencyKey(file),
         timeoutMs: TRANSFER_TIMEOUT_MS,
         csrfHeaders: getCsrfHeaders(),
         signal: controller.signal,
@@ -181,6 +228,12 @@ export function useUploadFile(): UseUploadFileReturn {
 
       if (!mountedRef.current) return
       stagedRef.current = { uploadId: staged.uploadId, file }
+      // The record behind this key is already a live page, so an earlier
+      // attempt finished the work: finalizing again would publish it twice.
+      if (staged.alreadyPublished) {
+        markPublished(staged.slug, staged.url)
+        return
+      }
       await runFinalize(staged.uploadId, false)
     } catch (error) {
       if (!mountedRef.current) return
@@ -193,7 +246,7 @@ export function useUploadFile(): UseUploadFileReturn {
       setErrorKind(uploadError.kind)
       setMessage(uploadError.message)
     }
-  }, [file, runFinalize])
+  }, [file, markPublished, resolveIdempotencyKey, runFinalize])
 
   /**
    * Re-run whichever phase failed. A staged upload means only finalize is
