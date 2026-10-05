@@ -19,18 +19,33 @@ export function formatCurrency(
   currency: string,
   locale: string = DEFAULT_LOCALE
 ): string {
-  // XLM (and anything without a real fiat quote) renders as "0.1234 XLM".
-  // Everything else renders as a localized currency amount. The currency code
-  // is still passed so parity-sensitive callers can rely on the shape.
+  // XLM renders as "0.1234 XLM" — a plain number plus the code, because a
+  // token has no fiat quote and a currency symbol would imply one.
   if (currency === "XLM") {
     return `${amount.toLocaleString(locale, { maximumFractionDigits: 4 })} XLM`
   }
 
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    currencyDisplay: "symbol",
-  }).format(amount)
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      currencyDisplay: "symbol",
+    }).format(amount)
+  } catch {
+    // Stellar assets are not ISO 4217 codes, and `Intl` throws a RangeError on
+    // anything it cannot resolve — which is an uncaught exception, not a
+    // formatting nit. Circles can be denominated in USDC, so this path is
+    // reachable from ordinary use. Fall back to the same "number + code" shape
+    // as XLM rather than taking the whole render down.
+    //
+    // Two decimals are pinned so the fallback matches the fiat path, which
+    // always shows cents; `toLocaleString` alone would render 500 as "500" and
+    // make a stablecoin amount look like a truncated one.
+    return `${amount.toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} ${currency}`
+  }
 }
 
 /**
