@@ -11,6 +11,28 @@ export type CredentialRecord = {
   createdAt?: string
 }
 
+type StoredCredentialDTO = {
+  credentialId: string
+  publicKey: string
+  counter?: number
+  transports?: string[]
+  userId?: string
+  deviceLabel?: string
+  createdAt?: string
+}
+
+function fromDTO(dto: StoredCredentialDTO): CredentialRecord {
+  return {
+    credentialId: dto.credentialId,
+    publicKey: Uint8Array.from(atob(dto.publicKey), (x) => x.charCodeAt(0)),
+    counter: dto.counter ?? 0,
+    transports: dto.transports,
+    userId: dto.userId,
+    deviceLabel: dto.deviceLabel,
+    createdAt: dto.createdAt,
+  }
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:1100"
 
 // ── Challenge store (Redis-backed for serverless compatibility) ──
@@ -158,15 +180,7 @@ export async function listCredentials(userId: string): Promise<CredentialRecord[
     if (!res.ok) return local
     const data = await res.json()
     if (!data?.data || !Array.isArray(data.data)) return local
-    return data.data.map((c: any) => ({
-      credentialId: c.credentialId,
-      publicKey: Uint8Array.from(atob(c.publicKey), (x) => x.charCodeAt(0)),
-      counter: c.counter ?? 0,
-      transports: c.transports,
-      userId: c.userId,
-      deviceLabel: c.deviceLabel,
-      createdAt: c.createdAt,
-    }))
+    return data.data.map((c: StoredCredentialDTO) => fromDTO(c))
   } catch {
     return local
   }
