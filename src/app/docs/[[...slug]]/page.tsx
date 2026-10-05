@@ -4,16 +4,20 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { sanitizeHtml, escapeHtml } from "@/lib/security/html-sanitizer";
+import { buildRouteMetadata } from "@/lib/seo/route-metadata";
+import { absoluteUrl } from "@/lib/seo/site";
+import { renderMarkdownTable } from "@/lib/markdown-table";
 
 const DOCS_DIR = path.join(process.cwd(), "content/docs");
 
 function parseFrontmatter(file: string): {
   title: string;
+  description: string;
   order: number;
   content: string;
 } {
   const parts = file.split("---\n");
-  if (parts.length < 3) return { title: "", order: 999, content: file };
+  if (parts.length < 3) return { title: "", description: "", order: 999, content: file };
   const meta: Record<string, string> = {};
   parts[1].split("\n").forEach((line) => {
     const [key, ...rest] = line.split(":");
@@ -21,6 +25,7 @@ function parseFrontmatter(file: string): {
   });
   return {
     title: meta.title || "",
+    description: meta.description || "",
     order: parseInt(meta.order || "999"),
     content: parts.slice(2).join("---\n").trim(),
   };
@@ -36,44 +41,41 @@ export async function generateMetadata({
   const filePath = path.join(DOCS_DIR, `${slug}.md`);
 
   if (!fs.existsSync(filePath)) {
-    return { title: "Doc Not Found — Moistello" };
+    return {
+      title: "Doc Not Found — Moistello",
+      description: "That documentation page does not exist.",
+      robots: { index: false, follow: false },
+    };
   }
 
   const raw = fs.readFileSync(filePath, "utf-8");
-  const { title } = parseFrontmatter(raw);
+  const { title, description } = parseFrontmatter(raw);
+  const pageTitle = title || "Documentation";
+  const canonical = `/docs/${slug === "index" ? "" : slug}`;
+
+  // Built on the docs base entry so every doc inherits the full OG/Twitter
+  // block, then overridden with per-page copy. The base guarantees a scraper
+  // always finds a description even when a markdown file omits frontmatter.
+  const base = buildRouteMetadata("/docs");
 
   return {
-    title: title ? `${title} — Moistello` : `Documentation — Moistello`,
+    ...base,
+    title: `${pageTitle} — Moistello`,
     description:
-      "Moistello documentation. Learn about Stellar savings circles, USDC contributions, MoiScore reputation, and smart contracts.",
-    keywords:
-      "moistello, documentation, stellar, savings circles, USDC, MoiScore, smart contracts, soroban, ROSCA",
-    authors: [{ name: "Nekwachukwu Ucheokoye" }],
-    creator: "Moistello",
-    publisher: "Moistello",
-    alternates: { canonical: `/docs/${slug === "index" ? "" : slug}` },
-    robots: { index: true, follow: true },
+      description ||
+      `Moistello docs: ${pageTitle.toLowerCase()} — passkey authentication, auto-provisioned Stellar wallets, USDC savings circles and Soroban contracts.`,
+    alternates: { canonical },
     openGraph: {
+      ...base.openGraph,
       type: "article",
-      locale: "en_US",
-      url: `https://moistello.com/docs/${slug === "index" ? "" : slug}`,
-      siteName: "Moistello",
-      title: title || "Documentation",
-      description: "Moistello documentation for Stellar savings circles.",
-      images: [
-        {
-          url: "/logo.jpg",
-          width: 1200,
-          height: 630,
-          alt: "Moistello Documentation",
-        },
-      ],
+      url: absoluteUrl(canonical),
+      title: `${pageTitle} — Moistello`,
+      description: description || `${pageTitle} in the Moistello developer and user documentation.`,
     },
     twitter: {
-      card: "summary_large_image",
-      title: title || "Documentation",
-      description: "Moistello docs for Stellar savings circles.",
-      images: ["/logo.jpg"],
+      ...base.twitter,
+      title: `${pageTitle} — Moistello`,
+      description: description || `${pageTitle} in the Moistello documentation.`,
     },
   };
 }
@@ -91,35 +93,12 @@ function mdToHtml(md: string): string {
     /`([^`]+)`/g,
     '<code class="glass-whisper rounded-md px-1.5 py-0.5 text-sm font-mono text-aurora-cyan">$1</code>',
   );
-  // Tables
+  // Tables — stacked cards below `sm`, named focusable scroll region above.
+  let tableIndex = 0;
   html = html.replace(
     /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)*)/g,
-    (_, header, body) => {
-      const hCells = header
-        .split("|")
-        .filter((c: string) => c.trim())
-        .map(
-          (c: string) =>
-            `<th class="border border-white/10 px-4 py-2 text-left font-heading text-sm">${c.trim()}</th>`,
-        )
-        .join("");
-      const rows = body
-        .trim()
-        .split("\n")
-        .map((row: string) => {
-          const cells = row
-            .split("|")
-            .filter((c: string) => c.trim())
-            .map(
-              (c: string) =>
-                `<td class="border border-white/10 px-4 py-2 text-sm">${c.trim()}</td>`,
-            )
-            .join("");
-          return `<tr>${cells}</tr>`;
-        })
-        .join("");
-      return `<div class="overflow-x-auto my-6"><table class="w-full border border-white/10 rounded-xl overflow-hidden glass"><thead><tr>${hCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
-    },
+    (_match, header: string, body: string) =>
+      renderMarkdownTable(header, body, { index: tableIndex++ }),
   );
   // Bold + italic
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");

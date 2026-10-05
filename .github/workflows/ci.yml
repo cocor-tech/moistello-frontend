@@ -34,6 +34,14 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
+      # ── SEO route audit ────────────────────────────────────────────────────
+      # Proves every public route in src/app ships a unique meta description
+      # and OpenGraph/Twitter tags, and that the sitemap only advertises
+      # indexable routes. Static analysis of the route tree, so it needs no
+      # production build and fails on the offending commit rather than after a
+      # deploy. The same rules run under vitest in src/lib/seo/__tests__.
+      - name: Audit SEO metadata on public routes
+        run: npm run audit:seo
       - run: npm run test -- --run
       # ── Coverage gate ──────────────────────────────────────────────────────
       # Runs vitest with the v8 coverage provider and enforces the thresholds

@@ -493,6 +493,7 @@ export default function TransactionsPage() {
     {
       id: "type",
       header: "Type",
+      label: "Type",
       cell: (tx) => (
         <div className="flex items-center gap-2">
           {tx.type === "sent" ? (
@@ -507,6 +508,7 @@ export default function TransactionsPage() {
     {
       id: "description",
       header: "Description",
+      label: "Description",
       cell: (tx) => (
         <div>
           <p className="font-medium text-foreground">{tx.description}</p>
@@ -517,6 +519,7 @@ export default function TransactionsPage() {
     {
       id: "amount",
       header: "Amount",
+      label: "Amount",
       cell: (tx) => (
         <span className={cn("font-semibold", tx.type === "sent" ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400")}>
           {tx.type === "sent" ? "-" : "+"}${tx.amount.toFixed(2)}
@@ -526,6 +529,7 @@ export default function TransactionsPage() {
     {
       id: "status",
       header: "Status",
+      label: "Status",
       cell: (tx) => {
         const st = tx.status ?? "completed"
         return (
@@ -538,6 +542,7 @@ export default function TransactionsPage() {
     {
       id: "createdAt",
       header: "Date",
+      label: "Date",
       cell: (tx) => (
         <span className="text-sm text-muted-foreground">
           {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : "-"}
@@ -546,7 +551,8 @@ export default function TransactionsPage() {
     },
     {
       id: "actions",
-      header: "",
+      header: "Detail",
+      label: "Detail",
       cell: (tx) => (
         <Link
           href={`/wallet/transactions/${tx.id}`}
@@ -644,7 +650,12 @@ export default function TransactionsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <DataTable columns={columns} data={paginatedTxns} getRowId={(tx) => tx.id} />
+          <DataTable
+            columns={columns}
+            data={paginatedTxns}
+            caption="Wallet transactions"
+            getRowId={(tx) => String(tx.id)}
+          />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2">

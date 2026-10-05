@@ -16,6 +16,14 @@ import { getServerDictionary } from "@/lib/locale/server-dictionaries"
 import { LOCALE_BOOTSTRAP_SCRIPT, dirForLocale, resolveLocale } from "@/lib/locale/locale-cookie"
 import { HmacProvider } from "@/providers/HmacProvider"
 import { PwaRegister } from "@/components/pwa-register"
+import {
+  AUTHOR_NAME,
+  OG_IMAGE,
+  SITE_NAME,
+  SITE_URL,
+  TWITTER_CREATOR,
+  TWITTER_SITE,
+} from "@/lib/seo/site"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -40,10 +48,12 @@ export const metadata: Metadata = {
   title: "Moistello — Stellar Savings Circles",
   description: "Decentralized rotating savings and credit circles on Stellar. Join trustless ROSCAs with USDC/XLM, build MoiScore reputation, and achieve financial freedom.",
   keywords: "moistello, stellar, blockchain, savings circles, defi, decentralized finance, rotating credit, USDC, XLM, smart contracts, soroban",
-  authors: [{ name: "Nekwachukwu Ucheokoye" }],
-  creator: "Nekwachukwu Ucheokoye",
+  authors: [{ name: AUTHOR_NAME }],
+  creator: "Moistello",
   publisher: "Moistello",
-  metadataBase: new URL("https://moistello.com"),
+  // Shared with src/lib/seo/route-metadata.ts so relative canonicals, og:url
+  // and the sitemap can never resolve against a different origin.
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
   },
@@ -60,26 +70,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://moistello.com",
-    siteName: "Moistello",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     title: "Moistello — Decentralized Savings Circles on Stellar",
     description: "Join trustless savings circles with zero intermediaries. Built on Stellar for true financial sovereignty and on-chain reputation.",
-    images: [
-      {
-        url: "/logo.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Moistello - Decentralized Stellar Savings Platform",
-      },
-    ],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@moistello",
-    creator: "@nekwasar",
+    site: TWITTER_SITE,
+    creator: TWITTER_CREATOR,
     title: "Moistello — Stellar Savings Circles",
     description: "Build trustless savings circles on Stellar. Join rotating credit groups with USDC/XLM, earn on-chain reputation, and achieve financial sovereignty.",
-    images: ["/logo.jpg"],
+    images: [OG_IMAGE.url],
   },
   icons: {
     icon: "/favicon.ico",

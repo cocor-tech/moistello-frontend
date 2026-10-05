@@ -1,5 +1,9 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, House, LockKeyhole, ShieldQuestionMark } from "lucide-react"
+import { buildRouteMetadata } from "@/lib/seo/route-metadata"
+
+export const metadata: Metadata = buildRouteMetadata("/access-denied")
 
 export default function Forbidden() {
   return (

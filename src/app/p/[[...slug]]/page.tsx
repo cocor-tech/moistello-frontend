@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { sanitizeHtml, escapeHtml } from "@/lib/security/html-sanitizer";
+import { OG_IMAGE, TWITTER_SITE, absoluteUrl } from "@/lib/seo/site";
+import { renderMarkdownTable } from "@/lib/markdown-table";
 
 const PAGES_DIR = path.join(process.cwd(), "content/pages");
 const DOCS_DIR = path.join(process.cwd(), "content/docs");
@@ -20,34 +22,12 @@ function mdToHtml(md: string): string {
     /`([^`]+)`/g,
     '<code class="glass-whisper rounded-md px-1.5 py-0.5 text-sm font-mono text-aurora-cyan">$1</code>',
   );
+  // Tables — stacked cards below `sm`, named focusable scroll region above.
+  let tableIndex = 0;
   html = html.replace(
     /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)*)/g,
-    (_, header, body) => {
-      const hCells = header
-        .split("|")
-        .filter((c: string) => c.trim())
-        .map(
-          (c: string) =>
-            `<th class="border border-white/10 px-4 py-2 text-left font-heading text-sm">${c.trim()}</th>`,
-        )
-        .join("");
-      const rows = body
-        .trim()
-        .split("\n")
-        .map((row: string) => {
-          const cells = row
-            .split("|")
-            .filter((c: string) => c.trim())
-            .map(
-              (c: string) =>
-                `<td class="border border-white/10 px-4 py-2 text-sm">${c.trim()}</td>`,
-            )
-            .join("");
-          return `<tr>${cells}</tr>`;
-        })
-        .join("");
-      return `<div class="overflow-x-auto my-6"><table class="w-full border border-white/10 rounded-xl overflow-hidden glass"><thead><tr>${hCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
-    },
+    (_match, header: string, body: string) =>
+      renderMarkdownTable(header, body, { index: tableIndex++ }),
   );
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
   html = html.replace(
@@ -155,15 +135,43 @@ export async function generateMetadata({
   const filePath = path.join(PAGES_DIR, `${slug}.md`);
 
   if (!fs.existsSync(filePath)) {
-    return { title: "Page Not Found — Moistello" };
+    return {
+      title: "Page Not Found — Moistello",
+      description: "That page does not exist on Moistello.",
+      robots: { index: false, follow: false },
+    };
   }
 
   const raw = fs.readFileSync(filePath, "utf-8");
   const { title, description } = parseFrontmatter(raw);
+  const pageTitle = title || slug;
+  const canonical = `/p/${slug === "index" ? "" : slug}`;
+  // A content page can supply its own copy, but it must never fall through to
+  // a bare slug: an untitled OG card is the thing this is fixing.
+  const summary =
+    description || `${pageTitle} — published on Moistello, the decentralized Stellar savings platform.`;
 
   return {
-    title: title || slug,
-    description: description || `Page: ${slug}`,
+    title: `${pageTitle} — Moistello`,
+    description: summary,
+    alternates: { canonical },
+    robots: { index: true, follow: true },
+    openGraph: {
+      type: "article",
+      locale: "en_US",
+      url: absoluteUrl(canonical),
+      siteName: "Moistello",
+      title: `${pageTitle} — Moistello`,
+      description: summary,
+      images: [OG_IMAGE],
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: TWITTER_SITE,
+      title: `${pageTitle} — Moistello`,
+      description: summary,
+      images: [OG_IMAGE.url],
+    },
   };
 }
 

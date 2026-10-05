@@ -58,6 +58,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <main
           id="main-content"
           tabIndex={-1}
+          data-print-content
           className={cn(
             // `pb-nav-safe` replaces `pb-24`: the 4rem that clears the floating
             // nav pill plus the home-indicator inset, so the last card on the
@@ -72,6 +73,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
         <MobileNav />
       </div>
+      {/* `data-print-hide` is belt-and-braces: the print rules also target
+          `nav`/`header`/`aside` by role and tag. Marking them explicitly
+          keeps the intent legible at the call site and survives a markup
+          change that drops the semantic element. */}
       <KeyboardShortcutsOverlay isOpen={helpOpen} onClose={closeHelp} shortcuts={shortcuts} />
       <CommandPalette />
     </div>

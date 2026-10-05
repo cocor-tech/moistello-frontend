@@ -25,6 +25,7 @@ const ALLOWED_TAGS = new Set([
   "a",
   "img",
   "table",
+  "caption",
   "thead",
   "tbody",
   "tr",
@@ -35,19 +36,52 @@ const ALLOWED_TAGS = new Set([
   "hr",
 ]);
 
+/**
+ * Attributes that carry accessibility semantics rather than behaviour.
+ *
+ * None of them can execute script or fetch a URL, and stripping them is what
+ * previously reduced every sanitised table to an unnamed, captionless block of
+ * cells: the markup looked fine but a screen reader had no column association
+ * and no landmark to navigate to.
+ *
+ * They are still granted per-tag, never as a blanket rule. `aria-*` on a `<p>`
+ * or a `tabindex` on an `<a>` would let content add landmark names and extra
+ * focus stops it has no business defining, so each tag only gets what the
+ * markdown table renderer actually emits on it.
+ */
+const A11Y_ATTRIBUTES = {
+  /** The focusable, named scroll region wrapped around a wide table. */
+  scrollRegion: ["role", "aria-label", "tabindex"],
+  /** Column/row semantics on a header cell. */
+  headerCell: ["scope"],
+  /** Column name, read by `.responsive-table__cell::before` when stacked. */
+  bodyCell: ["data-label"],
+} as const;
+
+/**
+ * `tabindex` values that cannot create a focus trap.
+ *
+ * A positive `tabindex` reorders the whole document's tab sequence, so
+ * `tabindex="1"` in content is a keyboard trap by another name — exactly the
+ * failure this allowlist exists to avoid. Only "in document order" and
+ * "programmatically focusable" survive.
+ */
+const SAFE_TABINDEX = new Set(["0", "-1"]);
+
 const ALLOWED_ATTRIBUTES: Record<string, Set<string>> = {
   a: new Set(["href", "title", "rel", "target"]),
   img: new Set(["src", "alt", "title", "width", "height"]),
-  div: new Set(["class"]),
+  div: new Set(["class", ...A11Y_ATTRIBUTES.scrollRegion]),
   span: new Set(["class"]),
   code: new Set(["class"]),
   pre: new Set(["class"]),
   table: new Set(["class"]),
+  caption: new Set(["class"]),
   thead: new Set(["class"]),
   tbody: new Set(["class"]),
   tr: new Set(["class"]),
-  th: new Set(["class"]),
-  td: new Set(["class"]),
+  th: new Set(["class", ...A11Y_ATTRIBUTES.headerCell]),
+  td: new Set(["class", ...A11Y_ATTRIBUTES.bodyCell]),
   h1: new Set(["class"]),
   h2: new Set(["class"]),
   h3: new Set(["class"]),
@@ -115,8 +149,10 @@ export function sanitizeHtml(html: string): string {
     const allowedAttrs = ALLOWED_ATTRIBUTES[tag];
     const sanitizedAttrs: string[] = [];
 
-    // Match attribute patterns: name="value" or name='value' or name=value
-    const attrRegex = /(\w+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]*)))?/g;
+    // Match attribute patterns: name="value" or name='value' or name=value.
+    // Hyphens are part of attribute names (`data-label`, `aria-label`), so the
+    // name pattern cannot be `\w+` or every one of those is silently dropped.
+    const attrRegex = /([\w-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]*)))?/g;
     let attrMatch;
 
     while ((attrMatch = attrRegex.exec(attributes)) !== null) {
@@ -148,6 +184,11 @@ export function sanitizeHtml(html: string): string {
             ) {
               sanitizedAttrs.push('rel="noopener noreferrer"');
             }
+          }
+        } else if (attrName === "tabindex") {
+          // Drop anything that would reorder or trap the tab sequence.
+          if (SAFE_TABINDEX.has(attrValue.trim())) {
+            sanitizedAttrs.push(`tabindex="${attrValue.trim()}"`);
           }
         } else {
           // Escape quotes in attribute values

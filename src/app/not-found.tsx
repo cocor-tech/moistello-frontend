@@ -1,6 +1,10 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { House, Search } from "lucide-react"
 import { GoBackButton } from "@/components/shared/go-back-button"
+import { buildRouteMetadata } from "@/lib/seo/route-metadata"
+
+export const metadata: Metadata = buildRouteMetadata("/404")
 
 /**
  * Root 404 boundary.

@@ -105,3 +105,25 @@ order, whether a focus trap releases correctly, or whether the app is usable wit
 a screen reader at all. Those still need manual review — the gate exists to stop
 the machine-checkable regressions from accumulating, not to replace a human
 looking at the screen.
+
+## `table-scroll-a11y.spec.ts` — the focus-trap gap
+
+The gap called out above ("cannot judge whether a focus trap releases correctly")
+is covered by a sibling spec rather than left to manual review, because it is
+mechanically checkable after all.
+
+Wide tables used to scroll horizontally inside a bare `overflow-x-auto` div: a
+focusable but *unnamed* box, with no affordance suggesting the content went
+sideways at all, and below 640px cells that existed only off-screen.
+
+The spec asserts the two halves of the fix at 375px:
+
+| Assertion | Catches |
+| --------- | ------- |
+| No element extends past the viewport | A cell reachable only by scrolling |
+| Every actually-scrolling element has an accessible name | The anonymous scroll box |
+| No focusable element has a zero-size box | Invisible Tab stops left by the stacked layout |
+| `table td` labels exist via `data-label` | A stacked card whose column name was dropped |
+
+Each test waits for a `table` to be visible before asserting, so a route that
+fails to render one fails loudly rather than passing over an empty page.
