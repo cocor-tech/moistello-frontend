@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { IDEMPOTENCY_KEY_HEADER } from "./upload-idempotency";
 import { UploadError, finalizeUpload, transferFile } from "./upload-transport";
 
 /**
@@ -79,6 +80,7 @@ describe("transferFile", () => {
 
   const baseOptions = {
     file: new File(["# hi"], "about.md", { type: "text/markdown" }),
+    idempotencyKey: "1111111111111111aaaaaaaaaaaa1111",
     timeoutMs: 1000,
     csrfHeaders: { "x-csrf-token": "abc" },
     onProgress: vi.fn(),
@@ -96,6 +98,9 @@ describe("transferFile", () => {
       uploadId: "u1",
       slug: "about",
       bytes: 4,
+      url: "",
+      replayed: false,
+      alreadyPublished: false,
     });
 
     const reported = (baseOptions.onProgress as ReturnType<typeof vi.fn>).mock.calls.map(
@@ -128,6 +133,35 @@ describe("transferFile", () => {
 
     xhr.respond(200, { uploadId: "u1", slug: "about", bytes: 4 });
     await promise;
+  });
+
+  it("sends the caller's idempotency key so a retry resolves to the same upload", async () => {
+    const promise = transferFile({ ...baseOptions, idempotencyKey: "retry-key-abc123" });
+
+    expect(FakeXhr.instances[0].headers[IDEMPOTENCY_KEY_HEADER]).toBe("retry-key-abc123");
+
+    FakeXhr.instances[0].respond(200, { uploadId: "u1", slug: "about", bytes: 4 });
+    await promise;
+  });
+
+  it("reports a record the server replayed for a key it had already seen", async () => {
+    const promise = transferFile(baseOptions);
+    FakeXhr.instances[0].respond(200, {
+      staged: false,
+      replayed: true,
+      alreadyPublished: true,
+      uploadId: "u1",
+      slug: "about",
+      url: "/p/about",
+      bytes: 4,
+    });
+
+    await expect(promise).resolves.toMatchObject({
+      uploadId: "u1",
+      replayed: true,
+      alreadyPublished: true,
+      url: "/p/about",
+    });
   });
 
   it("appends the overwrite flag when requested", () => {
