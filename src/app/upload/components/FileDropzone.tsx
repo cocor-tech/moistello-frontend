@@ -16,7 +16,7 @@ export function FileDropzone({ file, fileRef, onFileSelect, onClear }: FileDropz
       <label
         htmlFor="upload-file"
         className={cn(
-          "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 block focus-within:ring-2 focus-within:ring-aurora-violet/50",
+          "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 block focus-within:ring-2 focus-within:ring-foreground",
           file ? "border-aurora-violet/40 bg-aurora-violet/5" : "border-white/10 hover:border-white/20 hover:bg-white/[0.02]",
         )}
       >

@@ -81,7 +81,7 @@ export function ContributionForm() {
   }
 
   const inputClass = (hasError: boolean) =>
-    `w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${hasError ? "border-red-400/50" : "border-white/10"}`
+    `w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-foreground ${hasError ? "border-red-400/50" : "border-white/10"}`
 
   const errorText = (message?: string) =>
     message ? <p className="text-xs text-red-400 mt-1" role="alert">{message}</p> : null
@@ -146,7 +146,7 @@ export function ContributionForm() {
           rows={4}
           placeholder="Tell us about yourself..."
           {...register("bio")}
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 resize-y min-h-[80px]"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-foreground resize-y min-h-[80px]"
         />
         {errorText(errors.bio?.message)}
       </div>
