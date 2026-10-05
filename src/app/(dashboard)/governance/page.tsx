@@ -187,7 +187,7 @@ export default function GovernancePage() {
                 setCategoryFilter(e.target.value)
                 setCurrentPage(1)
               }}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-aurora-violet"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-foreground"
               data-testid="category-filter-select"
             >
               <option value="all" className="bg-background">All Categories</option>
@@ -203,7 +203,7 @@ export default function GovernancePage() {
               aria-label="Sort proposals"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "newest" | "votes" | "oldest")}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-aurora-violet"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-foreground"
               data-testid="governance-sort-select"
             >
               <option value="newest" className="bg-background">Newest</option>

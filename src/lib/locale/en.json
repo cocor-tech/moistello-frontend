@@ -569,5 +569,7 @@
   "tierCard.scoreOf": "MoiScore: {score} / 1,000",
   "tierCard.tierLadder": "Tier Progression Ladder",
   "tierCard.unlocked": "Unlocked",
-  "tierCard.yourBenefits": "Your {tier} Benefits"
+  "tierCard.yourBenefits": "Your {tier} Benefits",
+  "settings.data": "Your data",
+  "settings.dataDesc": "Download a copy of your data"
 }

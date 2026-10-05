@@ -25,6 +25,10 @@ const PayoutTimelineChart = dynamic(
   () => import('@/components/dashboard/charts/payout-timeline-chart').then(m => m.PayoutTimelineChart),
   { ssr: false, loading: ChartSkeleton }
 )
+const ContributionSummaryCard = dynamic(
+  () => import('@/components/dashboard/contribution-summary-card').then(m => m.ContributionSummaryCard),
+  { ssr: false, loading: ChartSkeleton }
+)
 const UpcomingPayoutsWidget = dynamic(
   () => import('@/components/dashboard/upcoming-payouts-widget').then(m => m.UpcomingPayoutsWidget),
   { ssr: false, loading: ChartSkeleton }
@@ -78,6 +82,13 @@ export function DashboardContent() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <ContributionSummaryCard
+            contributions={contributions}
+            isLoading={contributionsQuery.isLoading}
+            error={contributionsQuery.isError ? "Could not load your contributions." : null}
+            onRetry={() => void contributionsQuery.refetch()}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <SavingsGrowthChart goals={mockSavingsGoals} />
             <UpcomingPayoutsWidget

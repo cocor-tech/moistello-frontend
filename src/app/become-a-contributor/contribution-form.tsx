@@ -116,7 +116,7 @@ export function ContributionForm() {
   }
 
   const inputClass = (hasError: boolean) =>
-    `w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-aurora-violet/50 ${hasError ? "border-red-400/50" : "border-white/10"}`
+    `w-full h-11 rounded-xl bg-white/5 border px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-foreground ${hasError ? "border-red-400/50" : "border-white/10"}`
 
   const errorText = (message?: string, id?: string) =>
     message ? (

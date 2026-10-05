@@ -80,7 +80,7 @@ export default function CreateProposalPage() {
               aria-label="Proposal category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-aurora-violet"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-foreground"
               data-testid="category-select"
             >
               <option value="Circle Parameter" className="bg-background">Circle Parameter</option>
@@ -98,7 +98,7 @@ export default function CreateProposalPage() {
               aria-label="Voting period"
               value={votingPeriodDays}
               onChange={(e) => setVotingPeriodDays(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-aurora-violet"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-foreground"
               data-testid="voting-period-select"
             >
               <option value="3" className="bg-background">3 Days (Fast track)</option>
@@ -131,7 +131,7 @@ export default function CreateProposalPage() {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the motivation, background, parameters, and intended impact of this proposal in detail..."
-            className="mt-1 min-h-36 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-foreground focus:border-aurora-violet focus:outline-none placeholder:text-muted-foreground/50"
+            className="mt-1 min-h-36 w-full rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-foreground focus:border-foreground focus:outline-none placeholder:text-muted-foreground/50"
             data-testid="description-textarea"
           />
         </div>
@@ -150,7 +150,7 @@ export default function CreateProposalPage() {
             value={executionPayload}
             onChange={(e) => setExecutionPayload(e.target.value)}
             placeholder={`{\n  "target": "CircleFactory",\n  "action": "setFeeBps",\n  "value": 250\n}`}
-            className="min-h-28 w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-xs text-foreground focus:border-aurora-violet focus:outline-none placeholder:text-muted-foreground/40"
+            className="min-h-28 w-full rounded-xl border border-white/10 bg-white/5 p-4 font-mono text-xs text-foreground focus:border-foreground focus:outline-none placeholder:text-muted-foreground/40"
             data-testid="payload-textarea"
           />
         </div>

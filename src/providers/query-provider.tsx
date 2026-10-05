@@ -21,13 +21,15 @@ export function QueryProvider({ children }: QueryProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5000,
-            // Honours Retry-After on 429s, otherwise backs off exponentially
-            // with a cap instead of retrying immediately and worsening the
-            // throttling. See ./query-retry.
+            // #481: keep dashboard queries from refetching on every window
+            // focus. Stale data is served for a minute instead.
+            staleTime: 60000,
+            // #412: honours Retry-After on 429s, otherwise backs off
+            // exponentially with a cap instead of retrying immediately and
+            // worsening the throttling. See ./query-retry.
             retry: rateLimitAwareRetry,
             retryDelay: rateLimitAwareRetryDelay,
-            refetchOnWindowFocus: true,
+            refetchOnWindowFocus: false,
           },
         },
       })

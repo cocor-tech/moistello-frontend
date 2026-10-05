@@ -45,7 +45,7 @@ export function buttonStyles({
   return cn(
     "inline-flex items-center justify-center rounded-xl font-body font-medium transition-all duration-300",
     "hover:scale-[1.02] active:scale-[0.97]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aurora-violet/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:pointer-events-none disabled:opacity-40 disabled:hover:scale-100",
     "w-full md:w-auto",
     variant === "primary" && "font-heading",

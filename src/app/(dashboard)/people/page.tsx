@@ -216,7 +216,7 @@ export default function PeopleDirectoryPage() {
                 setTierFilter(e.target.value)
                 setCurrentPage(1)
               }}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-aurora-violet"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-foreground"
               data-testid="tier-filter-select"
             >
               <option value="all" className="bg-background">All Tiers</option>
@@ -233,7 +233,7 @@ export default function PeopleDirectoryPage() {
               aria-label="Sort people"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "score" | "circles" | "savings")}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-aurora-violet"
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-foreground"
               data-testid="sort-by-select"
             >
               <option value="score" className="bg-background">Reputation Score</option>
