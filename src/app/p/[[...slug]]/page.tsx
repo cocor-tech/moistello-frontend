@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { PublicLayout } from "@/components/layout/public-layout";
 import { sanitizeHtml, escapeHtml } from "@/lib/security/html-sanitizer";
 import { OG_IMAGE, TWITTER_SITE, absoluteUrl } from "@/lib/seo/site";
+import { renderMarkdownTable } from "@/lib/markdown-table";
 
 const PAGES_DIR = path.join(process.cwd(), "content/pages");
 const DOCS_DIR = path.join(process.cwd(), "content/docs");
@@ -21,34 +22,12 @@ function mdToHtml(md: string): string {
     /`([^`]+)`/g,
     '<code class="glass-whisper rounded-md px-1.5 py-0.5 text-sm font-mono text-aurora-cyan">$1</code>',
   );
+  // Tables — stacked cards below `sm`, named focusable scroll region above.
+  let tableIndex = 0;
   html = html.replace(
     /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)*)/g,
-    (_, header, body) => {
-      const hCells = header
-        .split("|")
-        .filter((c: string) => c.trim())
-        .map(
-          (c: string) =>
-            `<th class="border border-white/10 px-4 py-2 text-left font-heading text-sm">${c.trim()}</th>`,
-        )
-        .join("");
-      const rows = body
-        .trim()
-        .split("\n")
-        .map((row: string) => {
-          const cells = row
-            .split("|")
-            .filter((c: string) => c.trim())
-            .map(
-              (c: string) =>
-                `<td class="border border-white/10 px-4 py-2 text-sm">${c.trim()}</td>`,
-            )
-            .join("");
-          return `<tr>${cells}</tr>`;
-        })
-        .join("");
-      return `<div class="overflow-x-auto my-6"><table class="w-full border border-white/10 rounded-xl overflow-hidden glass"><thead><tr>${hCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
-    },
+    (_match, header: string, body: string) =>
+      renderMarkdownTable(header, body, { index: tableIndex++ }),
   );
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>");
   html = html.replace(

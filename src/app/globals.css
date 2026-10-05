@@ -873,3 +873,74 @@
     page-break-before: always;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE TABLES
+   Below `sm` (640px) every `.responsive-table` reflows into stacked
+   cards so no cell is ever only reachable by horizontal scrolling.
+
+   The column headers are NOT removed from the accessibility tree on
+   mobile — they are visually clipped instead (`.responsive-table__head-cell`),
+   so a screen reader still resolves "Amount" for every amount cell even
+   though the header strip is not painted. Removing them with `hidden`
+   would silently strip the header association, which is the exact class
+   of bug this is meant to fix.
+   ═══════════════════════════════════════════════════════════ */
+
+@layer components {
+  .responsive-table__head-cell {
+    @apply sr-only sm:not-sr-only;
+  }
+
+  /* The clipped header must never hold a focusable control: an invisible link
+     or button still takes Tab, which is precisely the "trapped focus with no
+     affordance" failure this whole treatment exists to remove. Interactive
+     header content comes back at `sm`, where the header strip is visible. */
+  .responsive-table__head-cell :where(a, button, input, select, textarea, [tabindex]) {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .responsive-table__head-cell :where(a, button, input, select, textarea, [tabindex]) {
+      display: revert;
+    }
+  }
+
+  .responsive-table__row {
+    @apply block border-b border-border py-1 sm:table-row sm:py-0;
+  }
+
+  .responsive-table__cell {
+    @apply flex items-baseline justify-between gap-4 px-4 py-2 text-left sm:table-cell sm:py-3;
+  }
+
+  .responsive-table__cell::before {
+    content: attr(data-label);
+    @apply shrink-0 font-heading text-2xs uppercase tracking-wider text-muted-foreground sm:hidden;
+  }
+
+  .responsive-table__cell--primary {
+    @apply font-semibold text-foreground sm:font-normal sm:text-inherit;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACCESSIBLE SCROLL CONTAINER
+   A scrollable region that is focusable and carries a visible focus
+   ring, so keyboard users can reach it, see that they have reached
+   it, and scroll it with the arrow keys. Focus lands on the container
+   once and moves on with Tab — it never traps.
+   ═══════════════════════════════════════════════════════════ */
+
+@layer components {
+  .scroll-region {
+    @apply overflow-x-auto overscroll-x-contain;
+    scrollbar-width: thin;
+  }
+
+  .scroll-region:focus-visible {
+    @apply outline-none ring-2 ring-[rgb(var(--aurora-violet))] ring-offset-2
+      ring-offset-[rgb(var(--background))];
+  }
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { memo, useMemo } from "react"
+import React from "react"
 import { useParams } from "next/navigation"
 import { motion } from "framer-motion"
 import {
@@ -19,52 +19,10 @@ import { ButtonLink } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatAddress, formatCurrency, formatDateLocalized } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
-import type { ContributionStatus } from "@/types"
 import { calculateRoundTotals } from "./round-totals"
-import type { Contribution } from "@/types"
 import { useIntl } from "@/hooks/use-intl"
+import { RoundContributionsTable } from "./round-contributions-table"
 
-const statusStyles: Record<
-  ContributionStatus,
-  { variant: "success" | "warning" | "destructive" | "default" }
-> = {
-  confirmed: { variant: "success" },
-  pending: { variant: "warning" },
-  failed: { variant: "destructive" },
-  late: { variant: "destructive" },
-};
-
-interface ContributionRowProps {
-  contribution: Contribution;
-  currency: string;
-}
-
-const ContributionRow = memo(function ContributionRow({
-  contribution,
-  currency,
-}: ContributionRowProps) {
-  const st = statusStyles[contribution.status] || statusStyles.pending
-  const label = contribution.onTime && contribution.status === "confirmed" ? "On Time" : contribution.status
-
-  return (
-    <tr className="hover:glass-whisper transition-colors">
-      <td className="px-4 py-2.5 font-mono text-xs text-foreground dark:text-white">
-        {contribution.userId.slice(0, 8)}...
-      </td>
-      <td className="px-4 py-2.5 text-sm gradient-text font-bold font-heading">
-        {formatCurrency(contribution.amount, currency)}
-      </td>
-      <td className="px-4 py-2.5 text-right">
-        <Badge
-          variant={contribution.onTime && contribution.status === "confirmed" ? "success" : st.variant}
-          size="sm"
-        >
-          {label}
-        </Badge>
-      </td>
-    </tr>
-  );
-});
 
 const container = {
   hidden: { opacity: 0 },
@@ -293,40 +251,11 @@ export default function CircleRoundsPage() {
                 </div>
               )}
 
-              {round.contributions.length > 0 && (
-                <div className="overflow-hidden rounded-xl border border-border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="glass-strong">
-                        <th className="px-4 py-2.5 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground">
-                          Contributor
-                        </th>
-                        <th className="px-4 py-2.5 text-left text-2xs font-heading tracking-wider uppercase text-muted-foreground">
-                          Amount
-                        </th>
-                        <th className="px-4 py-2.5 text-right text-2xs font-heading tracking-wider uppercase text-muted-foreground">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {round.contributions.map((c) => (
-                        <ContributionRow
-                          key={c.id}
-                          contribution={c}
-                          currency={circle?.currency ?? "USDC"}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {round.contributions.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4">
-                  No contributions recorded for this round yet.
-                </p>
-              )}
+              <RoundContributionsTable
+                roundNumber={round.roundNumber}
+                contributions={round.contributions}
+                currency={circle?.currency ?? "USDC"}
+              />
                   </>
                 )
               })()}
