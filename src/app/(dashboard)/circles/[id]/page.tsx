@@ -378,10 +378,11 @@ export default function CircleDetailPage() {
         isOpen={invite.isOpen}
         onClose={invite.close}
         code={invite.code}
-        copied={invite.copied}
+        inviteUrl={invite.inviteUrl}
+        expiresAt={invite.expiresAt}
+        ttlHours={invite.ttlHours}
         isError={invite.isError}
         error={invite.error}
-        onCopy={invite.copy}
       />
 
       <CircleJoinCodeModal

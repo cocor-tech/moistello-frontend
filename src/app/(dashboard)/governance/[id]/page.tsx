@@ -19,16 +19,28 @@ import Link from "next/link"
 import { Button, ButtonLink } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { useGovernanceProposal, useVoteOnProposal } from "@/hooks/use-governance"
+import { QUORUM_THRESHOLD_VOTES, type VoteChoice } from "@/lib/governance-api"
+import { useGovernanceVotes } from "@/stores/governance-votes-store"
+import { cn } from "@/lib/cn"
 import { useUIStore } from "@/stores/ui-store"
 
 export default function ProposalDetailPage() {
   const { id } = useParams<{ id: string }>()
   const addToast = useUIStore((state) => state.addToast)
 
-  const [voteChoice, setVoteChoice] = useState<boolean | "abstain" | null>(null)
+  const [voteChoice, setVoteChoice] = useState<boolean | VoteChoice | null>(null)
   const [voteReason, setVoteReason] = useState("")
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [userVoted, setUserVoted] = useState<string | null>(null)
+
+  /*
+   * The user's own vote now comes from a persisted store rather than local
+   * state, so the "You voted FOR" banner survives navigating away and reloading.
+   * As local `useState` it reset on every route change, leaving a voter unable
+   * to tell whether they had already voted — the one piece of state they
+   * actually need. The write happens in the hook's `onSuccess`, so a failed vote
+   * never leaves a marker behind.
+   */
+  const recordedVote = useGovernanceVotes((state) => state.votes[id]?.choice ?? null)
 
   const { data: proposal, isLoading } = useGovernanceProposal(id)
   const voteMutation = useVoteOnProposal(id)
@@ -38,6 +50,18 @@ export default function ProposalDetailPage() {
   const againstPercent = totalVotes ? Math.round(((proposal?.votesAgainst ?? 0) / totalVotes) * 100) : 0
   const abstainPercent = totalVotes ? Math.round(((proposal?.votesAbstain ?? 0) / totalVotes) * 100) : 0
 
+  // Quorum progress: how much of the required participation has been reached.
+  // Every vote counts toward quorum, so totalVotes is the numerator.
+  //
+  // Capped at 100 so the bar never overflows once quorum is comfortably passed,
+  // and floored so a proposal one vote short of quorum does not round up to a
+  // full bar that contradicts the "not reached" status next to it.
+  const quorumReached = totalVotes >= QUORUM_THRESHOLD_VOTES
+  const quorumPercent = quorumReached
+    ? 100
+    : Math.floor((totalVotes / QUORUM_THRESHOLD_VOTES) * 100)
+  const votesToQuorum = Math.max(0, QUORUM_THRESHOLD_VOTES - totalVotes)
+
   const countdown = useMemo(() => {
     if (!proposal?.timelockEndsAt) return "No timelock active"
     const hours = Math.max(0, Math.ceil((new Date(proposal.timelockEndsAt).getTime() - Date.now()) / 3_600_000))
@@ -45,7 +69,7 @@ export default function ProposalDetailPage() {
     return `${hours}h remaining`
   }, [proposal?.timelockEndsAt])
 
-  const openVoteModal = (choice: boolean | "abstain") => {
+  const openVoteModal = (choice: boolean | VoteChoice) => {
     setVoteChoice(choice)
     setShowConfirmModal(true)
   }
@@ -53,8 +77,10 @@ export default function ProposalDetailPage() {
   const handleConfirmVote = async () => {
     if (voteChoice === null) return
     try {
-      await voteMutation.mutateAsync(voteChoice)
-      setUserVoted(voteChoice === true ? "FOR" : voteChoice === false ? "AGAINST" : "ABSTAIN")
+      // The hook records the vote in the persisted store on success, so there
+      // is nothing to set here — doing it in both places would let the banner
+      // claim a vote that the request never confirmed.
+      await voteMutation.mutateAsync(voteChoice as boolean | VoteChoice)
       setShowConfirmModal(false)
       addToast({
         type: "success",
@@ -160,11 +186,69 @@ export default function ProposalDetailPage() {
             </div>
           </div>
 
+          {/* Quorum progress */}
+          <div
+            className="space-y-2 rounded-xl border border-white/10 bg-white/[0.02] p-4"
+            data-testid="quorum-progress"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <ShieldCheck
+                  className={cn(
+                    "h-3.5 w-3.5",
+                    quorumReached ? "text-emerald-400" : "text-amber-400",
+                  )}
+                  aria-hidden="true"
+                />
+                Quorum
+              </span>
+              <span
+                className={cn(
+                  "font-mono text-xs font-medium",
+                  quorumReached ? "text-emerald-400" : "text-amber-400",
+                )}
+                data-testid="quorum-status"
+              >
+                {quorumReached
+                  ? "Reached"
+                  : `${totalVotes.toLocaleString()} / ${QUORUM_THRESHOLD_VOTES.toLocaleString()}`}
+              </span>
+            </div>
+
+            <div
+              className="h-2 w-full overflow-hidden rounded-full bg-white/10"
+              role="progressbar"
+              aria-label="Quorum progress"
+              aria-valuenow={quorumPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuetext={`${quorumPercent}% of quorum reached, ${totalVotes} of ${QUORUM_THRESHOLD_VOTES} votes`}
+            >
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  quorumReached
+                    ? "bg-emerald-400"
+                    : "bg-gradient-to-r from-amber-400 to-aurora-violet",
+                )}
+                style={{ width: `${quorumPercent}%` }}
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              {quorumReached
+                ? "Quorum reached. The outcome of this vote is binding."
+                : `${votesToQuorum.toLocaleString()} more ${votesToQuorum === 1 ? "vote" : "votes"} needed to reach quorum.`}
+            </p>
+          </div>
+
           {/* User Voting Status */}
-          {userVoted ? (
+          {recordedVote ? (
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-2">
               <CircleCheckBig className="h-4 w-4 shrink-0" />
-              <span>You voted <strong>{userVoted}</strong> on this proposal.</span>
+              <span>
+                You voted <strong>{recordedVote.toUpperCase()}</strong> on this proposal.
+              </span>
             </div>
           ) : proposal.status === "active" ? (
             <div className="space-y-3 pt-2">
@@ -240,7 +324,7 @@ export default function ProposalDetailPage() {
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                Quorum threshold: 1,000 votes
+                Quorum threshold: {QUORUM_THRESHOLD_VOTES.toLocaleString()} votes
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />

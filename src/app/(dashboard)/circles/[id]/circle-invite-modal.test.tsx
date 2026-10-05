@@ -11,10 +11,11 @@ describe("CircleInviteModal", () => {
         isOpen
         onClose={vi.fn()}
         code=""
-        copied={false}
+        inviteUrl="https://moistello.app/invite/ABC123"
+        expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+        ttlHours={24}
         isError={false}
         error=""
-        onCopy={vi.fn()}
       />,
     )
 
@@ -27,34 +28,84 @@ describe("CircleInviteModal", () => {
         isOpen
         onClose={vi.fn()}
         code="ABC123"
-        copied={false}
+        inviteUrl="https://moistello.app/invite/ABC123"
+        expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+        ttlHours={24}
         isError={false}
         error=""
-        onCopy={vi.fn()}
       />,
     )
 
     expect(screen.getByText("ABC123")).toBeDefined()
-    expect(screen.getByRole("button", { name: "Copy Code" })).toBeDefined()
+    expect(screen.getByRole("button", { name: /copy invite link/i })).toBeDefined()
   })
 
-  it("calls onCopy when the copy button is clicked", async () => {
+  it("copies the full invite link, not the bare code", async () => {
     const user = userEvent.setup()
-    const onCopy = vi.fn()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    // navigator.clipboard is a getter-only accessor, so it has to be redefined
+    // rather than assigned.
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    })
+
     render(
       <CircleInviteModal
         isOpen
         onClose={vi.fn()}
         code="ABC123"
-        copied={false}
+        inviteUrl="https://moistello.app/invite/ABC123"
+        expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+        ttlHours={24}
         isError={false}
         error=""
-        onCopy={onCopy}
       />,
     )
 
-    await user.click(screen.getByRole("button", { name: "Copy Code" }))
-    expect(onCopy).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole("button", { name: /copy invite link/i }))
+
+    // The full URL is the only artefact a recipient can actually use.
+    expect(writeText).toHaveBeenCalledWith("https://moistello.app/invite/ABC123")
+  })
+
+  it("shows the live link and a countdown once generated", () => {
+    render(
+      <CircleInviteModal
+        isOpen
+        onClose={vi.fn()}
+        code="ABC123"
+        inviteUrl="https://moistello.app/invite/ABC123"
+        expiresAt={new Date(Date.now() + 2 * 3_600_000 + 30 * 60_000).toISOString()}
+        ttlHours={2}
+        isError={false}
+        error=""
+      />,
+    )
+
+    expect(screen.getByTestId("invite-link")).toHaveTextContent(
+      "https://moistello.app/invite/ABC123",
+    )
+    // Set 2h30m out, so the floored remainder reads 2h29m.
+    expect(screen.getByTestId("invite-expiry")).toHaveTextContent(/2h 29m/)
+    expect(screen.getByTestId("invite-expiry")).toHaveTextContent("2h after creation")
+  })
+
+  it("says the invite is expired once the countdown reaches zero", () => {
+    render(
+      <CircleInviteModal
+        isOpen
+        onClose={vi.fn()}
+        code="ABC123"
+        inviteUrl="https://moistello.app/invite/ABC123"
+        expiresAt={new Date(Date.now() - 1_000).toISOString()}
+        ttlHours={24}
+        isError={false}
+        error=""
+      />,
+    )
+
+    expect(screen.getByTestId("invite-expiry")).toHaveTextContent("Expired")
   })
 
   it("shows an error message when generation failed", () => {
@@ -63,10 +114,11 @@ describe("CircleInviteModal", () => {
         isOpen
         onClose={vi.fn()}
         code="error-generating-code"
-        copied={false}
+        inviteUrl="https://moistello.app/invite/ABC123"
+        expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+        ttlHours={24}
         isError
         error="Failed to generate invite code."
-        onCopy={vi.fn()}
       />,
     )
 
@@ -82,10 +134,11 @@ describe("CircleInviteModal", () => {
           isOpen
           onClose={vi.fn()}
           code="ABC123"
-          copied={false}
+          inviteUrl="https://moistello.app/invite/ABC123"
+          expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+          ttlHours={24}
           isError={false}
           error=""
-          onCopy={vi.fn()}
         />,
       )
 
@@ -102,10 +155,11 @@ describe("CircleInviteModal", () => {
           isOpen
           onClose={vi.fn()}
           code="ABC123"
-          copied={false}
+          inviteUrl="https://moistello.app/invite/ABC123"
+          expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+          ttlHours={24}
           isError={false}
           error=""
-          onCopy={vi.fn()}
         />,
       )
 
@@ -129,10 +183,11 @@ describe("CircleInviteModal", () => {
           isOpen
           onClose={vi.fn()}
           code="ABC123"
-          copied={false}
+          inviteUrl="https://moistello.app/invite/ABC123"
+          expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+          ttlHours={24}
           isError={false}
           error=""
-          onCopy={vi.fn()}
           onBulkImport={onBulkImport}
         />,
       )
@@ -154,10 +209,11 @@ describe("CircleInviteModal", () => {
           isOpen
           onClose={vi.fn()}
           code="ABC123"
-          copied={false}
+          inviteUrl="https://moistello.app/invite/ABC123"
+          expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+          ttlHours={24}
           isError={false}
           error=""
-          onCopy={vi.fn()}
         />,
       )
 
@@ -178,10 +234,11 @@ describe("CircleInviteModal", () => {
           isOpen
           onClose={vi.fn()}
           code="ABC123"
-          copied={false}
+          inviteUrl="https://moistello.app/invite/ABC123"
+          expiresAt={new Date(Date.now() + 24 * 3_600_000).toISOString()}
+          ttlHours={24}
           isError={false}
           error=""
-          onCopy={vi.fn()}
         />,
       )
 

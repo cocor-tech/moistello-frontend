@@ -1,9 +1,11 @@
 "use client"
 
-import React, { useState } from "react"
-import { Check, Copy, Upload, FileText, AlertCircle, CheckCircle2 } from "lucide-react"
+import React, { useEffect, useState } from "react"
+import { Clock, Upload, FileText, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
+import { CopyButton } from "@/components/shared/copy-button"
+import { formatTimeRemaining, msUntilExpiry } from "@/lib/invite-expiry"
 import { STELLAR_ADDRESS_REGEX } from "@/lib/formatters"
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -59,10 +61,14 @@ interface CircleInviteModalProps {
   isOpen: boolean
   onClose: () => void
   code: string
-  copied: boolean
+  /** Full shareable join URL, not the bare code. */
+  inviteUrl: string
+  /** ISO expiry from the server, or null when the invite never expires. */
+  expiresAt: string | null
+  /** Requested lifetime in hours, shown alongside the live countdown. */
+  ttlHours: number
   isError: boolean
   error: string
-  onCopy: () => void
   onBulkImport?: (members: string[]) => void
 }
 
@@ -70,13 +76,27 @@ export function CircleInviteModal({
   isOpen,
   onClose,
   code,
-  copied,
+  inviteUrl,
+  expiresAt,
+  ttlHours,
   isError,
   error,
-  onCopy,
   onBulkImport,
 }: CircleInviteModalProps) {
   const [activeTab, setActiveTab] = useState<"code" | "csv">("code")
+  // Ticks every second so the countdown counts down live rather than freezing at
+  // whatever it was when the invite was generated.
+  const [msRemaining, setMsRemaining] = useState(() => msUntilExpiry(expiresAt))
+
+  useEffect(() => {
+    setMsRemaining(msUntilExpiry(expiresAt))
+  }, [expiresAt])
+
+  useEffect(() => {
+    if (!expiresAt) return
+    const id = setInterval(() => setMsRemaining(msUntilExpiry(expiresAt)), 1_000)
+    return () => clearInterval(id)
+  }, [expiresAt])
   const [csvText, setCsvText] = useState("")
 
   const parsedEntries = parseCSVInput(csvText)
@@ -152,15 +172,36 @@ export function CircleInviteModal({
               </p>
             </div>
             {code && !isError && (
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full"
-                leftIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                onClick={onCopy}
-              >
-                {copied ? "Copied!" : "Copy Code"}
-              </Button>
+              <>
+                {/*
+                  The full link, not just the code. A recipient who receives
+                  "8XK2-9PQ" has nowhere to go with it - the link is the only
+                  shareable artefact, and it was never shown.
+                */}
+                <div
+                  className="rounded-lg border border-white/10 bg-black/20 p-3"
+                  data-testid="invite-link"
+                >
+                  <p className="text-xs text-muted-foreground mb-1">Share this link</p>
+                  <p className="font-mono text-sm text-foreground break-all">{inviteUrl}</p>
+                </div>
+
+                <div
+                  className="flex items-center gap-2 text-xs text-muted-foreground"
+                  data-testid="invite-expiry"
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>
+                    Expires in {formatTimeRemaining(msRemaining)} ({ttlHours}h after creation)
+                  </span>
+                </div>
+
+                <CopyButton
+                  text={inviteUrl}
+                  label="Copy invite link"
+                  className="w-full"
+                />
+              </>
             )}
             {isError && (
               <p className="text-sm text-red-400 text-center">
