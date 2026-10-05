@@ -53,6 +53,8 @@ function parsePreferences(raw: unknown): NotificationPreferences {
       marketing: (cats.marketing as boolean) ?? DEFAULT_PREFS.categories.marketing,
     },
     frequency: freq,
+    sendTime: typeof data.sendTime === "string" ? data.sendTime : DEFAULT_PREFS.sendTime,
+    timezone: typeof data.timezone === "string" ? data.timezone : DEFAULT_PREFS.timezone,
   }
 }
 
@@ -128,6 +130,8 @@ describe("notification preferences", () => {
       const prefs: NotificationPreferences = {
         categories: { ...DEFAULT_PREFS.categories, governance: false },
         frequency: "daily",
+        sendTime: DEFAULT_PREFS.sendTime,
+        timezone: DEFAULT_PREFS.timezone,
       }
 
       await put("/notifications/preferences", {

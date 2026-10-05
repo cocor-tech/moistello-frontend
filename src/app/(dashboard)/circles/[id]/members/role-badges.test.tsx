@@ -32,7 +32,11 @@ const mockUseCircleMembers = vi.fn(() => ({
   isLoading: false,
   isError: false,
 }))
-const mockUseCircle = vi.fn(() => ({
+const mockUseCircle = vi.fn((): {
+  data: { organizerId: string } | null
+  isLoading: boolean
+  isError: boolean
+} => ({
   data: { organizerId: "organizer-123" },
   isLoading: false,
   isError: false,

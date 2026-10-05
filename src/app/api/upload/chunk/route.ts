@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json({
-    uploadId: staged.uploadId,
+    uploadId: staged.meta.uploadId,
     receivedChunks,
     complete: true,
-    slug: staged.slug,
+    slug: staged.meta.slug,
   });
 }

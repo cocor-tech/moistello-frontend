@@ -3,15 +3,15 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { get } from '@/lib/api-client'
-import { Link } from 'next/link'
+import Link from 'next/link'
 import { ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatRelativeTimeLocalized } from '@/lib/formatters'
+import { formatRelativeTime } from '@/lib/formatters'
 import { useDateLocale } from '@/hooks/use-date-locale'
 import { useTranslate } from '@/lib/locale/context'
 import { cn } from '@/lib/cn'
-import type { Notification, Contribution, Payout } from '@/types'
+import type { ApiResponse, Notification, Contribution, Payout } from '@/types'
 
 const iconMap: Record<string, React.ReactNode> = {
   contribution: <ArrowUp className="h-4 w-4" />,
@@ -74,7 +74,7 @@ export function RecentActivityWidget() {
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery({
     queryKey: ['dashboard', 'notifications'],
     queryFn: async () => {
-      const res = await get<{ notifications: Notification[] }>('/api/notifications')
+      const res = await get<ApiResponse<{ notifications: Notification[] }>>('/api/notifications')
       return res.data?.notifications || []
     },
   })
@@ -82,7 +82,7 @@ export function RecentActivityWidget() {
   const { data: contributions = [], isLoading: contributionsLoading } = useQuery({
     queryKey: ['dashboard', 'contributions'],
     queryFn: async () => {
-      const res = await get<{ contributions: Contribution[] }>('/api/contributions')
+      const res = await get<ApiResponse<{ contributions: Contribution[] }>>('/api/contributions')
       return res.data?.contributions || []
     },
   })
@@ -90,7 +90,7 @@ export function RecentActivityWidget() {
   const { data: payouts = [], isLoading: payoutsLoading } = useQuery({
     queryKey: ['dashboard', 'payouts'],
     queryFn: async () => {
-      const res = await get<{ payouts: Payout[] }>('/api/payouts')
+      const res = await get<ApiResponse<{ payouts: Payout[] }>>('/api/payouts')
       return res.data?.payouts || []
     },
   })
@@ -102,7 +102,7 @@ export function RecentActivityWidget() {
       id: `notif-${n.id}`,
       type: 'notification' as const,
       title: n.title,
-      description: n.body,
+      description: n.body ?? undefined,
       timestamp: n.sentAt || n.createdAt,
       link: n.data && typeof n.data === 'object' && 'link' in n.data ? String(n.data.link) : undefined,
       icon: iconMap[n.type] || <Info className="h-4 w-4" />,
@@ -172,7 +172,7 @@ export function RecentActivityWidget() {
                   </p>
                 )}
                 <p className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
-                  {formatRelativeTimeLocalized(item.timestamp, dateFnsLocale)}
+                  {formatRelativeTime(item.timestamp, dateFnsLocale)}
                 </p>
               </div>
               {item.link && (
