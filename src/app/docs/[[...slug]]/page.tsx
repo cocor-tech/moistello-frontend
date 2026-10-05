@@ -272,7 +272,7 @@ export default function DocsPage({ params }: { params: { slug?: string[] } }) {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar */}
             <aside className="lg:w-56 shrink-0">
-              <div className="glass rounded-2xl p-4 lg:sticky lg:top-28">
+              <div className="glass rounded-2xl p-4 lg:sticky lg:top-28 dark:bg-background/80">
                 <h3 className="font-heading text-sm tracking-wider uppercase text-muted-foreground mb-4">
                   Docs
                 </h3>
@@ -296,7 +296,7 @@ export default function DocsPage({ params }: { params: { slug?: string[] } }) {
 
             {/* Content */}
             <main className="flex-1 min-w-0">
-              <div className="glass-premium rounded-2xl p-6 md:p-10">
+              <div className="glass-premium rounded-2xl p-6 md:p-10 dark:bg-background/60">
                 <article dangerouslySetInnerHTML={{ __html: html }} />
               </div>
             </main>
