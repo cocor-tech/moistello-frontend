@@ -1,6 +1,10 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft, House, Search } from "lucide-react"
 import { notFound } from "next/navigation"
+import { buildRouteMetadata } from "@/lib/seo/route-metadata"
+
+export const metadata: Metadata = buildRouteMetadata("/404")
 
 export default function NotFound() {
   notFound()

@@ -1,5 +1,9 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Check, House, KeyRound, LogIn } from "lucide-react"
+import { buildRouteMetadata } from "@/lib/seo/route-metadata"
+
+export const metadata: Metadata = buildRouteMetadata("/auth-required")
 
 const steps = ["Identity requested", "Session checked", "Sign in required"]
 
