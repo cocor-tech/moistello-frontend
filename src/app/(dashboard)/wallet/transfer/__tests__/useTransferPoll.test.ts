@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from "@testing-library/react"
+import { renderHook, act } from "@testing-library/react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { useTransferPoll } from "../hooks/useTransferPoll"
 
@@ -10,10 +10,30 @@ vi.mock("@/lib/constants", () => ({
 
 const mockGetTransaction = vi.fn()
 vi.mock("@/lib/soroban/rpc-client", () => ({
-  SorobanRpcClient: vi.fn().mockImplementation(() => ({
-    getTransaction: mockGetTransaction,
-  })),
+  SorobanRpcClient: vi.fn().mockImplementation(function () {
+    return { getTransaction: mockGetTransaction }
+  }),
 }))
+
+// ── Test helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Drives the hook's recursive poll loop under fake timers.
+ *
+ * Every poll awaits the mocked RPC, so its follow-up timer is only registered
+ * *after* a microtask flush. A single large `vi.advanceTimersByTime` therefore
+ * only ever fires the first poll, and `waitFor` cannot be used here because it
+ * schedules its own polling with the same faked timers and would deadlock.
+ * Advancing in steps with a flush between them walks the whole loop.
+ */
+async function flushPolls(ticks: number, stepMs = 3_000) {
+  for (let i = 0; i < ticks; i++) {
+    await act(async () => {
+      vi.advanceTimersByTime(stepMs)
+      await Promise.resolve()
+    })
+  }
+}
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
@@ -23,7 +43,7 @@ describe("useTransferPoll", () => {
   })
 
   afterEach(() => {
-    vi.runOnlyPendingTimers()
+    vi.clearAllTimers()
     vi.useRealTimers()
     vi.clearAllMocks()
   })
@@ -45,26 +65,18 @@ describe("useTransferPoll", () => {
     mockGetTransaction.mockResolvedValue({ status: "SUCCESS" })
     const { result } = renderHook(() => useTransferPoll("TX_SUCCESS"))
 
-    await act(async () => {
-      vi.advanceTimersByTime(2_000)
-    })
+    await flushPolls(1, 2_000)
 
-    await waitFor(() => {
-      expect(result.current.status).toBe("finalized")
-    })
+    expect(result.current.status).toBe("finalized")
   })
 
   it("transitions to failed when RPC returns FAILED", async () => {
     mockGetTransaction.mockResolvedValue({ status: "FAILED" })
     const { result } = renderHook(() => useTransferPoll("TX_FAIL"))
 
-    await act(async () => {
-      vi.advanceTimersByTime(2_000)
-    })
+    await flushPolls(1, 2_000)
 
-    await waitFor(() => {
-      expect(result.current.status).toBe("failed")
-    })
+    expect(result.current.status).toBe("failed")
   })
 
   it("increments attempts on NOT_FOUND", async () => {
@@ -72,13 +84,9 @@ describe("useTransferPoll", () => {
     const { result } = renderHook(() => useTransferPoll("TX_PENDING"))
 
     // First poll at 1.5s, second at 4.5s
-    await act(async () => {
-      vi.advanceTimersByTime(5_000)
-    })
+    await flushPolls(5)
 
-    await waitFor(() => {
-      expect(result.current.attempts).toBeGreaterThanOrEqual(1)
-    })
+    expect(result.current.attempts).toBeGreaterThanOrEqual(1)
     expect(result.current.status).toBe("pending")
   })
 
@@ -87,13 +95,9 @@ describe("useTransferPoll", () => {
     const { result } = renderHook(() => useTransferPoll("TX_TIMEOUT"))
 
     // 20 attempts × 3_000ms + initial 1_500ms
-    await act(async () => {
-      vi.advanceTimersByTime(65_000)
-    })
+    await flushPolls(30)
 
-    await waitFor(() => {
-      expect(result.current.status).toBe("timeout")
-    })
+    expect(result.current.status).toBe("timeout")
   })
 
   it("resets state when txnHash changes", async () => {
@@ -106,17 +110,13 @@ describe("useTransferPoll", () => {
       { initialProps: { hash: "TX_A" } },
     )
 
-    await act(async () => {
-      vi.advanceTimersByTime(2_000)
-    })
-    await waitFor(() => expect(result.current.status).toBe("finalized"))
+    await flushPolls(1, 2_000)
+    expect(result.current.status).toBe("finalized")
 
     // Switch to a new hash
     rerender({ hash: "TX_B" })
 
-    await waitFor(() => {
-      expect(result.current.status).toBe("pending")
-      expect(result.current.attempts).toBe(0)
-    })
+    expect(result.current.status).toBe("pending")
+    expect(result.current.attempts).toBe(0)
   })
 })

@@ -1,5 +1,4 @@
-import { render, screen, waitFor, act } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
+import { render, screen, fireEvent, act } from "@testing-library/react"
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { TransferConfirmation } from "../components/TransferConfirmation"
 
@@ -26,9 +25,9 @@ vi.mock("@/lib/formatters", () => ({
 // Mock the Soroban RPC so we control when getTransaction resolves
 const mockGetTransaction = vi.fn()
 vi.mock("@/lib/soroban/rpc-client", () => ({
-  SorobanRpcClient: vi.fn().mockImplementation(() => ({
-    getTransaction: mockGetTransaction,
-  })),
+  SorobanRpcClient: vi.fn().mockImplementation(function () {
+    return { getTransaction: mockGetTransaction }
+  }),
 }))
 
 // ── Test helpers ────────────────────────────────────────────────────────────
@@ -113,11 +112,10 @@ describe("TransferConfirmation", () => {
     // Advance past the initial delay
     await act(async () => {
       vi.advanceTimersByTime(2_000)
+      await Promise.resolve()
     })
 
-    await waitFor(() => {
-      expect(screen.getByText("Transfer Confirmed")).toBeDefined()
-    })
+    expect(screen.getByText("Transfer Confirmed")).toBeDefined()
 
     // Finalized state should show the detail link to the tx page
     expect(
@@ -132,21 +130,24 @@ describe("TransferConfirmation", () => {
 
     await act(async () => {
       vi.advanceTimersByTime(2_000)
+      await Promise.resolve()
     })
 
-    await waitFor(() => {
-      expect(screen.getByText("Transaction Failed")).toBeDefined()
-    })
+    expect(screen.getByText("Transaction Failed")).toBeDefined()
   })
 
   it("copies tx hash to clipboard when copy button is clicked", async () => {
     const { copyToClipboard } = await import("@/lib/clipboard")
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
 
     render(<TransferConfirmation {...DEFAULT_PROPS} />)
 
     const copyBtn = screen.getByRole("button", { name: /copy transaction hash/i })
-    await user.click(copyBtn)
+    // fireEvent rather than userEvent: user-event 14 deadlocks under vitest's
+    // fake timers in this repo (its internal wait never resolves).
+    await act(async () => {
+      fireEvent.click(copyBtn)
+      await Promise.resolve()
+    })
 
     expect(copyToClipboard).toHaveBeenCalledWith(DEFAULT_PROPS.txnHash)
   })
