@@ -225,4 +225,4 @@ const configWithSentry = withSentryConfig(nextConfig, {
   widenClientFileUpload: true,
 })
 
-export default withBundleAnalyzer(configWithSentry)
+export default withBundleAnalyzer(configWithSentry);

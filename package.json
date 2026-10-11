@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 127.0.0.1 -p 1110",
-    "build": "next build",
+    "dev": "node init && next dev -H 127.0.0.1 -p 1110",
+    "build": "node init && next build",
     "analyze": "node -e \"process.env.ANALYZE='true'; require('child_process').execSync('next build', {stdio: 'inherit'})\"",
-    "start": "next start -H 127.0.0.1 -p 1110",
+    "start": "node init && next start -H 127.0.0.1 -p 1110",
     "lint": "next lint",
     "audit:seo": "node scripts/audit-seo-routes.mjs",
     "test": "vitest run",
@@ -16,7 +16,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
+    "build-storybook": "node init && storybook build",
     "test:storybook": "test-storybook",
     "test:visual": "playwright test -c playwright.storybook.config.ts",
     "test:visual:update": "playwright test -c playwright.storybook.config.ts --update-snapshots"
