@@ -37,6 +37,11 @@ const RecentActivityWidget = dynamic(
   () => import('@/components/dashboard/recent-activity-widget').then(m => m.RecentActivityWidget),
   { ssr: false, loading: ChartSkeleton }
 )
+const PendingActionDigest = dynamic(
+  () => import('@/components/dashboard/pending-action-digest').then(m => m.PendingActionDigest),
+  { ssr: false, loading: ChartSkeleton }
+)
+import type { PendingActionItem } from '@/components/dashboard/pending-action-digest'
 
 export function DashboardContent() {
   const [contributionPeriod, setContributionPeriod] = useState<'week' | 'month' | 'all'>('month')
@@ -77,6 +82,35 @@ export function DashboardContent() {
     targetDate: null,
   }))
 
+  const pendingActions: PendingActionItem[] = [
+    ...circles
+      .filter((c) => c.status === 'active' && (c.currentRound || 1) > (c.totalContributions || 0))
+      .map((c) => ({
+        id: `missed-round-${c.id}`,
+        type: 'missed_round' as const,
+        title: `Round ${c.currentRound} contribution pending`,
+        description: `Deposit required to keep your standing in ${c.name}.`,
+        actionLabel: 'Contribute',
+        href: `/circles/${c.id}`,
+        circleId: c.id,
+        circleName: c.name,
+        amount: c.contributionAmount,
+        currency: c.currency || 'USDC',
+      })),
+    ...payouts
+      .filter((p) => !p.txnHash)
+      .map((p) => ({
+        id: `unclaimed-payout-${p.id}`,
+        type: 'unclaimed_payout' as const,
+        title: `Round ${p.roundNumber} payout ready to claim`,
+        description: 'Your disbursement is awaiting transfer to your wallet.',
+        actionLabel: 'Claim Payout',
+        href: '/payouts',
+        circleId: p.circleId,
+        amount: p.amount,
+      })),
+  ]
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -110,6 +144,10 @@ export function DashboardContent() {
         </div>
 
         <div className="space-y-6">
+          <PendingActionDigest
+            initialActions={pendingActions}
+            isLoading={circlesQuery.isLoading || payoutsQuery.isLoading}
+          />
           <PayoutTimelineChart payouts={payouts} />
           <RecentActivityWidget />
         </div>
