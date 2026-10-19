@@ -55,8 +55,8 @@ jobs:
       # The thresholds gate critical paths: auth, wallet, crypto, verification.
       - name: Coverage (vitest --coverage)
         run: npx vitest run --coverage
-        # perFile: false means a single aggregate check rather than per-file,
-        # keeping the gate stable as new files are added incrementally.
+      # perFile: true ensures a new untested source file cannot be hidden by
+      # unrelated high-coverage files in the aggregate.
         env:
           CI: true
 
