@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { fuzzyRank } from "@/lib/fuzzy";
 import { commandSearchText } from "@/components/command-palette/commands";
@@ -79,10 +79,10 @@ export function useCommandSearch(
     setActiveIndex(index);
   };
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setQuery("");
     setActiveIndex(0);
-  };
+  }, []);
 
   return { query, setQuery, groups, hits, activeIndex, move, moveTo, reset };
 }
