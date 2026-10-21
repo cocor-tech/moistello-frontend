@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Camera, Check, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAvatarUpload } from "../hooks/use-avatar-upload"
@@ -17,13 +18,13 @@ export function AvatarUploader({ initial, avatarUrl }: AvatarUploaderProps) {
     <div className="flex flex-col items-center gap-4">
       <div className="relative">
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={avatarUrl}
             alt="Your avatar"
             width={96}
             height={96}
             className="h-24 w-24 rounded-full object-cover shadow-lg"
+            unoptimized
           />
         ) : (
           <div className="flex h-24 w-24 items-center justify-center rounded-full gradient-bg text-white font-mono text-3xl font-bold shrink-0 shadow-lg">
@@ -58,13 +59,13 @@ export function AvatarUploader({ initial, avatarUrl }: AvatarUploaderProps) {
           aria-label="Avatar preview"
           className="w-full max-w-sm border-l-4 border-l-aurora-violet pl-4 flex items-center gap-4"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={preview.url}
             alt="New avatar preview"
             width={AVATAR_SIZE / 2}
             height={AVATAR_SIZE / 2}
             className="h-32 w-32 rounded-full object-cover holo-border"
+            unoptimized
           />
           <div className="flex-1 space-y-3">
             <p className="text-xs text-muted-foreground">

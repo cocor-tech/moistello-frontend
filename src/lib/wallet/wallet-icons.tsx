@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState, type ReactNode } from "react"
 import { QrCode, Usb, ScanFace, Wallet, type LucideIcon } from "lucide-react"
 
@@ -47,10 +48,11 @@ export function WalletIcon({ id, name, className, size = "md" }: WalletIconProps
   if (!svgFailed) {
     return (
       <span className={`flex ${WRAPPER_SIZE[size]} items-center justify-center rounded-full bg-white/10 ${className ?? ""}`} aria-hidden="true">
-        <img
+        <Image
           src={`/icons/wallets/${id}.svg`}
-          alt={name}
+          alt=""
           className={ICON_SIZE[size]}
+          unoptimized
           loading="lazy"
           decoding="async"
           width={size === "sm" ? 16 : size === "md" ? 20 : 28}
