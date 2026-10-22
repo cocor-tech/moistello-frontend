@@ -55,7 +55,10 @@ interface WcSignClient {
     uri?: string
     approval: () => Promise<WcSession>
   }>
-  disconnect: (opts: { topic: string; reason: { code: number; message: string } }) => Promise<void>
+  disconnect: (opts: {
+    topic: string
+    reason: { code: number; message: string }
+  }) => Promise<void>
   request: (opts: {
     chainId: string
     request: { method: string; params: Record<string, unknown> }
@@ -71,8 +74,13 @@ async function getOrInitSignClient(): Promise<WcSignClient> {
 
   initPromise = (async () => {
     const { SignClient } = await import("@walletconnect/sign-client")
-    const projectId =
-      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id"
+    const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim()
+    if (!projectId) {
+      throw Object.assign(
+        new Error("Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID configuration"),
+        { code: "configuration_error" }
+      )
+    }
 
     signClientInstance = (await SignClient.init({
       projectId,
@@ -88,7 +96,12 @@ async function getOrInitSignClient(): Promise<WcSignClient> {
       },
     })) as unknown as WcSignClient
     return signClientInstance
-  })()
+  })().catch((error: unknown) => {
+    // Permit a later retry if SDK initialisation fails transiently.
+    initPromise = null
+    signClientInstance = null
+    throw error
+  })
 
   return initPromise
 }
@@ -280,23 +293,34 @@ export function createWalletConnectAdapter(): WalletAdapter & {
         }
 
         // ── Reuse existing live session ───────────────────────────────────
+        const requestedChain =
+          options?.network === "mainnet" ? "stellar:pubnet" : "stellar:testnet"
         const sessions = client.session.getAll()
-        if (sessions.length > 0) {
-          const active = sessions[sessions.length - 1]
-          const accounts = active.namespaces?.stellar?.accounts || []
-          if (accounts.length > 0) {
-            const [, network, address] = accounts[0].split(":")
-            if (address && validateStellarAddress(address)) {
-              currentPublicKey = address
-              currentSession = active
-              ctx.state = "approved"
-              _currentContext = null
-              notifyContextChange()
-              relay.recordOutcome(true, Date.now() - connectStartedAt)
-              return {
-                publicKey: address,
-                network: network === "testnet" ? "testnet" : "mainnet",
-              }
+        const active = [...sessions].reverse().find((session) => {
+          const chains = session.namespaces?.stellar?.chains ?? []
+          const accounts = session.namespaces?.stellar?.accounts ?? []
+          return chains.includes(requestedChain) && accounts.some((account) => {
+            const [, , address] = account.split(":")
+            return Boolean(address && validateStellarAddress(address))
+          })
+        })
+
+        if (active) {
+          const account = active.namespaces?.stellar?.accounts?.find((value) => {
+            const [, , address] = value.split(":")
+            return Boolean(address && validateStellarAddress(address))
+          })
+          if (account) {
+            const [, network, address] = account.split(":")
+            currentPublicKey = address
+            currentSession = active
+            getWC2SessionStore().saveSession(active)
+            _currentContext = null
+            notifyContextChange()
+            relay.recordOutcome(true, Date.now() - connectStartedAt)
+            return {
+              publicKey: address,
+              network: network === "testnet" ? "testnet" : "mainnet",
             }
           }
         }
@@ -309,11 +333,7 @@ export function createWalletConnectAdapter(): WalletAdapter & {
                 "stellar_signTransaction",
                 "stellar_signMessage",
               ],
-              chains: [
-                options?.network === "mainnet"
-                  ? "stellar:pubnet"
-                  : "stellar:testnet",
-              ],
+              chains: [requestedChain],
               events: ["session_event", "session_delete"],
             },
           },
@@ -336,18 +356,27 @@ export function createWalletConnectAdapter(): WalletAdapter & {
         options?.onUri?.(uri)
 
         // ── Race approval against abort ───────────────────────────────────
-        const session = await Promise.race([
-          approval(),
-          new Promise<never>((_, reject) => {
-            ctx.abortController.signal.addEventListener("abort", () => {
-              reject(
-                Object.assign(new Error("Connect aborted"), {
-                  code: "user_rejected",
-                })
-              )
-            })
-          }),
-        ])
+        let abortListener: (() => void) | undefined
+        const aborted = new Promise<never>((_, reject) => {
+          abortListener = () => reject(
+            Object.assign(new Error("Connect aborted"), { code: "user_rejected" })
+          )
+          ctx.abortController.signal.addEventListener("abort", abortListener, { once: true })
+        })
+
+        let session: WcSession
+        try {
+          session = await Promise.race([approval(), aborted])
+        } finally {
+          if (abortListener) {
+            ctx.abortController.signal.removeEventListener("abort", abortListener)
+          }
+        }
+
+        // A newer connect may have replaced this context while approval resolved.
+        if (ctx.abortController.signal.aborted || _currentContext !== ctx) {
+          throw Object.assign(new Error("Connect aborted"), { code: "user_rejected" })
+        }
 
         ctx.uri = null
         ctx.state = "approved"
@@ -355,13 +384,15 @@ export function createWalletConnectAdapter(): WalletAdapter & {
         notifyContextChange()
 
         const accounts = session.namespaces?.stellar?.accounts || []
-        if (accounts.length === 0) {
-          throw new Error(
-            "No Stellar accounts found in WalletConnect session"
-          )
+        const account = accounts.find((value) => {
+          const [, , address] = value.split(":")
+          return Boolean(address && validateStellarAddress(address))
+        })
+        if (!account) {
+          throw new Error("No valid Stellar account found in WalletConnect session")
         }
 
-        const [, network, address] = accounts[0].split(":")
+        const [, network, address] = account.split(":")
         if (!address || !validateStellarAddress(address)) {
           throw new Error(
             "Invalid Stellar address returned from WalletConnect session"
@@ -418,8 +449,12 @@ export function createWalletConnectAdapter(): WalletAdapter & {
       currentPublicKey = null
       currentSession = null
 
-      // Clear persisted session without nuking all IndexedDB stores.
-      getWC2SessionStore().clear()
+      // Clear only this adapter's persisted WalletConnect session.
+      try {
+        getWC2SessionStore().clear()
+      } catch (e) {
+        logger.warn("[walletconnect] Session-store cleanup warning:", e)
+      }
     },
 
     async isConnected() {
@@ -464,13 +499,20 @@ export function createWalletConnectAdapter(): WalletAdapter & {
             params: { xdr, accountId: currentPublicKey },
           },
         })
+        const signedXdr =
+          typeof result === "string"
+            ? result
+            : (result as { signedXdr?: string } | null)?.signedXdr
+        if (typeof signedXdr !== "string" || signedXdr.length === 0) {
+          throw new Error("Wallet returned an empty or invalid signed transaction")
+        }
         relay.recordOutcome(true, Date.now() - signStartedAt)
-        return (result as { signedXdr?: string })?.signedXdr || (result as string)
+        return signedXdr
       } catch (err: unknown) {
         const errObj = err as { message?: string } | undefined
         relay.recordOutcome(false, Date.now() - signStartedAt)
         throw {
-          code: "user_rejected",
+          code: errObj?.message?.toLowerCase().includes("reject") ? "user_rejected" : "signing_failed",
           message: errObj?.message || "Signing rejected",
           adapter: "walletconnect",
         }
@@ -497,11 +539,18 @@ export function createWalletConnectAdapter(): WalletAdapter & {
             params: { message, accountId: currentPublicKey },
           },
         })
-        return (result as { signedMessage?: string })?.signedMessage || (result as string)
+        const signedMessage =
+          typeof result === "string"
+            ? result
+            : (result as { signedMessage?: string } | null)?.signedMessage
+        if (typeof signedMessage !== "string" || signedMessage.length === 0) {
+          throw new Error("Wallet returned an empty or invalid signed message")
+        }
+        return signedMessage
       } catch (err: unknown) {
         const errObj = err as { message?: string } | undefined
         throw {
-          code: "user_rejected",
+          code: errObj?.message?.toLowerCase().includes("reject") ? "user_rejected" : "signing_failed",
           message: errObj?.message || "Message signing rejected",
           adapter: "walletconnect",
         }
