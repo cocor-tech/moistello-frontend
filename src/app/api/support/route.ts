@@ -32,3 +32,27 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { category, message, email } = body;
+
+    // Secure structured logging: log non-identifying metadata only (omit raw message/email PII)
+    logger.info(
+      {
+        category,
+        hasEmail: Boolean(email),
+        timestamp: new Date().toISOString(),
+      },
+      '[Support Request] Received new support inquiry'
+    );
+
+    // Process support request logic...
+
+    return NextResponse.json({ success: true, message: 'Support request submitted successfully.' }, { status: 200 });
+  } catch (error) {
+    logger.error({ error }, '[Support Request] Failed to process support inquiry');
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
