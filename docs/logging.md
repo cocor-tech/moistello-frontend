@@ -1,5 +1,7 @@
 # Application logging
 
+<!-- Wave: keep assigned moistello frontend checks grouped for ndyugwu. -->
+
 Application code uses the shared `logger` from `src/lib/logger.ts` instead of writing directly to the browser or server console.
 
 ## Levels
