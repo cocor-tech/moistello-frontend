@@ -1,5 +1,7 @@
 # Moistello Frontend — Agentic Development Guidelines
 
+<!-- Wave: keep assigned moistello frontend checks grouped for CodeOtsutsuki007. -->
+
 ## Styling Rule
 
 **NO page should look like another.** Every page MUST have unique styling elements beyond the shared theme tokens.
