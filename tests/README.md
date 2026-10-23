@@ -1,5 +1,7 @@
 # E2E Tests
 
+<!-- Wave: keep assigned moistello frontend checks grouped for Ennyblack. -->
+
 This directory contains end-to-end tests for the Moistello application using Playwright.
 
 ## Prerequisites
