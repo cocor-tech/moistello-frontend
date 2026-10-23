@@ -57,6 +57,7 @@ export default defineConfig({
       // are documented in .github/workflows/ci.yml as:
       //   lines: 80, functions: 80, branches: 80, statements: 80
       thresholds: {
+        perFile: true,
         lines: 70,
         functions: 70,
         branches: 65,
