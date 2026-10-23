@@ -1,5 +1,7 @@
 # Moistello Frontend
 
+<!-- Wave: keep assigned moistello frontend checks grouped for precious1joe. -->
+
 Next.js 14 application delivering decentralized ROSCA (Rotating Savings and Credit Association) platform to 1.7B+ unbanked adults via Stellar blockchain.
 
 ## Business Model
