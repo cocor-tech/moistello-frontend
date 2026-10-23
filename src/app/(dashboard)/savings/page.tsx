@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, CircleAlert } from "lucide-react";
 
 export default function SavingsPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [goals, setGoals] = useState<any[]>([]);
+  const [goals, setGoals] = useState<unknown[]>([]);
 
   if (isLoading) {
     return (

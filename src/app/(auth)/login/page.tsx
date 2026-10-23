@@ -19,11 +19,13 @@ const WalletSelector = dynamic(
   { ssr: false }
 )
 
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
+
 export default function LoginPage() {
   const router = useRouter()
   const setTokens = useAuthStore((s) => s.setTokens)
   const toast = useToast()
-  const [loading, setLoading] = useState(false)
+  const { guard, isPending: loading } = useSubmitGuard()
 
   const {
     register,
@@ -35,8 +37,7 @@ export default function LoginPage() {
   })
 
   const onSubmit = useCallback(
-    async (values: LoginInput) => {
-      setLoading(true)
+    guard(async (values: LoginInput) => {
       try {
         const res = await post<{ token?: string; refreshToken?: string; user?: User }>("/auth/login", values)
         if (res?.token) {
@@ -51,11 +52,9 @@ export default function LoginPage() {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Login failed"
         toast.error(msg)
-      } finally {
-        setLoading(false)
       }
-    },
-    [setTokens, toast, router],
+    }),
+    [guard, setTokens, toast, router],
   )
 
   return (

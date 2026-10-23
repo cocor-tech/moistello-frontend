@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { ticketSchema, zodResolver, type TicketInput } from "@/lib/validation"
 import { Button } from "@/components/ui/button"
 import { getCsrfHeaders } from "@/lib/auth/csrf"
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
 
 const categories = [
   "Account & Wallet",
@@ -21,6 +22,7 @@ const categories = [
 type FormState = "idle" | "submitting" | "success" | "error"
 
 export function TicketForm() {
+  const { guard, isPending, idempotencyKey } = useSubmitGuard()
   const {
     register,
     handleSubmit,
@@ -35,14 +37,18 @@ export function TicketForm() {
   const [formError, setFormError] = useState<string | null>(null)
   const [showSubmitForm, setShowSubmitForm] = useState(false)
 
-  const handleSubmitTicket = async (values: TicketInput) => {
+  const handleSubmitTicket = guard(async (values: TicketInput) => {
     setFormState("submitting")
     setFormError(null)
 
     try {
       const res = await fetch("/api/support/tickets", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        headers: {
+          "Content-Type": "application/json",
+          "x-idempotency-key": idempotencyKey,
+          ...getCsrfHeaders(),
+        },
         body: JSON.stringify(values),
       })
       if (!res.ok) {
@@ -55,7 +61,7 @@ export function TicketForm() {
       setFormState("error")
       setFormError(err instanceof Error ? err.message : "Something went wrong")
     }
-  }
+  })
 
   const closeSuccess = () => {
     setFormState("idle")
@@ -167,8 +173,8 @@ export function TicketForm() {
               type="submit"
               variant="primary"
               className="flex-1"
-              isLoading={formState === "submitting"}
-              disabled={formState === "submitting"}
+              isLoading={isPending || formState === "submitting"}
+              disabled={isPending || formState === "submitting"}
             >
               Submit
             </Button>

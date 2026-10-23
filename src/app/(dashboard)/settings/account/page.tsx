@@ -216,9 +216,9 @@ export default function AccountSettingsPage() {
 
       <div className="glass-premium rounded-2xl p-6 space-y-5">
         <div>
-          <label className="mb-1.5 block text-xs font-heading tracking-wider uppercase text-muted-foreground">
+          <span className="mb-1.5 block text-xs font-heading tracking-wider uppercase text-muted-foreground">
             {t("account.displayName")}
-          </label>
+          </span>
           <p className="font-heading text-lg font-semibold text-foreground">{user?.displayName || t("account.anonymous")}</p>
           <p className="text-2xs text-muted-foreground mt-1">{t("account.displayNameHint")}</p>
         </div>
@@ -271,9 +271,9 @@ export default function AccountSettingsPage() {
           {t("account.deleteAccountHint")}
         </p>
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+          <span className="block text-xs font-medium text-muted-foreground mb-1.5">
             {t("account.confirmDelete")}
-          </label>
+          </span>
           <div className="flex gap-2">
             <Input
               label={t("account.confirmDelete")}

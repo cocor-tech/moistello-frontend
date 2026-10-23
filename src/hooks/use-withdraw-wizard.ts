@@ -45,7 +45,7 @@ export function useWithdrawWizard() {
         }
       })
       .catch(() => {})
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const selectWallet = useCallback((id: string, walletAsset: string) => {
     setSelectedWallet(id)

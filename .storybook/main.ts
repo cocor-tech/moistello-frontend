@@ -5,11 +5,9 @@ const config: StorybookConfig = {
     "../src/components/**/*.stories.@(js|jsx|mjs|ts|tsx)",
     "../src/components/**/*.mdx",
   ],
-  addons: [
-    "@storybook/addon-essentials",
-    "@storybook/addon-a11y",
-    "@storybook/addon-interactions",
-  ],
+  // Controls, actions, backgrounds, viewport and interactions are bundled into
+  // Storybook core since v9. Docs and a11y are still standalone addons.
+  addons: ["@storybook/addon-docs", "@storybook/addon-a11y"],
   framework: {
     name: "@storybook/nextjs",
     options: {
@@ -25,9 +23,6 @@ const config: StorybookConfig = {
     },
   },
   staticDirs: ["../public"],
-  docs: {
-    autodocs: "tag",
-  },
 };
 
 export default config;

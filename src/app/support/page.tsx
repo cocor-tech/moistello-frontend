@@ -1,21 +1,9 @@
 import type { Metadata } from "next"
 import { buildRouteMetadata } from "@/lib/seo/route-metadata"
-import dynamic from "next/dynamic"
 import { PublicLayout } from "@/components/layout/public-layout"
 import { SearchForm } from "./search-form"
-
-const TicketForm = dynamic(
-  () => import("./ticket-form").then((m) => m.TicketForm),
-  { ssr: false }
-)
-
-const TicketLookup = dynamic(
-  () => import("./ticket-lookup").then((m) => m.TicketLookup),
-  { ssr: false }
-)
-
-export const metadata: Metadata = buildRouteMetadata("/support")
-
+import { TicketFormTrigger } from "./ticket-form-trigger"
+import { TicketLookup } from "./ticket-lookup-client"
 import Link from "next/link"
 
 const quickLinks = [
@@ -41,6 +29,8 @@ const quickLinks = [
     iconColor: "text-premium-gold bg-premium-gold/15",
   },
 ]
+
+export const metadata: Metadata = buildRouteMetadata("/support")
 
 export default function SupportPage() {
   return (
@@ -114,7 +104,7 @@ export default function SupportPage() {
                   </p>
                 </div>
               </div>
-              <TicketForm />
+              <TicketFormTrigger />
             </div>
 
             {/* Track ticket */}
@@ -147,7 +137,7 @@ export default function SupportPage() {
                   Submit a Ticket
                 </h2>
               </div>
-              <TicketForm />
+              <TicketFormTrigger />
             </div>
 
             <div className="rounded-2xl bg-card/60 backdrop-blur-xl border border-white/10 p-5">

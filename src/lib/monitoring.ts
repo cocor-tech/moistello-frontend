@@ -2,7 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs"
 import type { AuthErrorCode } from "@/stores/auth-flow-store"
-import { attachLogFlushListeners, logger } from "@/lib/logger"
+import { attachLogFlushListeners, logger, redactString } from "@/lib/logger"
 
 export type MetricName =
   | "governance.proposal.created"
@@ -48,10 +48,7 @@ let metricBuffer: MetricEvent[] = []
 let flushTimer: ReturnType<typeof setInterval> | null = null
 
 function stripPii(value: string): string {
-  return value
-    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[email]")
-    .replace(/G[A-Za-z0-9]{55}/g, "[stellar-address]")
-    .replace(/0x[a-fA-F0-9]{40}/g, "[evm-address]")
+  return redactString(value)
 }
 
 export function captureAuthError(error: unknown, context: AuthErrorContext): void {
@@ -181,17 +178,25 @@ export function initMonitoring(): void {
   recordMetric("page.view", 1, { path: pagePath })
 
   window.addEventListener("error", (event) => {
-    Sentry.captureException(event.error ?? event.message)
+    const rawError = event.error ?? event.message
+    const safeError = rawError instanceof Error
+      ? { ...rawError, message: redactString(rawError.message), stack: rawError.stack ? redactString(rawError.stack) : undefined }
+      : (typeof rawError === "string" ? redactString(rawError) : rawError)
+    Sentry.captureException(safeError)
     recordMetric("error.unhandled", 1, {
-      message: event.message,
+      message: redactString(event.message),
       source: event.filename || "unknown",
     })
   })
 
   window.addEventListener("unhandledrejection", (event) => {
-    Sentry.captureException(event.reason ?? event.reason?.message)
+    const rawReason = event.reason ?? event.reason?.message
+    const safeReason = rawReason instanceof Error
+      ? { ...rawReason, message: redactString(rawReason.message), stack: rawReason.stack ? redactString(rawReason.stack) : undefined }
+      : (typeof rawReason === "string" ? redactString(rawReason) : rawReason)
+    Sentry.captureException(safeReason)
     recordMetric("error.unhandled", 1, {
-      message: event.reason?.message || String(event.reason),
+      message: redactString(event.reason?.message || String(event.reason)),
       source: "unhandled-rejection",
     })
   })

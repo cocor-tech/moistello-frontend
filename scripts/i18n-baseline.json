@@ -1,0 +1,17 @@
+{
+  "untranslated": [
+    "circles.",
+    "common.all",
+    "common.allTypes",
+    "common.viewDetails",
+    "notif.savePreferences",
+    "notif.sendTime",
+    "notif.timezone",
+    "notifications.description",
+    "notifications.emptyDescription",
+    "notifications.groupByDay",
+    "notifications.groupByType",
+    "notifications.markAllAsRead",
+    "notifications.noGrouping"
+  ]
+}

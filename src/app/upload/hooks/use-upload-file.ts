@@ -13,6 +13,7 @@ import {
   TRANSFER_TIMEOUT_MS,
   getUploadPath,
   isAllowedUpload,
+  validateUploadFile,
   type UploadErrorKind,
   type UploadProgress,
   type UploadStatus,
@@ -106,10 +107,13 @@ export function useUploadFile(): UseUploadFileReturn {
   const selectFile = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (!selectedFile) return
-    if (!isAllowedUpload(selectedFile)) {
+    const validation = validateUploadFile(selectedFile.name, selectedFile.size)
+    if (!validation.ok) {
+      setFile(null)
       setStatus("error")
       setErrorKind("validation")
-      setMessage("Only .md and .html files are allowed")
+      setMessage(validation.error)
+      if (fileRef.current) fileRef.current.value = ""
       return
     }
     setFile(selectedFile)
@@ -203,6 +207,14 @@ export function useUploadFile(): UseUploadFileReturn {
 
   const upload = useCallback(async () => {
     if (!file) return
+
+    const validation = validateUploadFile(file.name, file.size)
+    if (!validation.ok) {
+      setStatus("error")
+      setErrorKind("validation")
+      setMessage(validation.error)
+      return
+    }
 
     abortRef.current?.abort()
     const controller = new AbortController()

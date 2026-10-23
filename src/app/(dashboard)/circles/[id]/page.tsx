@@ -21,6 +21,7 @@ import {
 } from "@/hooks/use-circles";
 import { useCirclePayouts } from "@/hooks/use-payouts";
 import { useAuth } from "@/hooks/use-auth";
+import { useSubmitGuard } from "@/hooks/use-submit-guard";
 import { useUIStore } from "@/stores/ui-store";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button, ButtonLink } from "@/components/ui/button"
@@ -81,12 +82,12 @@ export default function CircleDetailPage() {
   const addToast = useUIStore((s) => s.addToast);
 
   const [showContributeModal, setShowContributeModal] = useState(false);
-  const [joinLoading, setJoinLoading] = useState(false);
+  const { guard: guardJoin, isPending: joinLoading } = useSubmitGuard();
   const [joinError, setJoinError] = useState<string | null>(null);
 
   const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
   const [joinCodeValue, setJoinCodeValue] = useState("");
-  const [joinCodeLoading, setJoinCodeLoading] = useState(false);
+  const { guard: guardJoinCode, isPending: joinCodeLoading } = useSubmitGuard();
   const [joinCodeError, setJoinCodeError] = useState<string | null>(null);
 
   const invite = useInviteGeneration(circleId);
@@ -100,25 +101,21 @@ export default function CircleDetailPage() {
     (circle.status === "pending" || circle.status === "active");
   const canContribute = isMember && circle?.status === "active";
 
-  const handleJoin = async () => {
-    setJoinLoading(true);
+  const handleJoin = guardJoin(async () => {
     setJoinError(null);
     try {
       await joinCircle.mutateAsync({ circleId });
-      setJoinLoading(false);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data
           ?.error ??
         (err instanceof Error ? err.message : "Failed to join circle");
       setJoinError(msg);
-      setJoinLoading(false);
     }
-  };
+  });
 
-  const handleJoinWithCode = async () => {
+  const handleJoinWithCode = guardJoinCode(async () => {
     if (!joinCodeValue.trim()) return;
-    setJoinCodeLoading(true);
     setJoinCodeError(null);
     try {
       await joinCircle.mutateAsync({
@@ -133,10 +130,8 @@ export default function CircleDetailPage() {
           ?.error ??
         (err instanceof Error ? err.message : "Invalid invite code");
       setJoinCodeError(msg);
-    } finally {
-      setJoinCodeLoading(false);
     }
-  };
+  });
 
   const handleContribute = () => {
     if (!circle) return;

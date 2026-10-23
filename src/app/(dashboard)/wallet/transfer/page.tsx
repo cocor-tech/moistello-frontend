@@ -11,6 +11,8 @@ import { post } from "@/lib/api-client"
 import { formatAddress } from "@/lib/formatters"
 import { TransferConfirmation } from "./components/TransferConfirmation"
 
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
+
 function WalletTransferContent() {
   const searchParams = useSearchParams()
   const initialRecipient = searchParams.get("recipient") || searchParams.get("address") || ""
@@ -22,7 +24,7 @@ function WalletTransferContent() {
   const [currency, setCurrency] = useState<"USDC" | "XLM">("USDC")
   const [memo, setMemo] = useState("")
   const [step, setStep] = useState<"form" | "confirm" | "success">("form")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { guard, isPending: isSubmitting, idempotencyKey } = useSubmitGuard()
   const [error, setError] = useState<string | null>(null)
   const [txnHash, setTxnHash] = useState<string | null>(null)
 
@@ -61,26 +63,31 @@ function WalletTransferContent() {
     }
   }
 
-  const handleConfirm = async () => {
-    setIsSubmitting(true)
+  const handleConfirm = guard(async () => {
     setError(null)
     try {
-      const res = await post<{ txnHash?: string }>("/api/wallet/transfer", {
-        recipient,
-        amount: parseFloat(amount),
-        currency,
-        memo,
-      })
+      const res = await post<{ txnHash?: string }>(
+        "/api/wallet/transfer",
+        {
+          recipient,
+          amount: parseFloat(amount),
+          currency,
+          memo,
+        },
+        {
+          headers: {
+            "x-idempotency-key": idempotencyKey,
+          },
+        }
+      )
       setTxnHash(res.txnHash || "tx_mock_hash_stellar")
       setStep("success")
       addToast({ type: "success", title: "Transfer completed successfully" })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Transfer failed. Please try again.")
       setStep("form")
-    } finally {
-      setIsSubmitting(false)
     }
-  }
+  })
 
   return (
     <div data-testid="wallet-transfer-page" className="max-w-2xl mx-auto space-y-8 pb-12">
@@ -198,6 +205,7 @@ function WalletTransferContent() {
             <Button
               onClick={handleConfirm}
               disabled={isSubmitting}
+              isLoading={isSubmitting}
               className="w-1/2"
             >
               {isSubmitting ? "Sending..." : "Confirm & Send"}

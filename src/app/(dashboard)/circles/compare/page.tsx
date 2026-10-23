@@ -1,143 +1,135 @@
 "use client"
 
-import React, { useState } from "react"
-import Link from "next/link"
+import React, { Suspense, useCallback, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { TableScrollRegion } from "@/components/shared/table-scroll-region"
-import { TableCaption, TableCell, TableHeadCell, TableRow } from "@/components/shared/responsive-table"
-import { useCircle } from "@/hooks/use-circles"
-import { formatCurrency } from "@/lib/formatters"
-import { Search, X, ChartColumn } from "lucide-react"
+import { useCircle, useCircleRounds } from "@/hooks/use-circles"
+import { ChartColumn } from "lucide-react"
+import { CompareSelector } from "./components/compare-selector"
+import { CompareSummary } from "./components/compare-summary"
+import { CompareRounds } from "./components/compare-rounds"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ATTRIBUTES: { key: string; label: string; format: (v: any, c?: any) => string }[] = [
-  { key: "contributionAmount", label: "Contribution", format: (v: number, c) => formatCurrency(v, c?.currency ?? "USDC") },
-  { key: "frequency", label: "Frequency", format: (v: string) => v.charAt(0).toUpperCase() + v.slice(1) },
-  { key: "payoutType", label: "Payout Type", format: (v: string) => v.charAt(0).toUpperCase() + v.slice(1) },
-  { key: "maxMembers", label: "Max Members", format: (v: number) => String(v) },
-  { key: "currentRound", label: "Current Round", format: (v: number) => String(v) },
-  { key: "totalContributions", label: "Total Saved", format: (v: number, c) => formatCurrency(v, c?.currency ?? "USDC") },
-  { key: "collateralPercent", label: "Collateral", format: (v: number) => `${v}%` },
-  { key: "lateFeePercent", label: "Late Fee", format: (v: number) => `${v}%` },
-  { key: "gracePeriodHours", label: "Grace Period", format: (v: number) => `${v}h` },
-  { key: "circleType", label: "Type", format: (v: string) => v.charAt(0).toUpperCase() + v.slice(1) },
-]
+function CompareContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-function CircleCompareChip({ id, onRemove }: { id: string; onRemove: (id: string) => void }) {
-  const { data: circle } = useCircle(id)
+  // Parse initial circle ids from query params (?c1=...&c2=... or ?circles=a,b or ?ids=a,b)
+  const initialA = searchParams.get("c1") || searchParams.get("id1") || searchParams.get("circles")?.split(",")[0] || searchParams.get("ids")?.split(",")[0] || ""
+  const initialB = searchParams.get("c2") || searchParams.get("id2") || searchParams.get("circles")?.split(",")[1] || searchParams.get("ids")?.split(",")[1] || ""
+
+  const [idA, setIdA] = useState(initialA)
+  const [idB, setIdB] = useState(initialB)
+
+  // Sync state if URL search params change externally
+  useEffect(() => {
+    const urlA = searchParams.get("c1") || searchParams.get("id1") || searchParams.get("circles")?.split(",")[0] || searchParams.get("ids")?.split(",")[0] || ""
+    const urlB = searchParams.get("c2") || searchParams.get("id2") || searchParams.get("circles")?.split(",")[1] || searchParams.get("ids")?.split(",")[1] || ""
+    if (urlA !== idA) setIdA(urlA)
+    if (urlB !== idB) setIdB(urlB)
+  }, [searchParams])
+
+  // Sync state to URL search parameters for deep-linking
+  const syncToUrl = useCallback((nextA: string, nextB: string) => {
+    const params = new URLSearchParams()
+    if (nextA) params.set("c1", nextA)
+    if (nextB) params.set("c2", nextB)
+    const queryString = params.toString()
+    const newPath = queryString ? `/circles/compare?${queryString}` : "/circles/compare"
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", newPath)
+    }
+  }, [])
+
+  const handleSetA = (id: string) => {
+    setIdA(id)
+    syncToUrl(id, idB)
+  }
+
+  const handleSetB = (id: string) => {
+    setIdB(id)
+    syncToUrl(idA, id)
+  }
+
+  const handleSwap = () => {
+    const nextA = idB
+    const nextB = idA
+    setIdA(nextA)
+    setIdB(nextB)
+    syncToUrl(nextA, nextB)
+  }
+
+  const handleClear = () => {
+    setIdA("")
+    setIdB("")
+    syncToUrl("", "")
+  }
+
+  const { data: circleA, isLoading: isLoadingA } = useCircle(idA)
+  const { data: circleB, isLoading: isLoadingB } = useCircle(idB)
+
+  const { data: roundsA = [] } = useCircleRounds(idA)
+  const { data: roundsB = [] } = useCircleRounds(idB)
+
+  const hasSelection = Boolean(idA || idB)
+
   return (
-    <div className="glass-premium rounded-xl p-4 holo-border relative">
-      <button type="button" onClick={() => onRemove(id)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 flex items-center justify-center" aria-label={`Remove circle ${id} from comparison`}><X className="h-3 w-3" aria-hidden="true" /></button>
-      <Link href={`/circles/${id}`} className="font-heading font-semibold text-foreground dark:text-white text-sm hover:underline block truncate">{circle?.name ?? "Loading..."}</Link>
-      <p className="text-2xs text-muted-foreground capitalize">{circle ? `${circle.circleType} · ${circle.status}` : ""}</p>
+    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+      {/* Decorative top accent line */}
+      <div className="h-1 w-full bg-gradient-to-r from-aurora-violet via-emerald-400 to-amber-400 rounded-full" />
+
+      <PageHeader
+        title="Compare Savings Circles"
+        description="Evaluate circle parameters, contributions, payouts, and round progression side-by-side."
+        breadcrumbs={[
+          { label: "Circles", href: "/circles" },
+          { label: "Compare" },
+        ]}
+      />
+
+      {/* Selector & Deep Link controls */}
+      <CompareSelector
+        idA={idA}
+        idB={idB}
+        onChangeA={handleSetA}
+        onChangeB={handleSetB}
+        onSwap={handleSwap}
+        onClear={handleClear}
+      />
+
+      {!hasSelection ? (
+        <EmptyState
+          icon={<ChartColumn className="h-8 w-8 text-aurora-violet" />}
+          title="Select Two Circles to Compare"
+          description="Enter two circle IDs or open a circle and click Compare to evaluate contribution amounts, payout rules, and round progression side-by-side."
+        />
+      ) : (
+        <div className="space-y-10">
+          {/* Summary and Metrics */}
+          <CompareSummary
+            circleA={circleA ?? null}
+            circleB={circleB ?? null}
+            isLoadingA={isLoadingA}
+            isLoadingB={isLoadingB}
+          />
+
+          {/* Side-by-side Rounds comparison with resilient different-duration handling */}
+          <CompareRounds
+            circleA={circleA ?? null}
+            circleB={circleB ?? null}
+            roundsA={roundsA}
+            roundsB={roundsB}
+          />
+        </div>
+      )}
     </div>
   )
 }
 
 export default function ComparePage() {
-  const [circleIds, setCircleIds] = useState<string[]>([])
-  const [inputValue, setInputValue] = useState("")
-
-  const addCircle = () => {
-    const id = inputValue.trim()
-    if (id && !circleIds.includes(id) && circleIds.length < 4) {
-      setCircleIds((prev) => [...prev, id])
-    }
-    setInputValue("")
-  }
-
-  const removeCircle = (id: string) => setCircleIds((prev) => prev.filter((x) => x !== id))
-
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Compare Circles"
-        description="Compare up to 4 circles side-by-side to find the best fit."
-      />
-
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Paste a circle ID to compare..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addCircle()}
-          leftIcon={<Search className="h-4 w-4" />}
-          className="flex-1"
-        />
-        <Button variant="primary" size="md" onClick={addCircle} disabled={circleIds.length >= 4 || !inputValue.trim()}>
-          Add
-        </Button>
-      </div>
-
-      {circleIds.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {circleIds.map((id) => (
-            <CircleCompareChip key={id} id={id} onRemove={removeCircle} />
-          ))}
-        </div>
-      )}
-
-      {circleIds.length === 0 ? (
-        <EmptyState
-          icon={<ChartColumn className="h-6 w-6" />}
-          title="Add circles to compare"
-          description="Paste circle IDs above to compare attributes side-by-side. You can compare up to 4 circles."
-        />
-      ) : (
-        <TableScrollRegion
-          label="Circle comparison table"
-          className="rounded-xl border border-border"
-        >
-          <table className="w-full text-sm">
-            <TableCaption>Circle attributes side by side.</TableCaption>
-            <thead>
-              <tr className="border-b border-border">
-                <TableHeadCell label="Attribute" className="w-48 text-left sm:sticky sm:left-0 sm:z-10 sm:bg-background">
-                  Attribute
-                </TableHeadCell>
-                {circleIds.map((id, index) => (
-                  <TableHeadCell key={id} label={`Circle ${index + 1}`} className="text-center">
-                    {/* Hidden below `sm`, where the header strip is clipped; the
-                        chip grid above stays visible and carries the same links. */}
-                    <Link
-                      href={`/circles/${id}`}
-                      className="hover:text-foreground hidden transition-colors sm:inline"
-                    >
-                      Circle {index + 1}
-                    </Link>
-                  </TableHeadCell>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {ATTRIBUTES.map((attr) => (
-                <TableRow key={attr.key} className="transition-colors hover:bg-white/[0.03]">
-                  <TableCell label="Attribute" primary className="w-48 font-heading font-medium text-muted-foreground sm:sticky sm:left-0 sm:z-10 sm:bg-background">
-                    {attr.label}
-                  </TableCell>
-                  {circleIds.map((id, index) => (
-                    <TableCell key={id} label={`Circle ${index + 1}`} className="text-center">
-                      <CircleAttrValue circleId={id} attr={attr} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </tbody>
-          </table>
-        </TableScrollRegion>
-      )}
-    </div>
+    <Suspense fallback={<div className="p-8 text-center font-mono text-sm text-muted-foreground">Loading circle comparison...</div>}>
+      <CompareContent />
+    </Suspense>
   )
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CircleAttrValue({ circleId, attr }: { circleId: string; attr: typeof ATTRIBUTES[0] }) {
-  const { data: circle } = useCircle(circleId)
-  if (!circle) return <span className="text-muted-foreground">—</span>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const val = (circle as any)[attr.key]
-  return <span>{val !== undefined ? attr.format(val, circle) : "—"}</span>
 }

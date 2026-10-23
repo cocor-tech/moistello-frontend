@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react"
 import { getCsrfHeaders } from "@/lib/auth/csrf"
 import { logger } from "@/lib/logger"
 
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
+
 interface AuthPayload {
   authenticated?: boolean
   error?: string
@@ -15,7 +17,7 @@ export function useUploadAuth() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
-  const [loggingIn, setLoggingIn] = useState(false)
+  const { guard, isPending: loggingIn, idempotencyKey } = useSubmitGuard()
 
   useEffect(() => {
     let active = true
@@ -37,33 +39,37 @@ export function useUploadAuth() {
     }
   }, [])
 
-  const login = useCallback(async () => {
-    if (!username.trim() || !password) {
-      setLoginError("Enter username and password")
-      return
-    }
-
-    setLoggingIn(true)
-    setLoginError("")
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ username: username.trim(), password }),
-      })
-      const data = (await response.json()) as AuthPayload
-      if (response.ok) {
-        setAuthenticated(true)
-      } else {
-        setLoginError(data.error || "Login failed")
+  const login = useCallback(
+    guard(async () => {
+      if (!username.trim() || !password) {
+        setLoginError("Enter username and password")
+        return
       }
-    } catch (error: unknown) {
-      logger.error("Upload login failed", { error })
-      setLoginError("Network error")
-    } finally {
-      setLoggingIn(false)
-    }
-  }, [password, username])
+
+      setLoginError("")
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-idempotency-key": idempotencyKey,
+            ...getCsrfHeaders(),
+          },
+          body: JSON.stringify({ username: username.trim(), password }),
+        })
+        const data = (await response.json()) as AuthPayload
+        if (response.ok) {
+          setAuthenticated(true)
+        } else {
+          setLoginError(data.error || "Login failed")
+        }
+      } catch (error: unknown) {
+        logger.error("Upload login failed", { error })
+        setLoginError("Network error")
+      }
+    }),
+    [guard, password, username, idempotencyKey],
+  )
 
   const logout = useCallback(async (): Promise<boolean> => {
     try {

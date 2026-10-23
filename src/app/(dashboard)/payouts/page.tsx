@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Award, CircleAlert } from "lucide-react";
 
 export default function PayoutsPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<unknown[]>([]);
 
   if (isLoading) {
     return (

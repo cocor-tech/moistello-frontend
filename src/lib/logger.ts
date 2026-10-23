@@ -77,18 +77,31 @@ export function isLogLevelEnabled(level: LogLevel): boolean {
   return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[getConfiguredLogLevel()]
 }
 
-function redactString(value: string): string {
+export function redactString(value: string): string {
   return value
+    .replace(/(?:authorization|auth)\s*[:=]\s*(Bearer\s+|Basic\s+)?[^\s,;]+/gi, (_match, prefix) => {
+      if (prefix) {
+        return `Authorization: ${prefix.trim()} [redacted]`
+      }
+      return "authorization: [redacted]"
+    })
+    .replace(/\bBearer\s+[^\s,;]+/gi, "Bearer [redacted]")
+    .replace(/\bBasic\s+[^\s,;]+/gi, "Basic [redacted]")
+    .replace(/([?&](?:token|access_token|refresh_token|id_token|auth_token|api_key|apiKey|secret|password)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/\b(api[_-]?key|access[_-]?token|refresh[_-]?token|id[_-]?token|secret[_-]?key|private[_-]?key)\s*[:=]\s*["']?[^\s,"']+/gi, "$1: [redacted]")
+    .replace(/\bS[A-Za-z0-9]{54,55}\b/g, "[stellar-secret-key]")
     .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, "[email]")
     .replace(/G[A-Za-z0-9]{55}/g, "[stellar-address]")
     .replace(/0x[a-fA-F0-9]{40}/g, "[evm-address]")
+    .replace(/\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, "[phone]")
+    .replace(/\b(?:\d{4}[-\s]?){3}\d{4}\b/g, "[card-number]")
+    .replace(/\b\d{3}-\d{2}-\d{4}\b/g, "[ssn]")
     .replace(/\b\d{6}\b/g, "[otp]")
-    .replace(/Bearer\s+[^\s,;]+/gi, "Bearer [redacted]")
     .replace(/[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[jwt]")
     .slice(0, MAX_REDACTED_STRING_LENGTH)
 }
 
-const SENSITIVE_KEY = /password|passcode|token|secret|authorization|cookie|private|credential|mnemonic|seed|otp|verification.?code|challenge|nonce|signature|xdr|session|user|wallet|address|email|file(name)?/i
+export const SENSITIVE_KEY = /password|passcode|token|secret|authorization|cookie|private|credential|mnemonic|seed|otp|verification.?code|challenge|nonce|signature|xdr|session|user|wallet|address|email|phone|mobile|tel|ssn|tax.?id|national.?id|dob|birth.?date|date.?of.?birth|first.?name|last.?name|full.?name|credit.?card|card.?number|cvv|cvc|pin|passphrase|api.?key|auth.?token|access.?token|refresh.?token|id.?token|secret.?key|private.?key|file(name)?/i
 
 function redactValue(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {
   if (depth > MAX_CONTEXT_DEPTH) return "[truncated]"

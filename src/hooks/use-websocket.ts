@@ -28,6 +28,7 @@ export function useWebSocket(options?: UseWebSocketOptions) {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
+  const connectRef = useRef<() => void>(() => undefined);
   const onEventRef = useRef(options?.onEvent);
   const onPollRef = useRef(options?.onPoll);
   const pollIntervalRef = useRef(options?.pollInterval ?? 30000);
@@ -67,6 +68,19 @@ export function useWebSocket(options?: UseWebSocketOptions) {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(typeof message === "string" ? message : JSON.stringify(message));
     }
+  }, []);
+
+  const scheduleReconnect = useCallback(() => {
+    if (!mountedRef.current) return;
+
+    const attempts = reconnectAttemptRef.current + 1;
+    reconnectAttemptRef.current = attempts;
+
+    const delay = Math.min(1000 * Math.pow(2, attempts - 1), 30000);
+
+    reconnectTimerRef.current = setTimeout(() => {
+      connectRef.current();
+    }, delay);
   }, []);
 
   const connect = useCallback(() => {
@@ -111,20 +125,10 @@ export function useWebSocket(options?: UseWebSocketOptions) {
     };
 
     wsRef.current = ws;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearPollTimer, startPollTimer]);
+  }, [clearPollTimer, scheduleReconnect, startPollTimer]);
 
-  const scheduleReconnect = useCallback(() => {
-    if (!mountedRef.current) return;
-
-    const attempts = reconnectAttemptRef.current + 1;
-    reconnectAttemptRef.current = attempts;
-
-    const delay = Math.min(1000 * Math.pow(2, attempts - 1), 30000);
-
-    reconnectTimerRef.current = setTimeout(() => {
-      connect();
-    }, delay);
+  useEffect(() => {
+    connectRef.current = connect;
   }, [connect]);
 
   useEffect(() => {

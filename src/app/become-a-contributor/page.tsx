@@ -1,12 +1,7 @@
 import type { Metadata } from "next"
 import { buildRouteMetadata } from "@/lib/seo/route-metadata"
-import dynamic from "next/dynamic"
 import { PublicLayout } from "@/components/layout/public-layout"
-
-const ContributionForm = dynamic(
-  () => import("./contribution-form").then((m) => m.ContributionForm),
-  { ssr: false }
-)
+import { ContributionForm } from "./contribution-form-client"
 
 export const metadata: Metadata = buildRouteMetadata("/become-a-contributor")
 

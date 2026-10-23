@@ -7,6 +7,7 @@ import { FileCode, Send, ArrowLeft, CircleAlert } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useCreateProposal } from "@/hooks/use-governance"
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
 
 export default function CreateProposalPage() {
   const router = useRouter()
@@ -17,8 +18,9 @@ export default function CreateProposalPage() {
   const [executionPayload, setExecutionPayload] = useState("")
   const [error, setError] = useState("")
   const createProposal = useCreateProposal()
+  const { guard, isPending: isGuarded } = useSubmitGuard()
 
-  async function submit() {
+  const submit = guard(async () => {
     if (!title.trim()) {
       setError("Proposal title is required.")
       return
@@ -40,7 +42,7 @@ export default function CreateProposalPage() {
     } catch {
       setError("Proposal could not be submitted to the governance contract. Please try again.")
     }
-  }
+  })
 
   return (
     <div className="mx-auto max-w-3xl space-y-8" data-testid="create-proposal-page">
@@ -170,7 +172,8 @@ export default function CreateProposalPage() {
             type="submit"
             variant="primary"
             size="lg"
-            isLoading={createProposal.isPending}
+            isLoading={isGuarded || createProposal.isPending}
+            disabled={isGuarded || createProposal.isPending}
             leftIcon={<Send className="h-4 w-4" />}
             rightIcon={<FileCode className="h-4 w-4" />}
             data-testid="submit-proposal-button"

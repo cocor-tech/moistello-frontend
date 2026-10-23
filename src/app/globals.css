@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 /* ═══════════════════════════════════════════════════════════
    MOISTELLO — EXTREME FUTURISM DESIGN SYSTEM
@@ -11,6 +10,9 @@
 /* ── LIGHT THEME ── */
 :root {
   color-scheme: light;
+  --font-space-grotesk: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-inter: "Inter Variable", system-ui, sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono Variable", monospace;
   --space-0: 255 255 255;
   --space-50: 248 248 250;
   --space-100: 240 240 245;

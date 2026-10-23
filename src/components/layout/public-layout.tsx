@@ -24,6 +24,7 @@ const DashboardLayout = dynamic(
   () => import("@/components/layout/dashboard-layout").then((m) => m.DashboardLayout),
   { ssr: false }
 );
+import { Footer } from "@/components/layout/footer";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -224,23 +225,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <main id="main-content" tabIndex={-1} className="pt-20">{children}</main>
 
       {/* ════════════════ FOOTER ════════════════ */}
-      <footer className="glass mt-20 py-8 border-t border-border">
-        <div className="container-premium flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-muted-foreground">
-          <span>&copy; {new Date().getFullYear()} Moistello</span>
-          <nav className="flex flex-wrap justify-center gap-6" aria-label="Footer navigation">
-            <Link href="/about" className="hover:text-foreground transition-colors">{t("nav.about")}</Link>
-            <Link href="/how-it-works" className="hover:text-foreground transition-colors">{t("nav.howItWorks")}</Link>
-            <Link href="/developers" className="hover:text-foreground transition-colors">{t("nav.developers")}</Link>
-            <Link href="/docs" className="hover:text-foreground transition-colors">{t("nav.docs")}</Link>
-            <Link href="/faq" className="hover:text-foreground transition-colors">{t("nav.faq")}</Link>
-            <Link href="/become-a-contributor" className="hover:text-foreground transition-colors">{t("common.create")}</Link>
-            <Link href="/support" className="hover:text-foreground transition-colors">{t("nav.support")}</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">{t("nav.terms")}</Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">{t("nav.privacy")}</Link>
-          </nav>
-          <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-aurora-cyan animate-pulse-glow" />{t("nav.builtOnStellar")}</span>
-        </div>
-      </footer>
+      <Footer className="mt-20" />
     </div>
   );
 }

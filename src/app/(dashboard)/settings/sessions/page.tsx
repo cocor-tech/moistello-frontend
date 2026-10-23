@@ -260,7 +260,7 @@ export default function SessionsSettingsPage() {
                     <div className="shrink-0">
                       {confirmRevokePasskey === passkey.credentialId ? (
                         <div className="flex flex-col items-end gap-2">
-                          {isLastPasskey && <p className="text-xs text-red-400 font-medium max-w-[200px] text-right">This is your last passkey. You won't be able to login with biometric authentication.</p>}
+                          {isLastPasskey && <p className="text-xs text-red-400 font-medium max-w-[200px] text-right">This is your last passkey. You won&apos;t be able to login with biometric authentication.</p>}
                           <div className="flex gap-1">
                             <Button variant="destructive" size="xs" onClick={() => handleRevokePasskey(passkey.credentialId)} className="h-7 text-xs">{t("session.confirm")}</Button>
                             <Button variant="outline" size="xs" onClick={() => setConfirmRevokePasskey(null)} className="h-7 text-xs">{t("session.keep")}</Button>

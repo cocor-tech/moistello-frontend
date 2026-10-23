@@ -70,6 +70,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  turbopack: {},
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns", "@stellar/stellar-base"],
   },
@@ -86,6 +87,13 @@ const nextConfig = {
     }
 
     if (!isServer) {
+      // pino treats pino-pretty as an optional runtime transport. WalletConnect
+      // reaches pino from client bundles, where that Node-only transport is
+      // never used; alias it out so webpack does not warn about the optional
+      // package during page compilation.
+      config.resolve.alias = config.resolve.alias || {}
+      config.resolve.alias["pino-pretty"] = false
+
       config.optimization = config.optimization || {}
       config.optimization.splitChunks = config.optimization.splitChunks || {}
       const cacheGroups = config.optimization.splitChunks.cacheGroups || {}

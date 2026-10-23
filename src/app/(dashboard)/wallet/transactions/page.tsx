@@ -134,7 +134,7 @@ function FilterChipGroup<T extends string>({
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</label>
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
       <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
         {showAll && (
           <button
@@ -194,7 +194,7 @@ function AmountRangeFilter({
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount Range</label>
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount Range</span>
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

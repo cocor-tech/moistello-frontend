@@ -14,11 +14,13 @@ import { useToast } from "@/hooks/use-toast"
 import { post } from "@/lib/api-client"
 import type { User } from "@/types"
 
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
+
 export default function RegisterPage() {
   const router = useRouter()
   const setTokens = useAuthStore((s) => s.setTokens)
   const toast = useToast()
-  const [loading, setLoading] = useState(false)
+  const { guard, isPending: loading } = useSubmitGuard()
 
   const {
     register,
@@ -33,8 +35,7 @@ export default function RegisterPage() {
   const passwordValue = watch("password") || ""
 
   const onSubmit = useCallback(
-    async (values: RegisterInput) => {
-      setLoading(true)
+    guard(async (values: RegisterInput) => {
       try {
         const res = await post<{ token?: string; refreshToken?: string; user?: User }>("/auth/register", values)
         if (res?.token) {
@@ -49,11 +50,9 @@ export default function RegisterPage() {
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Registration failed"
         toast.error(msg)
-      } finally {
-        setLoading(false)
       }
-    },
-    [setTokens, toast, router],
+    }),
+    [guard, setTokens, toast, router],
   )
 
   return (

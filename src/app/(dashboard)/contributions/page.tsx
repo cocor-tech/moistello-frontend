@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign, CircleAlert } from "lucide-react";
 
 export default function ContributionsPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [contributions, setContributions] = useState<any[]>([]);
+  const [contributions, setContributions] = useState<unknown[]>([]);
 
   if (isLoading) {
     return (

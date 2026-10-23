@@ -390,6 +390,17 @@ export const PUBLIC_ROUTES: readonly RouteSeo[] = [
     indexable: false,
   },
   {
+    path: "/verify-callback",
+    title: "Verifying Authentication — Moistello",
+    description:
+      "Establishing your secure session on Moistello after email verification. You will be redirected shortly.",
+    ogTitle: "Verifying your Moistello session",
+    ogDescription:
+      "Establishing your secure session on Moistello after verification.",
+    keywords: ["moistello", "verification", "auth", "session", "callback"],
+    indexable: false,
+  },
+  {
     path: "/access-denied",
     title: "Access Denied (403) — Moistello",
     description:

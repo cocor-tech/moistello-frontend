@@ -6,6 +6,7 @@ import { contributorSchema, zodResolver, type ContributorInput } from "@/lib/val
 import { Button } from "@/components/ui/button"
 import { ErrorSummary } from "@/components/shared/error-summary"
 import { getCsrfHeaders } from "@/lib/auth/csrf"
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
 
 const contributionAreas = [
   "Frontend Development (TypeScript/Next.js)",
@@ -23,6 +24,7 @@ const contributionAreas = [
 type FormState = "idle" | "submitting" | "success" | "error"
 
 export function ContributionForm() {
+  const { guard, isPending, idempotencyKey } = useSubmitGuard()
   const {
     register,
     handleSubmit,
@@ -62,14 +64,18 @@ export function ContributionForm() {
         }))
     : []
 
-  const onValid = async (values: ContributorInput) => {
+  const onValid = guard(async (values: ContributorInput) => {
     setFormState("submitting")
     setFormError(null)
 
     try {
       const res = await fetch("/api/contributors", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        headers: {
+          "Content-Type": "application/json",
+          "x-idempotency-key": idempotencyKey,
+          ...getCsrfHeaders(),
+        },
         body: JSON.stringify(values),
       })
       if (!res.ok) {
@@ -82,7 +88,7 @@ export function ContributionForm() {
       setFormState("error")
       setFormError(err instanceof Error ? err.message : "Something went wrong")
     }
-  }
+  })
 
   // Flip the flag before the invalid handler runs so the summary is rendered
   // in the same commit as the failed submit.
@@ -212,11 +218,11 @@ export function ContributionForm() {
         variant="primary"
         size="lg"
         className="w-full"
-        isLoading={formState === "submitting"}
-        disabled={formState === "submitting"}
+        isLoading={isPending || formState === "submitting"}
+        disabled={isPending || formState === "submitting"}
         leftIcon={<SendIcon />}
       >
-        {formState === "submitting" ? "Submitting..." : "Submit Application"}
+        {isPending || formState === "submitting" ? "Submitting..." : "Submit Application"}
       </Button>
     </form>
   )

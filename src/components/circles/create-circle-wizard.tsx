@@ -35,6 +35,8 @@ interface CreateCircleWizardProps {
   isPending?: boolean
 }
 
+import { useSubmitGuard } from "@/hooks/use-submit-guard"
+
 export default function CreateCircleWizard({
   communityId,
   onSubmit,
@@ -44,6 +46,7 @@ export default function CreateCircleWizard({
   const createCircle = useCreateCircle()
   const { user } = useAuth()
   const addToast = useUIStore((s) => s.addToast)
+  const { guard, isPending: isGuarded } = useSubmitGuard()
 
   const STEPS = getSteps(communityId)
 
@@ -63,7 +66,7 @@ export default function CreateCircleWizard({
     if (success) go(Math.min(4, currentStep + 1))
   }
   const handleBack = () => { setErrors({}); go(Math.max(1, currentStep - 1)) }
-  const handleSubmit = () => {
+  const handleSubmit = guard(async () => {
     const { success, errors: stepErrors } = validateCircleStep(4, formData, user?.moiScore ?? 0, communityId)
     if (!success) {
       setErrors(stepErrors)
@@ -75,22 +78,26 @@ export default function CreateCircleWizard({
       onSubmit(payload)
       return
     }
-    createCircle.mutate(payload as unknown as Parameters<typeof createCircle.mutate>[0], {
-      onSuccess: (res: unknown) => {
-        const data = (res as Record<string, unknown>)?.data as Record<string, unknown> | undefined
-        const circle = data?.circle as Record<string, unknown> | undefined
-        const rawId = circle?.id
-        const circleId = typeof rawId === "string" ? rawId : undefined
-        addToast({ type: "success", title: "Circle created!", description: "Your savings circle is ready." })
-        setTimeout(() => router.push(circleId ? `/circles/${circleId}` : onSuccessPath), 500)
-      },
-      onError: (err: unknown) => {
-        const axiosErr = err as { response?: { data?: Record<string, unknown> }; message?: string }
-        const resp = axiosErr?.response?.data
-        setErrors({ submit: JSON.stringify(resp ?? axiosErr?.message ?? err) })
-      },
+    await new Promise<void>((resolve, reject) => {
+      createCircle.mutate(payload as unknown as Parameters<typeof createCircle.mutate>[0], {
+        onSuccess: (res: unknown) => {
+          const data = (res as Record<string, unknown>)?.data as Record<string, unknown> | undefined
+          const circle = data?.circle as Record<string, unknown> | undefined
+          const rawId = circle?.id
+          const circleId = typeof rawId === "string" ? rawId : undefined
+          addToast({ type: "success", title: "Circle created!", description: "Your savings circle is ready." })
+          setTimeout(() => router.push(circleId ? `/circles/${circleId}` : onSuccessPath), 500)
+          resolve()
+        },
+        onError: (err: unknown) => {
+          const axiosErr = err as { response?: { data?: Record<string, unknown> }; message?: string }
+          const resp = axiosErr?.response?.data
+          setErrors({ submit: JSON.stringify(resp ?? axiosErr?.message ?? err) })
+          reject(err)
+        },
+      })
     })
-  }
+  })
 
   const StepC = STEPS[currentStep - 1]
   const stepProps = currentStep === 4
@@ -122,7 +129,8 @@ export default function CreateCircleWizard({
             rightIcon={<ChevronRight className="h-4 w-4" />}>Next</Button>
         ) : (
           <Button variant="premium" size="lg" onClick={handleSubmit}
-            isLoading={createCircle.isPending}>Create Circle</Button>
+            isLoading={isPending ?? (isGuarded || createCircle.isPending)}
+            disabled={isPending ?? (isGuarded || createCircle.isPending)}>Create Circle</Button>
         )}
       </div>
     </div>

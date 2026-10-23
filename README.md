@@ -146,7 +146,7 @@ See [`docs/logging.md`](docs/logging.md) for structured log levels, redaction, b
 
 ## License
 
-Apache 2.0
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 # V2-BE-369 — XSS Audit and CSP Hardening
 

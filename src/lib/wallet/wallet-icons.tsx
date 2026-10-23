@@ -67,3 +67,12 @@ export function WalletIcon({ id, name, className, size = "md" }: WalletIconProps
     </span>
   )
 }
+
+// ... inside component:
+<Image
+  src={iconUrl}
+  alt={`${walletName} wallet logo`}
+  width={24}
+  height={24}
+  className="h-6 w-6 object-contain"
+/>

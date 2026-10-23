@@ -46,7 +46,7 @@ export function CircleJoinCodeModal({
           className="w-full"
           onClick={onSubmit}
           isLoading={isLoading}
-          disabled={!value.trim()}
+          disabled={!value.trim() || isLoading}
         >
           Join Circle
         </Button>

@@ -19,6 +19,8 @@ interface CircleContributeFormProps {
   onCancel?: () => void;
 }
 
+import { useSubmitGuard } from "@/hooks/use-submit-guard";
+
 export function CircleContributeForm({
   circleId,
   circleName,
@@ -28,18 +30,17 @@ export function CircleContributeForm({
   onCancel,
 }: CircleContributeFormProps) {
   const { address: publicKey, signMessage } = useMultiWallet();
-  const [isLoading, setIsLoading] = useState(false);
+  const { guard, isPending: isLoading, idempotencyKey } = useSubmitGuard();
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<ContributionPhase>("idle");
 
-  const handleSubmit = async () => {
+  const handleSubmit = guard(async () => {
     if (!publicKey) {
       setError("No wallet connected. Please connect a wallet first.");
       setPhase("error");
       return;
     }
 
-    setIsLoading(true);
     setError(null);
     setPhase("submitting");
 
@@ -51,9 +52,12 @@ export function CircleContributeForm({
         amount: contributionAmount,
         currency,
         walletAddress: publicKey,
+        idempotencyKey,
       };
 
-      await post("/api/contributions", payload);
+      await post("/api/contributions", payload, {
+        headers: { "x-idempotency-key": idempotencyKey },
+      });
 
       setPhase("signing");
       const message = `Moistello Contribution: ${contributionAmount} ${currency} to ${circleName} (circle: ${circleId})`;
@@ -75,10 +79,8 @@ export function CircleContributeForm({
         setError("Failed to process contribution. Please try again.");
       }
       setPhase("error");
-    } finally {
-      setIsLoading(false);
     }
-  };
+  });
 
   const statusMessage = useMemo(() => {
     switch (phase) {

@@ -7,9 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users, CircleAlert } from "lucide-react";
 
 export default function ReferralsPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [referrals, setReferrals] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<unknown[]>([]);
 
   if (isLoading) {
     return (

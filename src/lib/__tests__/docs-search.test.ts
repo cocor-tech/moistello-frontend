@@ -15,7 +15,7 @@ describe("buildTerms", () => {
 
 describe("windowSnippet", () => {
   it("centers the snippet on the first match", () => {
-    const content = "one two three four five six seven eight nine ten"
+    const content = "one two three four five six seven eight nine ten ".repeat(5)
     const snippet = windowSnippet(content, ["three"])
     expect(snippet).toContain("three")
     expect(snippet.length).toBeLessThan(content.length)

@@ -159,6 +159,7 @@ export function CommandPalette() {
             }
             aria-autocomplete="list"
             placeholder="Search pages, circles and settings…"
+            aria-label="Search pages, circles and settings"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="h-14 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"

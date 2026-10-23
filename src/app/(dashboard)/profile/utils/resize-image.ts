@@ -55,7 +55,6 @@ export async function getExifOrientation(file: File | ArrayBuffer): Promise<numb
 
     // APP1 marker (EXIF)
     if (marker === 0xffe1) {
-      const segmentLength = view.getUint16(offset, false)
       offset += 2
 
       // Check for 'Exif\0\0'

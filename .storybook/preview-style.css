@@ -1,7 +1,6 @@
 :root {
-  /* The app defines these on <html> via next/font; Storybook does not boot the
-     Next font pipeline, so map them to the fontsource variable faces bundled
-     in the preview. */
+  /* The app defines these variables in globals.css; Storybook maps them to the
+     fontsource variable faces bundled in the preview. */
   --font-space-grotesk: "Space Grotesk Variable", system-ui, sans-serif;
   --font-inter: "Inter Variable", system-ui, sans-serif;
   --font-jetbrains-mono: "JetBrains Mono Variable", monospace;

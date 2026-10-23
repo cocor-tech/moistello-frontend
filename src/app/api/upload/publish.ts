@@ -3,6 +3,11 @@ import path from "path";
 
 import { logger } from "@/lib/logger";
 import { sanitizeHtml } from "@/lib/security/html-sanitizer";
+import {
+  ALLOWED_UPLOAD_EXTENSIONS,
+  UPLOAD_LIMITS_BY_TYPE,
+  validateUploadFile,
+} from "@/app/upload/utils/upload-limits";
 
 /**
  * Validation and page rendering shared by the upload and finalize routes.
@@ -12,9 +17,10 @@ import { sanitizeHtml } from "@/lib/security/html-sanitizer";
  */
 
 export const PAGES_DIR = path.join(process.cwd(), "content/pages");
-export const ALLOWED_EXTENSIONS = [".md", ".html"] as const;
-export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
-const SLUG_PATTERN = /^[a-zA-Z0-9\-_]+$/;
+export const ALLOWED_EXTENSIONS = ALLOWED_UPLOAD_EXTENSIONS;
+export const MAX_UPLOAD_SIZE = Math.max(
+  ...Object.values(UPLOAD_LIMITS_BY_TYPE).map((l) => l.maxBytes),
+);
 
 export interface ValidationFailure {
   error: string;
@@ -26,38 +32,15 @@ export type ValidationResult =
   | { ok: false; failure: ValidationFailure };
 
 export function validateUpload(fileName: string, size: number): ValidationResult {
-  const extension = path.extname(fileName).toLowerCase();
-
-  if (!(ALLOWED_EXTENSIONS as readonly string[]).includes(extension)) {
+  const result = validateUploadFile(fileName, size);
+  if (!result.ok) {
     return {
       ok: false,
-      failure: { error: "Only .md and .html files are allowed", status: 400 },
+      failure: { error: result.error, status: result.status },
     };
   }
 
-  if (size > MAX_UPLOAD_SIZE) {
-    return {
-      ok: false,
-      failure: {
-        error: `File too large (max ${MAX_UPLOAD_SIZE / 1024 / 1024}MB)`,
-        status: 400,
-      },
-    };
-  }
-
-  const slug = fileName.replace(extension, "");
-  if (!SLUG_PATTERN.test(slug)) {
-    return {
-      ok: false,
-      failure: {
-        error:
-          "Filename must contain only letters, numbers, hyphens, or underscores",
-        status: 400,
-      },
-    };
-  }
-
-  return { ok: true, slug, extension };
+  return { ok: true, slug: result.slug, extension: result.extension };
 }
 
 /** True when the target page already exists and overwrite was not requested. */

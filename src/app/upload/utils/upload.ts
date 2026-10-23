@@ -1,4 +1,19 @@
-export const ALLOWED_UPLOAD_EXTENSIONS = [".md", ".html"] as const
+import {
+  ALLOWED_UPLOAD_EXTENSIONS,
+  validateUploadFile,
+} from "./upload-limits"
+
+export {
+  ALLOWED_UPLOAD_EXTENSIONS,
+  ALLOWED_TYPES_LIST,
+  UPLOAD_LIMITS_BY_TYPE,
+  isAllowedExtension,
+  getLimitForExtension,
+  validateUploadFile,
+  type AllowedUploadExtension,
+  type UploadTypeLimit,
+  type UploadValidationResult,
+} from "./upload-limits"
 
 /**
  * Upload lifecycle.
@@ -41,7 +56,7 @@ export function getFileExtension(fileName: string): string {
 }
 
 export function isAllowedUpload(file: File): boolean {
-  return (ALLOWED_UPLOAD_EXTENSIONS as readonly string[]).includes(getFileExtension(file.name))
+  return validateUploadFile(file.name, file.size).ok
 }
 
 export function getUploadSlug(fileName: string): string {

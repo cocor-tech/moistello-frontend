@@ -33,7 +33,7 @@ jobs:
             nextjs-${{ runner.os }}-
       - run: npm ci
       - run: npm run lint
-      - run: npx tsc --noEmit
+      - run: npm run typecheck
       # ── SEO route audit ────────────────────────────────────────────────────
       # Proves every public route in src/app ships a unique meta description
       # and OpenGraph/Twitter tags, and that the sitemap only advertises
@@ -42,6 +42,11 @@ jobs:
       # deploy. The same rules run under vitest in src/lib/seo/__tests__.
       - name: Audit SEO metadata on public routes
         run: npm run audit:seo
+      # ── i18n untranslated keys audit ───────────────────────────────────────
+      # Scans for translation keys referenced in code but absent from locale files,
+      # ensuring new keys are not silently un-translated.
+      - name: Detect untranslated i18n keys
+        run: npm run audit:i18n
       - run: npm run test -- --run
       # ── Coverage gate ──────────────────────────────────────────────────────
       # Runs vitest with the v8 coverage provider and enforces the thresholds

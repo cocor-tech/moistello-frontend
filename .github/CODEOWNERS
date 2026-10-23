@@ -1,0 +1,7 @@
+# Default owner for repository changes.
+* @devzubby
+
+# Wallet, authentication, and state-management changes require focused review.
+/src/lib/wallet/ @devzubby
+/src/stores/ @devzubby
+/src/app/api/auth/ @devzubby

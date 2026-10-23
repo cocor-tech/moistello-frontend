@@ -14,20 +14,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 
 // ── Mock SignClient ─────────────────────────────────────────────────────────
 
-let approvalResolve: ((session: unknown) => void) | null = null
-let approvalReject: ((err: unknown) => void) | null = null
-
 const mockSignClient = {
   on: vi.fn(),
   session: { getAll: vi.fn().mockReturnValue([]) },
   connect: vi.fn().mockImplementation(() =>
     Promise.resolve({
       uri: "wc:test-uri",
-      approval: () =>
-        new Promise((res, rej) => {
-          approvalResolve = res
-          approvalReject = rej
-        }),
+      approval: () => new Promise(() => {}),
     })
   ),
   disconnect: vi.fn().mockResolvedValue(undefined),
@@ -75,20 +68,6 @@ import {
   setOnPairingUri,
   type PairingContext,
 } from "../walletconnect"
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function makeSession(address = "GAXI4RFQHLT2OVXZWRLGE6YFAJILKM576FKGSEDPMHPXWKBHDPXUIYJ") {
-  return {
-    topic: "test-topic",
-    namespaces: {
-      stellar: {
-        accounts: [`stellar:testnet:${address}`],
-        chains: ["stellar:testnet"],
-      },
-    },
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -138,8 +117,6 @@ describe("Per-connect context: concurrent connects — latest wins", () => {
     vi.clearAllMocks()
     mockRelay.status = "healthy"
     mockSignClient.session.getAll.mockReturnValue([])
-    approvalResolve = null
-    approvalReject = null
 
     // Each call to connect() sets up a fresh approval promise.
     let callCount = 0
@@ -148,13 +125,7 @@ describe("Per-connect context: concurrent connects — latest wins", () => {
       const n = callCount
       return Promise.resolve({
         uri: `wc:uri-${n}`,
-        approval: () =>
-          new Promise((res, rej) => {
-            if (n === 1) {
-              approvalResolve = res as any
-              approvalReject = rej
-            }
-          }),
+        approval: () => new Promise(() => {}),
       })
     })
   })
@@ -212,15 +183,9 @@ describe("abortConnect / unmount cleanup", () => {
     vi.clearAllMocks()
     mockRelay.status = "healthy"
     mockSignClient.session.getAll.mockReturnValue([])
-    approvalResolve = null
-    approvalReject = null
     mockSignClient.connect.mockResolvedValue({
       uri: "wc:test",
-      approval: () =>
-        new Promise((res, rej) => {
-          approvalResolve = res as any
-          approvalReject = rej
-        }),
+      approval: () => new Promise(() => {}),
     })
   })
 
@@ -289,15 +254,9 @@ describe("resetWcState scoping", () => {
     vi.clearAllMocks()
     mockRelay.status = "healthy"
     mockSignClient.session.getAll.mockReturnValue([])
-    approvalResolve = null
-    approvalReject = null
     mockSignClient.connect.mockResolvedValue({
       uri: "wc:test",
-      approval: () =>
-        new Promise((res, rej) => {
-          approvalResolve = res as any
-          approvalReject = rej
-        }),
+      approval: () => new Promise(() => {}),
     })
   })
 

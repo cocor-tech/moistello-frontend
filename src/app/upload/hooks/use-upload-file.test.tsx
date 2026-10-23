@@ -240,7 +240,7 @@ describe("useUploadFile — two-phase upload", () => {
     expect(result.current.canRetry).toBe(true);
   });
 
-  it("rejects a disallowed extension before any request", async () => {
+  it("rejects a disallowed extension before any request with allowed types listed", async () => {
     const { result } = renderHook(() => useUploadFile());
 
     act(() => {
@@ -251,6 +251,34 @@ describe("useUploadFile — two-phase upload", () => {
 
     expect(result.current.status).toBe("error");
     expect(result.current.errorKind).toBe("validation");
+    expect(result.current.message).toMatch(/allowed types/i);
+    expect(result.current.message).toContain(".md");
+    expect(result.current.message).toContain(".html");
+    expect(result.current.file).toBeNull();
+    expect(transferFileMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a file exceeding the per-type size limit instantly before any request", async () => {
+    const { result } = renderHook(() => useUploadFile());
+
+    // 3MB .md file exceeds 2MB limit
+    const oversizedMd = new File([new Uint8Array(3 * 1024 * 1024)], "huge.md", {
+      type: "text/markdown",
+      lastModified: FILE_MTIME,
+    });
+
+    act(() => {
+      result.current.selectFile({
+        target: { files: [oversizedMd] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    expect(result.current.status).toBe("error");
+    expect(result.current.errorKind).toBe("validation");
+    expect(result.current.message).toContain("File too large for .md");
+    expect(result.current.message).toContain("2MB");
+    expect(result.current.message).toMatch(/allowed types/i);
+    expect(result.current.file).toBeNull();
     expect(transferFileMock).not.toHaveBeenCalled();
   });
 

@@ -155,14 +155,15 @@ describe("WalletConnect Adapter", () => {
     it("connect does not throw synchronously when relay is flagged down", async () => {
       mockRelay.status = "down"
       let promise: Promise<unknown> | undefined
-      expect(() => { promise = adapter.connect() }).not.toThrow()
+      expect(() => {
+        promise = adapter.connect()
+        // Attach rejection handler immediately so Node/Vitest doesn't emit unhandledRejection
+        promise.catch(() => {})
+      }).not.toThrow()
       expect(promise).toBeInstanceOf(Promise)
-      // Wait for connect() async body to set _pendingReject (via
-      // getOrInitSignClient resolving the mocked SignClient.init),
-      // then cancel and consume the rejection so nothing leaks.
-      await new Promise<void>((resolve) => setTimeout(resolve, 20))
-      resetWcState()
-      try { await promise! } catch { /* expected — resetWcState rejected it */ }
+      await expect(promise).rejects.toMatchObject({
+        code: "relay_down",
+      })
     })
 
     it("throws not_installed for signMessage when not connected (regardless of relay)", async () => {

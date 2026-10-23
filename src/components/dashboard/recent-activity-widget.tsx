@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { get } from '@/lib/api-client'
 import Link from 'next/link'
-import { ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, Info } from 'lucide-react'
+import { ArrowUp, ArrowDown, DollarSign, CircleDot, UserPlus, Info, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatRelativeTime } from '@/lib/formatters'
@@ -16,6 +16,11 @@ import type { ApiResponse, Notification, Contribution, Payout } from '@/types'
 const iconMap: Record<string, React.ReactNode> = {
   contribution: <ArrowUp className="h-4 w-4" />,
   contribution_received: <ArrowDown className="h-4 w-4" />,
+  deposit: <ArrowDown className="h-4 w-4" />,
+  deposit_completed: <ArrowDown className="h-4 w-4" />,
+  transfer: <ArrowLeftRight className="h-4 w-4" />,
+  transfer_sent: <ArrowUp className="h-4 w-4" />,
+  transfer_received: <ArrowDown className="h-4 w-4" />,
   payout: <DollarSign className="h-4 w-4" />,
   payout_received: <DollarSign className="h-4 w-4" />,
   circle: <CircleDot className="h-4 w-4" />,
@@ -29,6 +34,11 @@ const iconMap: Record<string, React.ReactNode> = {
 const gradientMap: Record<string, string> = {
   contribution: 'from-emerald-500/30 to-green-600/30',
   contribution_received: 'from-emerald-500/30 to-green-600/30',
+  deposit: 'from-emerald-500/30 to-green-600/30',
+  deposit_completed: 'from-emerald-500/30 to-green-600/30',
+  transfer: 'from-blue-500/30 to-cyan-600/30',
+  transfer_sent: 'from-blue-500/30 to-cyan-600/30',
+  transfer_received: 'from-emerald-500/30 to-green-600/30',
   payout: 'from-aurora-indigo/30 to-aurora-violet/30',
   payout_received: 'from-aurora-indigo/30 to-aurora-violet/30',
   circle: 'from-aurora-violet/30 to-fuchsia-500/30',
@@ -42,6 +52,11 @@ const gradientMap: Record<string, string> = {
 const iconColorMap: Record<string, string> = {
   contribution: 'text-emerald-400',
   contribution_received: 'text-emerald-400',
+  deposit: 'text-emerald-400',
+  deposit_completed: 'text-emerald-400',
+  transfer: 'text-blue-400',
+  transfer_sent: 'text-blue-400',
+  transfer_received: 'text-emerald-400',
   payout: 'text-aurora-violet',
   payout_received: 'text-aurora-violet',
   circle: 'text-fuchsia-400',
@@ -54,9 +69,114 @@ const iconColorMap: Record<string, string> = {
 
 const PAGE_SIZE = 5
 
-type ActivityItem = {
+export interface ActivityLinkSource {
   id: string
-  type: 'notification' | 'contribution' | 'payout'
+  type: string
+  subType?: string
+  data?: Record<string, unknown> | null
+  circleId?: string
+  transactionId?: string
+  link?: string
+}
+
+/**
+ * Resolves activity item deep-links:
+ * - Transaction-related feed items (deposits, transfers, payouts) deep-link to /wallet/transactions/[id]
+ * - Non-transaction feed items link to their respective pages (circle, governance, referrals, etc.)
+ */
+export function resolveActivityLink(item: ActivityLinkSource): string | undefined {
+  const type = (item.subType || item.type || '').toLowerCase()
+  const data = item.data ?? {}
+
+  // 1. Transaction-related: Deposits, Contributions, Transfers, Payouts
+  const txId = (
+    data.transactionId ??
+    data.txId ??
+    data.txnId ??
+    item.transactionId ??
+    (type.includes('contribution') ? data.contributionId : undefined) ??
+    (type.includes('payout') ? data.payoutId : undefined) ??
+    (type.includes('transfer') ? data.transferId : undefined) ??
+    (type.includes('deposit') ? data.depositId : undefined)
+  )
+
+  // Deposits / Contributions deep-link to transaction detail view
+  if (
+    type === 'contribution' ||
+    type === 'contribution_received' ||
+    type === 'deposit' ||
+    type === 'deposit_completed'
+  ) {
+    const resolvedId = txId || item.id.replace(/^(contrib|deposit)-/, '')
+    return `/wallet/transactions/${resolvedId}`
+  }
+
+  // Transfers deep-link to transaction detail view
+  if (
+    type === 'transfer' ||
+    type === 'transfer_sent' ||
+    type === 'transfer_received'
+  ) {
+    const resolvedId = txId || item.id.replace(/^transfer-/, '')
+    return `/wallet/transactions/${resolvedId}`
+  }
+
+  // Payouts deep-link to transaction detail view
+  if (
+    type === 'payout' ||
+    type === 'payout_received'
+  ) {
+    const resolvedId = txId || item.id.replace(/^payout-/, '')
+    return `/wallet/transactions/${resolvedId}`
+  }
+
+  // If item has an explicit transaction identifier, deep-link to transaction detail view
+  if (txId) {
+    return `/wallet/transactions/${txId}`
+  }
+
+  // 2. Non-transaction items link to their own relevant pages
+  // Circle-related
+  if (type.startsWith('circle') || data.circleId || item.circleId) {
+    const cId = data.circleId || item.circleId
+    return cId ? `/circles/${cId}` : '/circles'
+  }
+
+  // Governance-related
+  if (type.startsWith('governance') || type.startsWith('proposal') || data.proposalId) {
+    const pId = data.proposalId
+    return pId ? `/governance/${pId}` : '/governance'
+  }
+
+  // Referral-related
+  if (type.startsWith('referral') || data.referralId) {
+    return '/referrals'
+  }
+
+  // Reputation / Warning / Penalty
+  if (type === 'reputation' || type === 'penalty' || type === 'warning') {
+    return data.circleId ? `/circles/${data.circleId}` : '/reputation'
+  }
+
+  // Explicit link if present
+  if (data.link && typeof data.link === 'string') {
+    return data.link
+  }
+  if (item.link) {
+    return item.link
+  }
+
+  // Fallback for notifications
+  if (item.type === 'notification') {
+    return '/notifications'
+  }
+
+  return undefined
+}
+
+export type ActivityItem = {
+  id: string
+  type: 'notification' | 'contribution' | 'payout' | 'deposit' | 'transfer'
   title: string
   description?: string
   timestamp: string
@@ -104,7 +224,12 @@ export function RecentActivityWidget() {
       title: n.title,
       description: n.body ?? undefined,
       timestamp: n.sentAt || n.createdAt,
-      link: n.data && typeof n.data === 'object' && 'link' in n.data ? String(n.data.link) : undefined,
+      link: resolveActivityLink({
+        id: n.id,
+        type: 'notification',
+        subType: n.type,
+        data: n.data,
+      }),
       icon: iconMap[n.type] || <Info className="h-4 w-4" />,
       gradient: gradientMap[n.type] || gradientMap.system,
       iconColor: iconColorMap[n.type] || iconColorMap.system,
@@ -115,7 +240,12 @@ export function RecentActivityWidget() {
       title: `Contribution: ${c.amount} USDC`,
       description: `Round ${c.roundNumber}`,
       timestamp: c.createdAt,
-      link: `/circles/${c.circleId}`,
+      link: resolveActivityLink({
+        id: c.id,
+        type: 'contribution',
+        circleId: c.circleId,
+        data: { txnHash: c.txnHash },
+      }),
       icon: <ArrowUp className="h-4 w-4" />,
       gradient: gradientMap.contribution,
       iconColor: iconColorMap.contribution,
@@ -126,7 +256,12 @@ export function RecentActivityWidget() {
       title: `Payout: ${p.amount} USDC`,
       description: `Round ${p.roundNumber}`,
       timestamp: p.createdAt,
-      link: `/circles/${p.circleId}`,
+      link: resolveActivityLink({
+        id: p.id,
+        type: 'payout',
+        circleId: p.circleId,
+        data: { txnHash: p.txnHash },
+      }),
       icon: <DollarSign className="h-4 w-4" />,
       gradient: gradientMap.payout,
       iconColor: iconColorMap.payout,

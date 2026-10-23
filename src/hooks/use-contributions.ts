@@ -51,7 +51,7 @@ export function useContributions(filters?: ContributionFilters) {
           page: filters?.page ?? 1,
           limit: filters?.limit ?? 20,
           total: contributions.length,
-          totalPages: 1,
+          totalPages: contributions.length === 0 ? 0 : Math.ceil(contributions.length / (filters?.limit ?? 20)),
         },
       };
     },
