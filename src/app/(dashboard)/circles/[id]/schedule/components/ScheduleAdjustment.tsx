@@ -81,12 +81,6 @@ export function ScheduleAdjustment({
   const [editedSchedule, setEditedSchedule] = useState<RoundScheduleItem[]>(initialSchedule)
   const [errors, setErrors] = useState<Record<number, string>>({})
 
-  const isOrganizer = user && circle && circle.organizerId === user.id
-
-  if (!isOrganizer) {
-    return null
-  }
-
   const adjustScheduleMutation = useMutation({
     mutationFn: async (schedule: RoundScheduleItem[]) => {
       const response = await post<ApiResponse<unknown>>(`/circles/${circleId}/schedule/adjust`, {
@@ -157,6 +151,13 @@ export function ScheduleAdjustment({
 
     return newErrors
   }, [circle, rounds])
+
+  // Early return must stay after every hook so the hook order is identical on each render.
+  const isOrganizer = user && circle && circle.organizerId === user.id
+
+  if (!isOrganizer) {
+    return null
+  }
 
   const handleDateChange = (round: number, value: string) => {
     const date = parseLocalDatetimeLocal(value)
