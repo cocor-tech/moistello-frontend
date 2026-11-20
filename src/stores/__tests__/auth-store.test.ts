@@ -5,6 +5,8 @@ const { mockPost } = vi.hoisted(() => ({ mockPost: vi.fn() }))
 
 vi.mock("@/lib/api-client", () => ({
   post: mockPost,
+  // auth-store calls this on every setTokens / clearTokens; the mock must provide it.
+  clearApiClientState: vi.fn(),
 }))
 
 vi.mock("@/lib/wallet/registry", () => ({
