@@ -7,7 +7,6 @@ import {
   useEffect,
   useRef,
   useCallback,
-  useState,
 } from "react";
 import {
   useWebSocket,
