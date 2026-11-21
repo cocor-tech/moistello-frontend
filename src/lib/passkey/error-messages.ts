@@ -125,9 +125,14 @@ const FALLBACK: PasskeyErrorInfo = {
  * are never surfaced to the user.
  */
 export function classifyPasskeyError(error: unknown): PasskeyErrorInfo {
-  if (error instanceof Error) {
-    const info = ERROR_MAP[error.name]
-    if (info) return info
+  // Duck-type the name rather than using `instanceof Error`: DOMException is not
+  // an Error subclass in every runtime (e.g. jsdom), so real WebAuthn failures
+  // were falling through to the generic "unknown" bucket.
+  if (typeof error === "object" && error !== null && "name" in error) {
+    const name = (error as { name: unknown }).name
+    if (typeof name === "string" && Object.prototype.hasOwnProperty.call(ERROR_MAP, name)) {
+      return ERROR_MAP[name]
+    }
   }
 
   // Passkey adapter errors carry a `code` field like "user_rejected"

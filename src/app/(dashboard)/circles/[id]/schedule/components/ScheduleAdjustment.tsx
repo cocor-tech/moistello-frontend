@@ -1,14 +1,12 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useParams } from "next/navigation"
 import { Calendar, Save, X, AlertCircle, Clock, HelpCircle } from "lucide-react"
 import { useCircle, useCircleRounds } from "@/hooks/use-circles"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { post } from "@/lib/api-client"
 import { queryKeys } from "@/lib/query-keys"
 import { useUIStore } from "@/stores/ui-store"
-import { formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/cn"
 import type { ApiResponse, Frequency } from "@/types"
 import { useAuth } from "@/hooks/use-auth"
@@ -81,12 +79,6 @@ export function ScheduleAdjustment({
   const [editedSchedule, setEditedSchedule] = useState<RoundScheduleItem[]>(initialSchedule)
   const [errors, setErrors] = useState<Record<number, string>>({})
 
-  const isOrganizer = user && circle && circle.organizerId === user.id
-
-  if (!isOrganizer) {
-    return null
-  }
-
   const adjustScheduleMutation = useMutation({
     mutationFn: async (schedule: RoundScheduleItem[]) => {
       const response = await post<ApiResponse<unknown>>(`/circles/${circleId}/schedule/adjust`, {
@@ -157,6 +149,13 @@ export function ScheduleAdjustment({
 
     return newErrors
   }, [circle, rounds])
+
+  // Early return must stay after every hook so the hook order is identical on each render.
+  const isOrganizer = user && circle && circle.organizerId === user.id
+
+  if (!isOrganizer) {
+    return null
+  }
 
   const handleDateChange = (round: number, value: string) => {
     const date = parseLocalDatetimeLocal(value)
